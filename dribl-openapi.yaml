@@ -1,0 +1,3497 @@
+openapi: 3.0.3
+info:
+  title: Dribl Android API Surface (Recovered)
+  version: "4.1.0-recovered"
+  description: >-
+    Recovered from com.dribl.app Android XAPK version 4.1.0. This document
+    contains non-sensitive endpoint literals and inferred HTTP methods only.
+    No OAuth tokens, JWTs, API keys, cookies, or user credentials are included.
+    Request/response schemas were not present in recoverable form and are
+    represented as generic JSON placeholders. Methods marked with
+    x-method-inference should be verified against authorized traffic or
+    backend documentation before implementation.
+servers:
+  - url: https://api.dribl.com/api
+    description: Primary API base URL discovered in app bundle
+security:
+  - bearerAuth: []
+tags:
+  - name: "Access"
+  - name: "Access Requests"
+  - name: "Accounts"
+  - name: "Auth"
+  - name: "Borrow Members"
+  - name: "Bulk Notifications"
+  - name: "Bulk Washout"
+  - name: "Bulk Washout Events"
+  - name: "Device Token"
+  - name: "External Events"
+  - name: "Formation"
+  - name: "Linked Users"
+  - name: "Linked Users Bulk"
+  - name: "Linked Users Lookup"
+  - name: "Linked Users Resend Token"
+  - name: "Matchsheets"
+  - name: "Referee Can Self Allocate Matchsheet"
+  - name: "Referee Cu"
+  - name: "Referee Mapper"
+  - name: "Referee Mapper Role"
+  - name: "Referee Matchsheet Members"
+  - name: "Registrations"
+  - name: "Stripe"
+  - name: "Teams"
+  - name: "Universal"
+  - name: "Update Ladder"
+  - name: "Upload Token"
+  - name: "User Contacts"
+paths:
+  "/access-requests":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_access_requests
+      tags: ["Access Requests"]
+      summary: "Discovered read endpoint for access requests"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/access-requests/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_access_requests_slash
+      tags: ["Access Requests"]
+      summary: "Discovered read endpoint for access requests"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/access/accounts":
+    x-discovered-source: "Hermes bytecode call site and authenticated live response"
+    x-live-response-shape: "data[] JSON:API records with type=accounts; attributes include type, value, federation, activated, is_primary; links.self.href is present"
+    get:
+      operationId: get_access_accounts
+      tags: ["Access"]
+      summary: "Return login accounts available to the authenticated user"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/access/accounts')"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/access/coordinator-entities":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_access_coordinator_entities
+      tags: ["Access"]
+      summary: "Discovered read endpoint for access coordinator entities"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/access/is_member":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_access_is_member
+      tags: ["Access"]
+      summary: "Discovered read endpoint for access is_member"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/access/roles":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_access_roles
+      tags: ["Access"]
+      summary: "Discovered read endpoint for access roles"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/access/shortcut":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_access_shortcut
+      tags: ["Access"]
+      summary: "Discovered read endpoint for access shortcut"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/accounts":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_accounts
+      tags: ["Accounts"]
+      summary: "Replace or add a login account"
+      x-method-confirmation: "confirmed from Hermes call site: axios.post('/accounts', payload)"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: email
+                value:
+                  type: string
+                activated:
+                  type: boolean
+                replace:
+                  type: boolean
+                is_primary:
+                  type: boolean
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/accounts/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_accounts_slash
+      tags: ["Accounts"]
+      summary: "Discovered read endpoint for accounts"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/accounts/request-token":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_accounts_request_token
+      tags: ["Accounts"]
+      summary: "Discovered action endpoint for accounts request token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/check-password-reset":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_check_password_reset
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth check password reset"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/generate-email-token":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_generate_email_token
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth generate email token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/impersonate-identifier/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    post:
+      operationId: post_auth_impersonate_identifier_slash
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth impersonate identifier"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/impersonate/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    post:
+      operationId: post_auth_impersonate_slash
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth impersonate"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/link-user":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_link_user
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth link user"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/merge-device-account":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_merge_device_account
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth merge device account"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/register-user":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_register_user
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth register user"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/related-users":
+    x-discovered-source: "Hermes bytecode call site and authenticated live response"
+    x-live-response-shape: "data[] records with first_name, last_name, source, dob, id, activated, value"
+    get:
+      operationId: get_auth_related_users
+      tags: ["Auth"]
+      summary: "Return profile and related users for the authenticated account"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/auth/related-users', { params: { email: username } })"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Login email/username forwarded by the original related-user screen.
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/reset-password":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_reset_password
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth reset password"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/reset-password-with-token":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_reset_password_with_token
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth reset password with token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/signin":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_signin
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth signin"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/verify-email":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_verify_email
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth verify email"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/auth/verify-email-token":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_auth_verify_email_token
+      tags: ["Auth"]
+      summary: "Discovered action endpoint for auth verify email token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/borrow-members":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_borrow_members
+      tags: ["Borrow Members"]
+      summary: "Discovered action endpoint for borrow members"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/bulk-notifications":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_bulk_notifications
+      tags: ["Bulk Notifications"]
+      summary: "Discovered action endpoint for bulk notifications"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/bulk-washout":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_bulk_washout
+      tags: ["Bulk Washout"]
+      summary: "Discovered action endpoint for bulk washout"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/bulk-washout-events":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_bulk_washout_events
+      tags: ["Bulk Washout Events"]
+      summary: "Discovered action endpoint for bulk washout events"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/device-token":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_device_token
+      tags: ["Device Token"]
+      summary: "Discovered action endpoint for device token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/external-events":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_external_events
+      tags: ["External Events"]
+      summary: "Discovered action endpoint for external events"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/formation":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_formation
+      tags: ["Formation"]
+      summary: "Discovered action endpoint for formation"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/formation/update":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_formation_update
+      tags: ["Formation"]
+      summary: "Discovered action endpoint for formation update"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/linked-users":
+    x-discovered-source: "Hermes bytecode call site: loadLinkedUsers"
+    get:
+      operationId: get_linked_users
+      tags: ["Linked Users"]
+      summary: "Return users linked to the authenticated profile"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/linked-users')"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/linked-users-bulk":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_linked_users_bulk
+      tags: ["Linked Users Bulk"]
+      summary: "Discovered action endpoint for linked users bulk"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/linked-users-lookup":
+    x-discovered-source: "Hermes bytecode call site"
+    get:
+      operationId: get_linked_users_lookup
+      tags: ["Linked Users Lookup"]
+      summary: "Return family members available to link"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/linked-users-lookup')"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/linked-users-resend-token/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    post:
+      operationId: post_linked_users_resend_token_slash
+      tags: ["Linked Users Resend Token"]
+      summary: "Discovered action endpoint for linked users resend token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/linked-users/{id}":
+    x-discovered-source: "Hermes bytecode call site"
+    patch:
+      operationId: patch_linked_user
+      tags: ["Linked Users"]
+      summary: "Verify a token and link a family member"
+      x-method-confirmation: "confirmed from Hermes call site: axios.patch('/linked-users/' + id, { token })"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-acknowledgements":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_acknowledgements
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet acknowledgements"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-acknowledgements/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_acknowledgements_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet acknowledgements"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-cards":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_cards
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet cards"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-cards/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_cards_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet cards"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-disputes":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_disputes
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet disputes"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-disputes/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_disputes_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet disputes"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-foul-accumulations":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_foul_accumulations
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet foul accumulations"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-fouls":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_fouls
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet fouls"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-fouls/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_fouls_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet fouls"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-goals":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_goals
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet goals"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-goals/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_goals_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet goals"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-member-guests":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_member_guests
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet member guests"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-members":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_members
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet members"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-members-sync":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_matchsheet_members_sync
+      tags: ["Matchsheets"]
+      summary: "Discovered action endpoint for matchsheet members sync"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-members/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_members_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet members"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-officials":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_officials
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet officials"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-officials/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_officials_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet officials"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-penalties":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_penalties
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet penalties"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-penalties/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_penalties_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet penalties"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-referees":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_referees
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet referees"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-reports":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_reports
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet reports"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-reports/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_reports_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet reports"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-scores":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_scores
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet scores"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-scores/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_scores_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet scores"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-substitutions":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_substitutions
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet substitutions"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-substitutions/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_substitutions_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet substitutions"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-team-submissions":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_team_submissions
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet team submissions"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-team-submissions/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_team_submissions_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet team submissions"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-update":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_matchsheet_update
+      tags: ["Matchsheets"]
+      summary: "Discovered action endpoint for matchsheet update"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-votes":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_matchsheet_votes
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet votes"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-votes/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheet_votes_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheet votes"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheets/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_matchsheets_slash
+      tags: ["Matchsheets"]
+      summary: "Discovered read endpoint for matchsheets"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/referee-can-self-allocate-matchsheet/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    post:
+      operationId: post_referee_can_self_allocate_matchsheet_slash
+      tags: ["Referee Can Self Allocate Matchsheet"]
+      summary: "Discovered action endpoint for referee can self allocate matchsheet"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/referee-cu":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_referee_cu
+      tags: ["Referee Cu"]
+      summary: "Discovered read endpoint for referee cu"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/referee-mapper-role/map":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_referee_mapper_role_map
+      tags: ["Referee Mapper Role"]
+      summary: "Discovered read endpoint for referee mapper role map"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/referee-mapper/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_referee_mapper_slash
+      tags: ["Referee Mapper"]
+      summary: "Discovered read endpoint for referee mapper"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/referee-matchsheet-members":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_referee_matchsheet_members
+      tags: ["Referee Matchsheet Members"]
+      summary: "Discovered read endpoint for referee matchsheet members"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/registrations":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_registrations
+      tags: ["Registrations"]
+      summary: "Discovered read endpoint for registrations"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/registrations/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_registrations_slash
+      tags: ["Registrations"]
+      summary: "Discovered read endpoint for registrations"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/teams":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_teams
+      tags: ["Teams"]
+      summary: "Discovered teams endpoint; observed to require admin privileges"
+      x-method-inference: "recovered /teams literal; observed client testing returned 401 for a non-admin authenticated user"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/check-connect-account":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_stripe_check_connect_account
+      tags: ["Stripe"]
+      summary: "Discovered read endpoint for stripe check connect account"
+      x-method-inference: "inferred from endpoint name indicating retrieval"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/connect-account-link":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_connect_account_link
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe connect account link"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/create-connect-account":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_create_connect_account
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe create connect account"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/create-customer":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_create_customer
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe create customer"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/detach-payment-method":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_detach_payment_method
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe detach payment method"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/get-payment-methods":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_stripe_get_payment_methods
+      tags: ["Stripe"]
+      summary: "Discovered read endpoint for stripe get payment methods"
+      x-method-inference: "inferred from endpoint name indicating retrieval"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/get-paymentsheet-details":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_get_paymentsheet_details
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe get paymentsheet details"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/set-customer-default-payment-method":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_set_customer_default_payment_method
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe set customer default payment method"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/stripe/update-payment-method":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_stripe_update_payment_method
+      tags: ["Stripe"]
+      summary: "Discovered action endpoint for stripe update payment method"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/active-referee-clubs":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_active_referee_clubs
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal active referee clubs"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/age-groups":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_age_groups
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal age groups"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/allocations/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_allocations_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal allocations"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/allocations/self-allocate":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_universal_allocations_self_allocate
+      tags: ["Universal"]
+      summary: "Discovered action endpoint for universal allocations self allocate"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/availabilities":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_availabilities
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal availabilities"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/availabilities/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_availabilities_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal availabilities"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/blockouts":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_blockouts
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal blockouts"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/blockouts/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_blockouts_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal blockouts"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/clubs":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-live-response-shape: "JSON:API-style data[].attributes plus pagination meta."
+    x-live-observation: "An authenticated unfiltered call returned approximately 4,977 clubs. The replacement client follows every page for local Discover search."
+    get:
+      operationId: get_universal_clubs
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal clubs"
+      x-method-confirmation: "confirmed from Hermes call site"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - { name: tenant_id, in: query, schema: { type: string } }
+        - { name: season_id, in: query, schema: { type: string } }
+        - { name: competition_id, in: query, schema: { type: string } }
+        - { name: sort, in: query, schema: { type: string, default: "+name" } }
+        - { name: type, in: query, schema: { type: string, default: standard } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20 } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Successful paginated club response observed from the live API
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UniversalClubListResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/competitions":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_competitions
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal competitions"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/competitions/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_competitions_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal competitions"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/fields/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_fields_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal fields"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/grounds/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_grounds_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal grounds"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/hubs":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_hubs
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal hubs"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/hubs-update-availability":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_universal_hubs_update_availability
+      tags: ["Universal"]
+      summary: "Discovered action endpoint for universal hubs update availability"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/ladders":
+    x-discovered-source: "Hermes bytecode call site: ScheduleLaddersView"
+    get:
+      operationId: get_universal_ladders
+      tags: ["Universal"]
+      summary: "Return ladders available to the authenticated profile"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('universal/ladders')"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Ladder summaries for favourite and affiliated teams
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+  "/universal/ladders/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_ladders_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal ladders"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/leagues":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_leagues
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal leagues"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/leagues-bulk":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_leagues_bulk
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal leagues bulk"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/leagues/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_leagues_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal leagues"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/matches":
+    x-discovered-source: "Hermes bytecode call site: ScheduleMatchesView and ScheduleResultsView"
+    x-live-response-shape: "JSON:API-style data[].attributes. Scores are home_team_score/away_team_score and venue is field_name."
+    get:
+      operationId: get_universal_matches
+      tags: ["Universal"]
+      summary: "Return matches for the authenticated profile and linked teams"
+      x-method-confirmation: "confirmed from Hermes call sites"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          schema:
+            type: string
+        - name: remove_byes
+          in: query
+          schema:
+            type: boolean
+        - name: require_adherance
+          in: query
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful match list observed from the live API
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UniversalMatchListResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/matches/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_matches_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal matches"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/matches/{matchId}":
+    x-discovered-source: "Hermes bytecode call site used by match details"
+    get:
+      operationId: get_universal_match_details
+      tags: ["Universal"]
+      summary: "Return details for a match"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/universal/matches/' + data_id)"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: require_season
+          in: query
+          schema:
+            type: boolean
+        - name: require_adherance
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Match details including teams, score, competition, venue, and status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UniversalMatchResponse"
+        "401":
+          description: Unauthorized or expired authentication
+  "/universal/member-cards":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_member_cards
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal member cards"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/next-scheduled-match":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_next_scheduled_match
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal next scheduled match"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/schedule":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-live-response-shape: "Root object contains allocations[], availabilities[], blockouts[], and smallest_biggest_date."
+    x-live-observation: "An unscoped call returned cross-user historical records; user_id and date/direction context are needed for a user schedule."
+    get:
+      operationId: get_universal_schedule
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal schedule"
+      x-method-confirmation: "confirmed from Hermes call site"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - { name: start_date, in: query, schema: { type: string } }
+        - { name: end_date, in: query, schema: { type: string } }
+        - { name: direction, in: query, schema: { type: string, enum: [asc, desc] } }
+        - { name: user_id, in: query, schema: { type: string } }
+        - { name: skip_first, in: query, schema: { type: boolean } }
+        - { name: require_payrun, in: query, schema: { type: boolean } }
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/teams":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-live-response-shape: "JSON:API-style data[] plus links and meta."
+    x-live-observation: "An authenticated unfiltered call reported 172,228 records across 173 pages. Marrickville alone returned 2,053 historical teams, but club_id=19 plus current_season=true returned 471 current teams in one page, including 20 Under 13 teams. The replacement client always supplies both filters."
+    x-pagination-note: "The original client uses per_page=20 and page-based pagination."
+    get:
+      operationId: get_universal_teams
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal teams"
+      x-method-confirmation: "confirmed from Hermes call site"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - { name: tenant_id, in: query, schema: { type: string } }
+        - { name: season_id, in: query, schema: { type: string } }
+        - { name: competition_id, in: query, schema: { type: string } }
+        - { name: club_id, in: query, schema: { type: string } }
+        - { name: current_season, in: query, schema: { type: boolean }, description: "Observed live filter limiting results to each tenant's current season." }
+        - { name: age_group_id, in: query, schema: { type: string } }
+        - { name: sort, in: query, schema: { type: string, default: "+club,+age_group,+group" } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20 } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Successful paginated team response observed from the live API
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UniversalTeamListResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/teams-bulk":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_teams_bulk
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal teams bulk"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/teams/":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    get:
+      operationId: get_universal_teams_slash
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal teams"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/tenants":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_universal_tenants
+      tags: ["Universal"]
+      summary: "Discovered read endpoint for universal tenants"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/update-ladder":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_update_ladder
+      tags: ["Update Ladder"]
+      summary: "Discovered action endpoint for update ladder"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/upload-token":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    post:
+      operationId: post_upload_token
+      tags: ["Upload Token"]
+      summary: "Discovered action endpoint for upload token"
+      x-method-inference: "inferred from action-oriented endpoint name"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/user-contacts":
+    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    get:
+      operationId: get_user_contacts
+      tags: ["User Contacts"]
+      summary: "Discovered read endpoint for user contacts"
+      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Successful response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/user-contacts/":
+    x-discovered-source: "Hermes bytecode call site used by the personal information screen"
+    get:
+      operationId: get_user_contacts_slash
+      tags: ["User Contacts"]
+      summary: "Return emergency contacts for the authenticated profile"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/user-contacts/')"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Emergency contacts for the active profile context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/users/{userId}":
+    x-discovered-source: "Hermes bytecode call site used by the personal information screen"
+    get:
+      operationId: get_user_personal_information
+      tags: ["Auth"]
+      summary: "Return personal information for the active profile"
+      x-method-confirmation: "confirmed from Hermes call site: axios.get('/users/' + authenticatedUser.id)"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: userId
+          in: path
+          required: true
+          description: "Authenticated subject user ID, including a linked profile user_id"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >-
+            Personal details including first_name, last_name, gender, dob,
+            phone, contact_email, address_line_1, address_line_2, city, state,
+            postcode, and image.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Authorization mechanism inferred from app strings. Token values were not extracted or included."
+  parameters:
+    AuthorizationHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: "Bearer token or equivalent auth header, if required by the endpoint. No credential values recovered."
+      schema:
+        type: string
+        example: "Bearer <token>"
+  schemas:
+    GenericRequest:
+      type: object
+      additionalProperties: true
+      description: "Placeholder for request bodies not recoverable from bytecode strings."
+    GenericResponse:
+      type: object
+      additionalProperties: true
+      description: "Placeholder for response bodies not recoverable from bytecode strings."
+    PaginationMeta:
+      type: object
+      required: [current_page, last_page]
+      properties:
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    UniversalClubListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [id, attributes]
+            properties:
+              id:
+                oneOf:
+                  - { type: string }
+                  - { type: integer }
+              type:
+                type: string
+                example: clubs
+              attributes:
+                type: object
+                required: [name]
+                additionalProperties: true
+                properties:
+                  name: { type: string }
+                  friendly_name: { type: string }
+                  code: { type: string }
+                  image: { type: string }
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+    UniversalTeamListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [id, attributes]
+            properties:
+              id:
+                oneOf:
+                  - { type: string }
+                  - { type: integer }
+              type:
+                type: string
+                example: teams
+              attributes:
+                type: object
+                required: [club_id, name]
+                additionalProperties: true
+                properties:
+                  club_id: { type: string }
+                  name: { type: string }
+                  friendly_name: { type: string }
+                  team_name: { type: string }
+                  age_group: { type: string }
+                  division: { type: string }
+                  gender: { type: string }
+                  image: { type: string }
+                  color: { type: string }
+                  accent: { type: string }
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+    UniversalMatchListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UniversalMatchResource"
+    UniversalMatchResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/UniversalMatchResource"
+    UniversalMatchResource:
+      type: object
+      required: [id, attributes]
+      properties:
+        id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        type:
+          type: string
+          example: matches
+        attributes:
+          $ref: "#/components/schemas/UniversalMatchAttributes"
+    UniversalMatchAttributes:
+      type: object
+      required:
+        - date
+        - home_team_id
+        - home_team_name
+        - away_team_id
+        - away_team_name
+      additionalProperties: true
+      properties:
+        match_id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        date: { type: string, format: date-time }
+        home_team_id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        home_team_name: { type: string }
+        away_team_id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        away_team_name: { type: string }
+        competition_name: { type: string }
+        league_name: { type: string }
+        field_name: { type: string }
+        address: { type: string }
+        latitude:
+          oneOf:
+            - { type: string }
+            - { type: number }
+        longitude:
+          oneOf:
+            - { type: string }
+            - { type: number }
+        round_label: { type: string }
+        round_number:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        status: { type: string }
+        home_team_score: { type: integer, nullable: true }
+        away_team_score: { type: integer, nullable: true }
+        home_team_logo: { type: string }
+        away_team_logo: { type: string }
+    ErrorResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        message:
+          type: string
+        error:
+          type: string
+x-android-package: com.dribl.app
+x-android-version-name: "4.1.0"
+x-android-version-code: 4010001
+x-discovery-notes:
+  - "Base API URL recovered: https://api.dribl.com/api"
+  - "App uses Expo/React Native Hermes bytecode; endpoint literals were recovered from the Hermes string table."
+  - "OAuth/JWT/token/API-key values were intentionally not extracted or documented."
+  - "Route strings that appear to be local app navigation paths were omitted from paths where identifiable."
+x-discovered-external-services:
+  - url: "https://app.dribl.com/app/open?team="
+    description: "Dribl web/deep-link URL"
+  - url: "https://expo.dribl.com/manifest"
+    description: "Expo updates manifest"
+  - url: "https://storage.dribl.com/images/default/default_profile.png"
+    description: "Default profile image asset"
+  - url: "https://ocean.dribl.com"
+    description: "Dribl asset/CDN host"
+  - url: "https://ocean.dribl.com/2f3bdffdf460422b9a6495903dee8775"
+    description: "Dribl asset/CDN URL literal"
+  - url: "https://ocean.dribl.com/4360b6edaa464a089b2e725197d2e1fd"
+    description: "Dribl asset/CDN URL literal"
+  - url: "https://ocean.dribl.com/82bcc0c009d44362b97303f08f6f7d43"
+    description: "Dribl asset/CDN URL literal"
+  - url: "https://help.dribl.com/"
+    description: "Dribl help site"
+  - url: "https://maps.googleapis.com/maps/api/staticmap?center="
+    description: "Google Maps static map endpoint; API key value not included"
+  - url: "https://exp.host/--/api/v2/push/updateDeviceToken"
+    description: "Expo push token update endpoint"
+  - url: "https://connect-js.stripe.com"
+    description: "Stripe Connect JS endpoint"
+  - url: "https://r.stripe.com/0"
+    description: "Stripe telemetry endpoint"
