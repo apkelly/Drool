@@ -1,35 +1,86 @@
-# Gradle files
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.fleet/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*~
+*.swp
+
+# Gradle and Kotlin
 .gradle/
-build/
+.gradle-local/
+.gradle-user-home/
 .kotlin/
+.konan/
+.kotlin-js-store/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
 
-# Local configuration file (sdk path, etc)
+# JavaScript targets
+node_modules/
+.yarn/
+yarn-error.log
+npm-debug.log*
+webpack.config.d/
+
+# Android
 local.properties
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
 captures/
 .externalNativeBuild/
 .cxx/
-*.aab
 *.apk
+*.apks
+*.aab
 output-metadata.json
+*.hprof
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
-
-# Keystore files
+# Signing and service configuration
 *.jks
 *.keystore
-
-# Google Services (e.g. APIs or Firebase)
+*.p12
+*.mobileprovision
+secrets.properties
 google-services.json
+GoogleService-Info.plist
+Secrets.xcconfig
+Local.xcconfig
+.env
+.env.*
+!.env.example
 
-# Android Profiling
-*.hprof
+# Xcode, SwiftPM, CocoaPods, and Apple build products
+DerivedData/
+*.xcarchive
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+**/xcuserdata/
+Pods/
+.symlinks/
+.swiftpm/
+.xcode.env.local
+Carthage/Build/
+.build/
+
+# Desktop distribution artifacts
+*.dmg
+*.pkg
+*.msi
+*.deb
+*.rpm
+
+# Local databases and logs
+*.db
+*.db-shm
+*.db-wal
+*.log
