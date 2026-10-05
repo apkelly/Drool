@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
@@ -14,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import java.awt.Desktop
 import java.net.URI
 import java.net.URLEncoder
@@ -51,6 +54,21 @@ actual fun GoogleMapPreview(
     onNavigate: () -> Unit,
     modifier: Modifier,
 ) {
+    val apiKey = remember {
+        System.getProperty(DesktopStaticMapsApiKey)
+            ?.takeIf { it.isNotBlank() }
+            ?: System.getenv(DesktopStaticMapsApiKey)?.takeIf { it.isNotBlank() }
+    }
+    val mapUrl = remember(latitude, longitude, address, apiKey) {
+        apiKey?.let {
+            staticMapUrl(
+                latitude = latitude,
+                longitude = longitude,
+                address = address,
+                apiKey = it,
+            )
+        }
+    }
     Box(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -64,6 +82,14 @@ actual fun GoogleMapPreview(
             Icon(Icons.Default.LocationOn, contentDescription = null)
             Text(stringResource(Res.string.match_google_maps))
         }
+        mapUrl?.let {
+            AsyncImage(
+                model = it,
+                contentDescription = stringResource(Res.string.match_google_maps),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
     }
 }
 
@@ -76,3 +102,22 @@ private fun destination(
 
 private fun String.urlQueryValue(): String =
     URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+
+internal fun staticMapUrl(
+    latitude: Double?,
+    longitude: Double?,
+    address: String,
+    apiKey: String,
+): String {
+    val location = destination(latitude, longitude, address).urlQueryValue()
+    return "https://maps.googleapis.com/maps/api/staticmap" +
+        "?center=$location" +
+        "&zoom=15" +
+        "&size=640x320" +
+        "&scale=2" +
+        "&maptype=roadmap" +
+        "&markers=color%3Ared%7C$location" +
+        "&key=${apiKey.urlQueryValue()}"
+}
+
+private const val DesktopStaticMapsApiKey = "GOOGLE_MAPS_STATIC_API_KEY"

@@ -377,6 +377,7 @@ class SessionRepositoryImpl(
             database.profileDao().deleteAllProfiles()
             database.teamDao().deleteAll()
             database.clubDao().deleteAll()
+            database.teamHubCacheDao().deleteAll()
         }
     }
 

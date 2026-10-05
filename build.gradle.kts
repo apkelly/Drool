@@ -1,3 +1,6 @@
+import java.util.Properties
+import org.gradle.api.tasks.JavaExec
+
 plugins {
     kotlin("multiplatform") version "2.4.20"
     kotlin("plugin.serialization") version "2.4.20"
@@ -7,10 +10,26 @@ plugins {
     id("com.google.devtools.ksp") version "2.3.12"
     id("androidx.room") version "2.8.5"
     id("org.jetbrains.kotlinx.kover") version "0.9.11"
+    id("com.google.gms.google-services") version "4.5.0" apply false
+    id("com.google.firebase.crashlytics") version "3.0.6" apply false
 }
 
 group = "com.github.apkelly.drool"
 version = "1.0.0"
+
+val localProperties = Properties().apply {
+    file("local.properties")
+        .takeIf { it.isFile }
+        ?.inputStream()
+        ?.use(::load)
+}
+val desktopMapsApiKey = providers.gradleProperty("GOOGLE_MAPS_STATIC_API_KEY")
+    .orElse(providers.environmentVariable("GOOGLE_MAPS_STATIC_API_KEY"))
+    .orElse(
+        providers.provider {
+            localProperties.getProperty("GOOGLE_MAPS_STATIC_API_KEY").orEmpty()
+        }
+    )
 
 kotlin {
     compilerOptions {
@@ -81,6 +100,9 @@ kotlin {
                 implementation("io.ktor:ktor-client-okhttp:3.6.0")
                 implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
                 implementation("com.google.android.gms:play-services-maps:20.0.0")
+                implementation(project.dependencies.platform("com.google.firebase:firebase-bom:34.19.0"))
+                implementation("com.google.firebase:firebase-analytics")
+                implementation("com.google.firebase:firebase-crashlytics")
             }
         }
 
@@ -120,6 +142,14 @@ compose.desktop {
         nativeDistributions {
             packageName = "Drool"
         }
+    }
+}
+
+tasks.withType<JavaExec>().configureEach {
+    doFirst {
+        desktopMapsApiKey.orNull
+            ?.takeIf { it.isNotBlank() }
+            ?.let { systemProperty("GOOGLE_MAPS_STATIC_API_KEY", it) }
     }
 }
 

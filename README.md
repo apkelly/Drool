@@ -8,7 +8,7 @@ Drool is a Kotlin Multiplatform football client for the recovered Dribl API. It 
 - Desktop JVM, using Ktor's OkHttp engine
 - iOS device and Apple Silicon simulator (`iosArm64`, `iosSimulatorArm64`), using Ktor's Darwin engine
 
-The original app's `okhttp/4.12.0` user-agent is sent for API compatibility. Kermit is the app-wide logging system for network, session, authentication, and refresh diagnostics. Android and desktop route unredacted OkHttp BODY output through Kermit for local API debugging. Authentication and normal API traffic use separate log tags.
+The original app's `okhttp/4.12.0` user-agent is sent for API compatibility. Kermit is the app-wide logging system for network, session, authentication, and refresh diagnostics. Authentication and normal API traffic use separate log tags. Authentication logging is headers-only, sensitive headers are redacted, and token/password fields are removed from any logged JSON.
 
 ## Architecture
 
@@ -24,10 +24,10 @@ The shared application uses:
 - Material 3 with light, dark, and system themes
 - Navigation 3 with typed, serializable routes and independent top-level back stacks
 - Room as the local source of truth
-- DataStore for the bearer token, active account, and theme preference
+- DataStore for the bearer token, active account, theme, and diagnostics consent
 - Compottie for the shared splash animation
 - Compose Multiplatform resources as the single localization catalog
-- Native Google Maps SDK views on Android and iOS for match venues
+- Native Google Maps SDK views on Android and iOS, plus Static Maps previews on desktop
 
 ## Google Maps configuration
 
@@ -37,15 +37,24 @@ for Android** and **Maps SDK for iOS** enabled. Restrict the Android key to the
 `com.github.apkelly.drool` bundle identifier. Do not commit either key.
 
 Android reads `GOOGLE_MAPS_API_KEY` from a Gradle property or environment
-variable:
+variable. For local development it can also be stored in the ignored root
+`local.properties` file:
 
 ```bash
+GOOGLE_MAPS_API_KEY=your_android_key
+# in local.properties, or:
 GOOGLE_MAPS_API_KEY=your_android_key ./gradlew :androidApp:assembleDebug
 # or: ./gradlew -PGOOGLE_MAPS_API_KEY=your_android_key :androidApp:assembleDebug
 ```
 
-For iOS, add `GOOGLE_MAPS_API_KEY` as a user-defined build setting in the
-Drool target, or supply it to command-line builds:
+For iOS, create the ignored `iosApp/Secrets.xcconfig` file:
+
+```text
+GOOGLE_MAPS_API_KEY = your_ios_key
+```
+
+The tracked `iosApp/Config.xcconfig` imports this file when present. The key
+can also be supplied to command-line builds:
 
 ```bash
 xcodebuild -project iosApp/Drool.xcodeproj -scheme Drool \
@@ -53,8 +62,42 @@ xcodebuild -project iosApp/Drool.xcodeproj -scheme Drool \
 ```
 
 The key is substituted into the built app's `Info.plist`; it is not stored in
-source. Desktop continues to use a Google Maps directions link because Google
-does not provide a native desktop Maps SDK.
+source.
+
+Desktop uses the **Maps Static API** because Google does not provide a native
+desktop Maps SDK. Store its key in ignored `local.properties` for Gradle runs:
+
+```text
+GOOGLE_MAPS_STATIC_API_KEY=your_desktop_key
+```
+
+Alternatively, set the `GOOGLE_MAPS_STATIC_API_KEY` environment variable when
+launching a packaged app. The desktop key is read only at runtime and is not
+embedded in source or native distributions. Static map previews remain
+clickable and open Google Maps driving directions.
+
+## Firebase observability
+
+Android and iOS include Firebase Analytics and Crashlytics using the registered
+app identifiers `com.github.apkelly.drool`. Their platform configuration files
+are versioned at `androidApp/google-services.json` and
+`iosApp/iosApp/GoogleService-Info.plist`; Firebase documents these files as
+containing non-secret project and app identifiers. Download replacements from
+the Firebase console if either app registration changes.
+
+Collection is disabled by default on both platforms. A user can explicitly
+enable or disable **Share anonymous diagnostics** from Profile. The preference
+controls Analytics and Crashlytics together and persists locally. Analytics
+uses only fixed event and parameter values for screen categories, sign-in
+outcomes, refresh outcomes, theme changes, and sign-out. Names, email
+addresses, account/profile/team/match IDs, tokens, free-form text, and API
+request or response data are never sent. Desktop uses a no-op observability
+adapter.
+
+Android uses the Google Services and Crashlytics Gradle plugins. The iOS target
+links `FirebaseAnalytics` and `FirebaseCrashlytics` through Swift Package
+Manager and runs the Crashlytics symbol-upload build phase. Release archives
+therefore require network access to upload dSYMs.
 
 ## Offline behavior
 
@@ -131,4 +174,4 @@ Room schemas are exported to `schemas/` and must be versioned whenever the datab
 
 Drool currently includes session restoration, sign-in/sign-out, a summary-oriented Family Hub Home, a date-grouped full Schedule, attributed teams and clubs, club discovery, local account-scoped team following, and cached Profile lists refreshed from `GET /auth/related-users?email=...`, `GET /linked-users`, and `GET /access/accounts`. Team cards open branded hubs with Matches, Results, and Ladders; match rows open details where either team can be selected to continue browsing. Related-user identity fields, including date of birth, are reconciled into the canonical linked-user record so Profile, Home, Schedule, and Personal Information use the same family member. Profile provides a link-member FAB using the recovered `GET /linked-users-lookup` and `PATCH /linked-users/{id}` verification flow, while linked-user rows open Personal Information further hydrated from `GET /users/{userId}` and emergency contacts from `GET /user-contacts/`. Family profile sessions use `POST /auth/impersonate/{user_id}` internally without exposing backend switching terminology; team affiliations come from `GET /access/shortcut`, and club memberships come from `GET /universal/member-cards`. Association refresh failures preserve data from the authentication response or Room cache so the Profile remains available offline. Coil-backed profile/club/team/account imagery, responsive navigation, and dark mode are also included.
 
-Future observability work will add a vendor-neutral analytics layer backed by Firebase Analytics, privacy-safe typed events and consent handling, and Firebase Crashlytics. Firebase APIs will remain behind the analytics/crash-reporting adapters rather than leaking into feature, domain, or UI code.
+Firebase APIs remain behind platform observability adapters rather than leaking into feature, domain, or UI code.

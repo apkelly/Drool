@@ -52,8 +52,8 @@ class SetTeamFollowingUseCase(private val repository: SportsRepository) {
 }
 
 class LoadTeamHubUseCase(private val repository: SportsRepository) {
-    suspend operator fun invoke(profileId: String, teamId: String) =
-        repository.loadTeamHub(profileId, teamId)
+    suspend operator fun invoke(profileId: String, teamId: String, force: Boolean = false) =
+        repository.loadTeamHub(profileId, teamId, force)
 }
 
 class LoadMatchDetailsUseCase(private val repository: SportsRepository) {

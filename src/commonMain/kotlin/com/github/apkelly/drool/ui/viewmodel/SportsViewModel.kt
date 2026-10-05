@@ -25,7 +25,6 @@ import com.github.apkelly.drool.domain.model.Profile
 import com.github.apkelly.drool.domain.model.RefreshFailure
 import com.github.apkelly.drool.domain.model.RefreshResult
 import com.github.apkelly.drool.domain.model.Team
-import com.github.apkelly.drool.domain.model.TeamHub
 import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.domain.usecase.ObserveClubsUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveFixturesUseCase
@@ -44,8 +43,12 @@ import com.github.apkelly.drool.logging.DroolLog
 import com.github.apkelly.drool.ui.model.CollectionUiState
 import com.github.apkelly.drool.ui.model.TeamHubUiState
 import com.github.apkelly.drool.ui.model.MatchDetailsUiState
+import com.github.apkelly.drool.observability.AnalyticsEvent
+import com.github.apkelly.drool.observability.NoOpObservability
+import com.github.apkelly.drool.observability.Observability
+import com.github.apkelly.drool.observability.RefreshArea
+import com.github.apkelly.drool.observability.RefreshOutcome
 
-private data class TeamHubCacheKey(val profileId: String, val teamId: String)
 private data class MatchCacheKey(val profileId: String, val matchId: String)
 
 private fun <K, V> Map<K, V>.withCachedEntries(
@@ -78,6 +81,7 @@ class SportsViewModel(
     private val setTeamFollowing: SetTeamFollowingUseCase,
     private val loadTeamHub: LoadTeamHubUseCase,
     private val loadMatchDetails: LoadMatchDetailsUseCase,
+    private val observability: Observability = NoOpObservability,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val logger = DroolLog.withTag("SportsViewModel")
@@ -97,7 +101,6 @@ class SportsViewModel(
     private val mutableTeamHubState = MutableStateFlow<TeamHubUiState>(TeamHubUiState.Idle)
     private val mutableMatchDetailsState =
         MutableStateFlow<MatchDetailsUiState>(MatchDetailsUiState.Idle)
-    private val teamHubCache = MutableStateFlow<Map<TeamHubCacheKey, TeamHub>>(emptyMap())
     private val matchCache = MutableStateFlow<Map<MatchCacheKey, Fixture>>(emptyMap())
     private var cacheOwnerAccountId: String? = null
 
@@ -194,7 +197,6 @@ class SportsViewModel(
     fun configureFamily(profile: Profile) {
         if (cacheOwnerAccountId != profile.accountId) {
             cacheOwnerAccountId = profile.accountId
-            teamHubCache.value = emptyMap()
             matchCache.value = emptyMap()
             mutableTeamHubState.value = TeamHubUiState.Idle
             mutableMatchDetailsState.value = MatchDetailsUiState.Idle
@@ -219,7 +221,9 @@ class SportsViewModel(
     }
 
     fun refreshClubs(force: Boolean = true) =
-        refresh(clubsRefreshing, clubsFailure) { refreshClubsUseCase(force) }
+        refresh(RefreshArea.Clubs, clubsRefreshing, clubsFailure) {
+            refreshClubsUseCase(force)
+        }
 
     fun refreshTeams(force: Boolean = true) {
         val clubId = selectedClubId.value ?: return
@@ -229,6 +233,7 @@ class SportsViewModel(
                 teamsFailure.value = null
                 try {
                     val result = refreshTeamsUseCase(force, clubId)
+                    trackRefresh(RefreshArea.Teams, result)
                     if (result is RefreshResult.Failed) {
                         logger.w { "Refresh failed: ${result.reason}" }
                         teamsFailure.value = result.reason
@@ -260,6 +265,7 @@ class SportsViewModel(
                                 RefreshResult.Updated
                             }
                     }
+                    trackRefresh(RefreshArea.Fixtures, result)
                     if (result is RefreshResult.Failed) {
                         logger.w { "Refresh failed: ${result.reason}" }
                         fixturesFailure.value = result.reason
@@ -275,24 +281,30 @@ class SportsViewModel(
         scope.launch { setTeamFollowing(teamId, following) }
     }
 
-    fun loadTeam(profileId: String, teamId: String) {
-        val key = TeamHubCacheKey(profileId, teamId)
-        teamHubCache.value[key]?.let { cached ->
-            mutableTeamHubState.value =
-                TeamHubUiState.Content(profileId, teamId, cached)
+    fun loadTeam(profileId: String, teamId: String) =
+        requestTeam(profileId, teamId, force = false)
+
+    fun refreshTeam(profileId: String, teamId: String) =
+        requestTeam(profileId, teamId, force = true)
+
+    private fun requestTeam(profileId: String, teamId: String, force: Boolean) {
+        val existing = (mutableTeamHubState.value as? TeamHubUiState.Content)
+            ?.takeIf { it.profileId == profileId && it.teamId == teamId }
+        if (mutableTeamHubState.value == TeamHubUiState.Loading(profileId, teamId) ||
+            existing?.isRefreshing == true
+        ) {
             return
         }
-        if (mutableTeamHubState.value == TeamHubUiState.Loading(profileId, teamId)) {
-            return
+        val request: TeamHubUiState = if (force && existing != null) {
+            existing.copy(isRefreshing = true, refreshFailure = null)
+        } else {
+            TeamHubUiState.Loading(profileId, teamId)
         }
-        val request = TeamHubUiState.Loading(profileId, teamId)
         mutableTeamHubState.value = request
         scope.launch {
             try {
-                val hub = loadTeamHub(profileId, teamId)
-                teamHubCache.update {
-                    it.withCachedEntries(mapOf(key to hub), TEAM_HUB_CACHE_SIZE)
-                }
+                val data = loadTeamHub(profileId, teamId, force)
+                val hub = data.value
                 matchCache.update { cached ->
                     cached.withCachedEntries(
                         entries = (hub.matches + hub.results).associateBy(
@@ -303,14 +315,23 @@ class SportsViewModel(
                     )
                 }
                 if (mutableTeamHubState.value == request) {
-                    mutableTeamHubState.value = TeamHubUiState.Content(profileId, teamId, hub)
+                    mutableTeamHubState.value = TeamHubUiState.Content(
+                        profileId = profileId,
+                        teamId = teamId,
+                        hub = hub,
+                        lastUpdatedEpochMillis = data.lastUpdatedEpochMillis,
+                        isStale = data.isStale,
+                    )
                 }
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
             } catch (error: Exception) {
                 logger.w { "Unable to load team hub (${error::class.simpleName})" }
                 if (mutableTeamHubState.value == request) {
-                    mutableTeamHubState.value = TeamHubUiState.Failed(profileId, teamId)
+                    mutableTeamHubState.value = existing?.copy(
+                        isRefreshing = false,
+                        refreshFailure = RefreshFailure.Unknown,
+                    ) ?: TeamHubUiState.Failed(profileId, teamId)
                 }
             }
         }
@@ -351,6 +372,7 @@ class SportsViewModel(
     }
 
     private fun refresh(
+        area: RefreshArea,
         refreshing: MutableStateFlow<Boolean>,
         failure: MutableStateFlow<RefreshFailure?>,
         block: suspend () -> RefreshResult,
@@ -360,6 +382,7 @@ class SportsViewModel(
             refreshing.value = true
             failure.value = null
             val result = block()
+            trackRefresh(area, result)
             if (result is RefreshResult.Failed) {
                 logger.w { "Refresh failed: ${result.reason}" }
                 failure.value = result.reason
@@ -368,8 +391,20 @@ class SportsViewModel(
         }
     }
 
+    private fun trackRefresh(area: RefreshArea, result: RefreshResult) {
+        observability.log(
+            AnalyticsEvent.RefreshCompleted(
+                area = area,
+                outcome = when (result) {
+                    RefreshResult.Updated -> RefreshOutcome.Updated
+                    RefreshResult.NotModified -> RefreshOutcome.NotModified
+                    is RefreshResult.Failed -> RefreshOutcome.Failed
+                },
+            )
+        )
+    }
+
     private companion object {
-        const val TEAM_HUB_CACHE_SIZE = 12
         const val MATCH_CACHE_SIZE = 256
 
         fun <T> collectionState(

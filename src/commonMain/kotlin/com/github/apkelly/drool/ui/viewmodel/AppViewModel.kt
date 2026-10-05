@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import com.github.apkelly.drool.domain.model.AuthCredentials
 import com.github.apkelly.drool.domain.model.AuthenticationException
@@ -18,6 +19,8 @@ import com.github.apkelly.drool.domain.usecase.ObserveThemeModeUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveProfileUseCase
 import com.github.apkelly.drool.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.domain.usecase.ObserveObservabilityEnabledUseCase
+import com.github.apkelly.drool.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.domain.usecase.RefreshProfileEndpointUseCase
@@ -29,6 +32,13 @@ import com.github.apkelly.drool.logging.DroolLog
 import com.github.apkelly.drool.ui.model.AuthFailure
 import com.github.apkelly.drool.ui.model.SessionUiState
 import com.github.apkelly.drool.ui.model.LinkMemberUiState
+import com.github.apkelly.drool.observability.AnalyticsEvent
+import com.github.apkelly.drool.observability.AppScreen
+import com.github.apkelly.drool.observability.NoOpObservability
+import com.github.apkelly.drool.observability.NonFatalOperation
+import com.github.apkelly.drool.observability.Observability
+import com.github.apkelly.drool.observability.SignInOutcome
+import com.github.apkelly.drool.observability.ThemeSelection
 
 class AppViewModel(
     private val observeProfile: ObserveProfileUseCase,
@@ -40,6 +50,9 @@ class AppViewModel(
     private val verifyLinkedUserUseCase: VerifyLinkedUserUseCase,
     observeThemeMode: ObserveThemeModeUseCase,
     private val setThemeMode: SetThemeModeUseCase,
+    observeObservabilityEnabled: ObserveObservabilityEnabledUseCase,
+    private val setObservabilityEnabled: SetObservabilityEnabledUseCase,
+    private val observability: Observability = NoOpObservability,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val logger = DroolLog.withTag("AppViewModel")
@@ -53,6 +66,11 @@ class AppViewModel(
     val themeMode: StateFlow<ThemeMode> =
         observeThemeMode()
             .stateIn(scope, SharingStarted.Eagerly, ThemeMode.System)
+
+    val observabilityEnabled: StateFlow<Boolean> =
+        observeObservabilityEnabled()
+            .onEach(observability::setCollectionEnabled)
+            .stateIn(scope, SharingStarted.Eagerly, false)
 
     init {
         restore()
@@ -70,8 +88,9 @@ class AppViewModel(
                 }
             } catch (error: CancellationException) {
                 throw error
-            } catch (_: Exception) {
+            } catch (error: Exception) {
                 logger.w { "Session restoration failed" }
+                observability.recordNonFatal(error, NonFatalOperation.RestoreSession)
                 SessionUiState.ReconnectRequired
             }
             updateSessionState(state)
@@ -80,6 +99,9 @@ class AppViewModel(
 
     fun signIn(username: String, password: String) {
         if (username.isBlank() || password.isBlank()) {
+            observability.log(
+                AnalyticsEvent.SignInCompleted(SignInOutcome.MissingFields)
+            )
             updateSessionState(
                 SessionUiState.AuthenticationFailed(AuthFailure.MissingFields)
             )
@@ -97,12 +119,31 @@ class AppViewModel(
                         password = password,
                     )
                 )
-                session.profile?.let(SessionUiState::Authenticated)
-                    ?: SessionUiState.ReconnectRequired
+                if (session.profile == null) {
+                    observability.log(
+                        AnalyticsEvent.SignInCompleted(SignInOutcome.ReconnectRequired)
+                    )
+                    SessionUiState.ReconnectRequired
+                } else {
+                    observability.log(
+                        AnalyticsEvent.SignInCompleted(SignInOutcome.Success)
+                    )
+                    SessionUiState.Authenticated(session.profile)
+                }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: AuthenticationException) {
                 logger.w { "Authentication failed: ${error.reason}" }
+                observability.log(
+                    AnalyticsEvent.SignInCompleted(
+                        when (error.reason) {
+                            AuthenticationFailure.InvalidCredentials ->
+                                SignInOutcome.InvalidCredentials
+                            AuthenticationFailure.Offline -> SignInOutcome.Offline
+                            AuthenticationFailure.Unknown -> SignInOutcome.UnknownFailure
+                        }
+                    )
+                )
                 SessionUiState.AuthenticationFailed(
                     when (error.reason) {
                         AuthenticationFailure.InvalidCredentials -> AuthFailure.InvalidCredentials
@@ -110,8 +151,12 @@ class AppViewModel(
                         AuthenticationFailure.Unknown -> AuthFailure.Unknown
                     }
                 )
-            } catch (_: Exception) {
+            } catch (error: Exception) {
                 logger.e { "Unexpected authentication failure" }
+                observability.log(
+                    AnalyticsEvent.SignInCompleted(SignInOutcome.UnknownFailure)
+                )
+                observability.recordNonFatal(error, NonFatalOperation.SignIn)
                 SessionUiState.AuthenticationFailed(AuthFailure.Unknown)
             }
             updateSessionState(state)
@@ -121,6 +166,7 @@ class AppViewModel(
     fun signOut() {
         scope.launch {
             signOutUser()
+            observability.log(AnalyticsEvent.SignedOut)
             updateSessionState(SessionUiState.AuthenticationRequired)
         }
     }
@@ -173,7 +219,26 @@ class AppViewModel(
     }
 
     fun updateTheme(mode: ThemeMode) {
-        scope.launch { setThemeMode(mode) }
+        scope.launch {
+            setThemeMode(mode)
+            observability.log(
+                AnalyticsEvent.ThemeSelected(
+                    when (mode) {
+                        ThemeMode.System -> ThemeSelection.System
+                        ThemeMode.Light -> ThemeSelection.Light
+                        ThemeMode.Dark -> ThemeSelection.Dark
+                    }
+                )
+            )
+        }
+    }
+
+    fun updateObservability(enabled: Boolean) {
+        scope.launch { setObservabilityEnabled(enabled) }
+    }
+
+    fun trackScreen(screen: AppScreen) {
+        observability.log(AnalyticsEvent.ScreenViewed(screen))
     }
 
     private fun updateSessionState(state: SessionUiState) {

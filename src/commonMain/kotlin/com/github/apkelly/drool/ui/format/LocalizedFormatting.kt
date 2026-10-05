@@ -2,6 +2,7 @@ package com.github.apkelly.drool.ui.format
 
 import androidx.compose.runtime.Composable
 
+@Composable
 expect fun formatFixtureDateTime(epochMillis: Long): String
 expect fun formatFixtureDateHeading(epochMillis: Long): String
 

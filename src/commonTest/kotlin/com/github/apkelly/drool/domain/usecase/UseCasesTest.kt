@@ -78,6 +78,10 @@ class UseCasesTest {
 
         SetThemeModeUseCase(repository)(ThemeMode.Dark)
         assertEquals(ThemeMode.Dark, repository.theme.value)
+
+        assertEquals(false, ObserveObservabilityEnabledUseCase(repository)().first())
+        SetObservabilityEnabledUseCase(repository)(true)
+        assertEquals(true, repository.observabilityEnabled.value)
     }
 
     @Test
@@ -120,7 +124,10 @@ class UseCasesTest {
 
         SetTeamFollowingUseCase(repository)("team", true)
         assertEquals("team" to true, repository.lastFollow)
-        assertEquals(repository.teamHub, LoadTeamHubUseCase(repository)("profile", "team"))
+        assertEquals(
+            repository.teamHub,
+            LoadTeamHubUseCase(repository)("profile", "team").value,
+        )
         assertEquals("profile" to "team", repository.lastTeamHub)
         assertEquals(
             repository.matchDetails,
@@ -130,7 +137,7 @@ class UseCasesTest {
     }
 
     @Test
-    fun sportsViewModelCachesTeamHubsAndMatchDetails() = runTest {
+    fun sportsViewModelLoadsTeamHubCacheAndRefreshes() = runTest {
         val repository = FakeSportsRepository()
         repository.teamHub = TeamHub(
             teamId = "team",
@@ -161,7 +168,13 @@ class UseCasesTest {
             advanceUntilIdle()
             viewModel.loadTeam("profile", "team")
             advanceUntilIdle()
-            assertEquals(1, repository.teamHubCalls)
+            assertEquals(2, repository.teamHubCalls)
+            assertEquals(false, repository.lastTeamHubForce)
+
+            viewModel.refreshTeam("profile", "team")
+            advanceUntilIdle()
+            assertEquals(3, repository.teamHubCalls)
+            assertEquals(true, repository.lastTeamHubForce)
 
             viewModel.loadMatch("profile", "match")
             advanceUntilIdle()
@@ -212,9 +225,14 @@ private class FakeSessionRepository : SessionRepository {
 
 private class FakePreferencesRepository : PreferencesRepository {
     val theme = MutableStateFlow(ThemeMode.System)
+    val observabilityEnabled = MutableStateFlow(false)
     override fun observeThemeMode(): Flow<ThemeMode> = theme
     override suspend fun setThemeMode(mode: ThemeMode) {
         theme.value = mode
+    }
+    override fun observeObservabilityEnabled(): Flow<Boolean> = observabilityEnabled
+    override suspend fun setObservabilityEnabled(enabled: Boolean) {
+        observabilityEnabled.value = enabled
     }
 }
 
@@ -233,6 +251,7 @@ private class FakeSportsRepository : SportsRepository {
     var lastProfileIds: Set<String>? = null
     var lastFamilyProfiles: List<FamilyProfile>? = null
     var lastTeamHub: Pair<String, String>? = null
+    var lastTeamHubForce: Boolean? = null
     var lastMatchDetails: Pair<String, String>? = null
     var teamHub = TeamHub("team", emptyList(), emptyList(), null, emptyList())
     var teamHubCalls = 0
@@ -302,10 +321,15 @@ private class FakeSportsRepository : SportsRepository {
         lastFollow = teamId to following
     }
 
-    override suspend fun loadTeamHub(profileId: String, teamId: String): TeamHub {
+    override suspend fun loadTeamHub(
+        profileId: String,
+        teamId: String,
+        force: Boolean,
+    ): CachedData<TeamHub> {
         lastTeamHub = profileId to teamId
+        lastTeamHubForce = force
         teamHubCalls += 1
-        return teamHub
+        return CachedData(teamHub, lastUpdatedEpochMillis = 0L, isStale = false)
     }
 
     override suspend fun loadMatchDetails(profileId: String, matchId: String): Fixture {

@@ -80,7 +80,7 @@ class SportsRepositoryImplTest {
                 ladder = emptyList(),
             )
 
-            val hub = repository.loadTeamHub("root", "team")
+            val hub = repository.loadTeamHub("root", "team").value
             assertEquals(listOf("upcoming"), hub.matches.map { it.id })
             assertEquals(listOf("result"), hub.results.map { it.id })
             assertEquals("root-token" to "team", remote.teamHubRequest)
@@ -88,6 +88,56 @@ class SportsRepositoryImplTest {
             repository.loadMatchDetails("child", "result")
             assertEquals("profile-token-child" to "result", remote.matchDetailsRequest)
             assertEquals(listOf("child"), remote.profileSessionUsers)
+        }
+    }
+
+    @Test
+    fun teamHubCachePersistsForTwentyFourHoursAndForceRefreshes() = runTest {
+        fixture { repository, remote, store, clock, _ ->
+            store.saveBearerToken("root-token")
+            store.setActiveAccountId("root")
+            remote.teamHub = teamHub(
+                teamId = "team",
+                fixtures = listOf(
+                    fixture(
+                        "match",
+                        200L,
+                        "team",
+                        "Home",
+                        "away",
+                        "Away",
+                        null,
+                        null,
+                        "team",
+                        "scheduled",
+                    )
+                ),
+                ladderName = "Premier League",
+                ladder = emptyList(),
+            )
+
+            val initial = repository.loadTeamHub("root", "team")
+            assertFalse(initial.isStale)
+            assertEquals(1, remote.teamHubCalls)
+
+            clock.now = 24L * 60L * 60L * 1_000L - 1L
+            remote.failure = IOException("offline")
+            val freshCache = repository.loadTeamHub("root", "team")
+            assertFalse(freshCache.isStale)
+            assertEquals("Premier League", freshCache.value.ladderName)
+            assertEquals(1, remote.teamHubCalls)
+
+            clock.now += 1L
+            val staleCache = repository.loadTeamHub("root", "team")
+            assertTrue(staleCache.isStale)
+            assertEquals(1, remote.teamHubCalls)
+
+            assertFailsWith<IOException> {
+                repository.loadTeamHub("root", "team", force = true)
+            }
+            remote.failure = null
+            repository.loadTeamHub("root", "team", force = true)
+            assertEquals(2, remote.teamHubCalls)
         }
     }
 

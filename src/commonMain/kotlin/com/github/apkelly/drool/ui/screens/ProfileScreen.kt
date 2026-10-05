@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +50,8 @@ import com.github.apkelly.drool.resources.profile_related_users
 import com.github.apkelly.drool.resources.profile_title
 import com.github.apkelly.drool.resources.profile_link_member
 import com.github.apkelly.drool.resources.profile_api_diagnostics
+import com.github.apkelly.drool.resources.profile_observability
+import com.github.apkelly.drool.resources.profile_observability_body
 import com.github.apkelly.drool.resources.content_profile_image
 import com.github.apkelly.drool.resources.content_account_logo
 import com.github.apkelly.drool.resources.sign_out_body
@@ -64,7 +67,9 @@ import org.jetbrains.compose.resources.stringResource
 fun ProfileScreen(
     profile: Profile,
     themeMode: ThemeMode,
+    observabilityEnabled: Boolean,
     onThemeChanged: (ThemeMode) -> Unit,
+    onObservabilityChanged: (Boolean) -> Unit,
     onOpenApiDiagnostics: () -> Unit,
     onAddMember: () -> Unit,
     onRelatedUserSelected: (RelatedUser) -> Unit,
@@ -187,6 +192,30 @@ fun ProfileScreen(
                         },
                     )
                 }
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        stringResource(Res.string.profile_observability),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(Res.string.profile_observability_body),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(
+                    checked = observabilityEnabled,
+                    onCheckedChange = onObservabilityChanged,
+                )
             }
         }
         item {

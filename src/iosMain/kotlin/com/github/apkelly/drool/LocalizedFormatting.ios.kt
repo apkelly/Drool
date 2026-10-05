@@ -8,6 +8,7 @@ import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDateFormatterShortStyle
 
+@Composable
 actual fun formatFixtureDateTime(epochMillis: Long): String =
     NSDateFormatter().apply {
         dateStyle = NSDateFormatterMediumStyle

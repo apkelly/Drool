@@ -6,8 +6,8 @@ info:
     Recovered from com.dribl.app Android XAPK version 4.1.0. This document
     contains non-sensitive endpoint literals and inferred HTTP methods only.
     No OAuth tokens, JWTs, API keys, cookies, or user credentials are included.
-    Request/response schemas were not present in recoverable form and are
-    represented as generic JSON placeholders. Methods marked with
+    Recovered request/response schemas are represented as generic JSON
+    placeholders unless a route has subsequently been live-verified. Methods marked with
     x-method-inference should be verified against authorized traffic or
     backend documentation before implementation.
 servers:
@@ -617,26 +617,24 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/auth/signin":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-live-verified: "2026-10-05"
     post:
       operationId: post_auth_signin
       tags: ["Auth"]
-      summary: "Discovered action endpoint for auth signin"
-      x-method-inference: "inferred from action-oriented endpoint name"
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationHeader"
+      summary: "Authenticate a user and return a bearer token"
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenericRequest"
+              $ref: "#/components/schemas/AuthSignInRequest"
       responses:
         "200":
-          description: Successful response; schema not recovered from APK
+          description: Authentication succeeded
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenericResponse"
+                $ref: "#/components/schemas/AuthSignInResponse"
         "401":
           description: Unauthorized or expired authentication
         default:
@@ -3306,6 +3304,63 @@ components:
       type: object
       additionalProperties: true
       description: "Placeholder for response bodies not recoverable from bytecode strings."
+    AuthSignInRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    AuthSignInResponse:
+      type: object
+      required: [status, token, user]
+      properties:
+        status:
+          type: integer
+          example: 200
+        token:
+          type: string
+          description: JWT bearer token
+        user:
+          $ref: "#/components/schemas/AuthSignInUser"
+        refresh_token:
+          type: string
+          nullable: true
+    AuthSignInUser:
+      type: object
+      required: [id, first_name, last_name]
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+          format: int64
+        sending_email_address:
+          type: string
+          format: email
+        primary_email:
+          type: string
+          format: email
+        primary_email_id:
+          type: integer
+          format: int64
+        last_login:
+          type: string
+          format: date-time
+        first_name:
+          type: string
+        last_name:
+          type: string
+        is_guest:
+          type: integer
+        image:
+          type: string
+          nullable: true
+        system_image:
+          type: string
+          nullable: true
+          format: uri
     PaginationMeta:
       type: object
       required: [current_page, last_page]

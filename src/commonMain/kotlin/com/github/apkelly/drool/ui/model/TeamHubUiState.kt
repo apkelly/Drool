@@ -1,6 +1,7 @@
 package com.github.apkelly.drool.ui.model
 
 import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.RefreshFailure
 import com.github.apkelly.drool.domain.model.TeamHub
 
 sealed interface TeamHubUiState {
@@ -10,6 +11,10 @@ sealed interface TeamHubUiState {
         val profileId: String,
         val teamId: String,
         val hub: TeamHub,
+        val lastUpdatedEpochMillis: Long?,
+        val isStale: Boolean,
+        val isRefreshing: Boolean = false,
+        val refreshFailure: RefreshFailure? = null,
     ) : TeamHubUiState
     data class Failed(val profileId: String, val teamId: String) : TeamHubUiState
 }

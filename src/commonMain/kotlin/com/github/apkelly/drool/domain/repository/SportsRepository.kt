@@ -32,6 +32,10 @@ interface SportsRepository {
         force: Boolean = false,
     ): Map<String, RefreshResult>
     suspend fun setFollowing(teamId: String, following: Boolean)
-    suspend fun loadTeamHub(profileId: String, teamId: String): TeamHub
+    suspend fun loadTeamHub(
+        profileId: String,
+        teamId: String,
+        force: Boolean = false,
+    ): CachedData<TeamHub>
     suspend fun loadMatchDetails(profileId: String, matchId: String): Fixture
 }

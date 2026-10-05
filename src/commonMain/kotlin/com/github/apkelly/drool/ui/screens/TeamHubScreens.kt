@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -95,6 +96,7 @@ import com.github.apkelly.drool.ui.model.TeamHubUiState
 import com.github.apkelly.drool.ui.platform.GoogleMapPreview
 import com.github.apkelly.drool.ui.platform.rememberLocationActionLauncher
 import com.github.apkelly.drool.ui.widgets.RemoteImage
+import com.github.apkelly.drool.ui.widgets.CacheStatus
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,6 +111,7 @@ fun TeamHubScreen(
     state: TeamHubUiState,
     onBack: () -> Unit,
     onLoad: (String, String) -> Unit,
+    onRefresh: (String, String) -> Unit,
     onMatchSelected: (Fixture) -> Unit,
 ) {
     LaunchedEffect(profileId, teamId) { onLoad(profileId, teamId) }
@@ -119,8 +122,9 @@ fun TeamHubScreen(
         rememberTopAppBarState()
     )
     var selectedTab by remember(teamId) { mutableIntStateOf(0) }
-    val content = state as? TeamHubUiState.Content
-    val current = content?.takeIf { it.profileId == profileId && it.teamId == teamId }?.hub
+    val content = (state as? TeamHubUiState.Content)
+        ?.takeIf { it.profileId == profileId && it.teamId == teamId }
+    val current = content?.hub
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -149,43 +153,57 @@ fun TeamHubScreen(
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
-                listOf(
-                    Res.string.team_matches,
-                    Res.string.team_results,
-                    Res.string.team_ladders,
-                ).forEachIndexed { index, label ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(stringResource(label)) },
+        PullToRefreshBox(
+            isRefreshing = content?.isRefreshing == true,
+            onRefresh = { onRefresh(profileId, teamId) },
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                PrimaryTabRow(selectedTabIndex = selectedTab) {
+                    listOf(
+                        Res.string.team_matches,
+                        Res.string.team_results,
+                        Res.string.team_ladders,
+                    ).forEachIndexed { index, label ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(stringResource(label)) },
+                        )
+                    }
+                }
+                if (content != null) {
+                    CacheStatus(
+                        isStale = content.isStale,
+                        failure = content.refreshFailure,
+                        hasContent = true,
+                        onRetry = { onRefresh(profileId, teamId) },
                     )
                 }
-            }
-            when {
-                state is TeamHubUiState.Failed &&
-                    state.profileId == profileId && state.teamId == teamId ->
-                    LoadFailure(
-                        message = stringResource(Res.string.team_load_failed),
-                        onRetry = { onLoad(profileId, teamId) },
+                when {
+                    state is TeamHubUiState.Failed &&
+                        state.profileId == profileId && state.teamId == teamId ->
+                        LoadFailure(
+                            message = stringResource(Res.string.team_load_failed),
+                            onRetry = { onLoad(profileId, teamId) },
+                        )
+                    current == null -> LoadingContent()
+                    selectedTab == 0 -> FixtureList(
+                        fixtures = current.matches,
+                        emptyMessage = stringResource(Res.string.team_no_matches),
+                        onSelected = onMatchSelected,
                     )
-                current == null -> LoadingContent()
-                selectedTab == 0 -> FixtureList(
-                    fixtures = current.matches,
-                    emptyMessage = stringResource(Res.string.team_no_matches),
-                    onSelected = onMatchSelected,
-                )
-                selectedTab == 1 -> FixtureList(
-                    fixtures = current.results,
-                    emptyMessage = stringResource(Res.string.team_no_results),
-                    onSelected = onMatchSelected,
-                )
-                else -> LadderList(
-                    name = current.ladderName,
-                    entries = current.ladder,
-                    highlightedTeamId = teamId,
-                )
+                    selectedTab == 1 -> FixtureList(
+                        fixtures = current.results,
+                        emptyMessage = stringResource(Res.string.team_no_results),
+                        onSelected = onMatchSelected,
+                    )
+                    else -> LadderList(
+                        name = current.ladderName,
+                        entries = current.ladder,
+                        highlightedTeamId = teamId,
+                    )
+                }
             }
         }
     }
@@ -345,14 +363,14 @@ private fun MatchDetails(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 MatchTeam(
                     fixture.homeTeamId,
                     fixture.homeTeamName,
                     fixture.homeTeamLogoUrl,
                     onTeamSelected,
+                    modifier = Modifier.weight(1f),
                 )
                 Text(
                     if (fixture.homeScore != null && fixture.awayScore != null) {
@@ -364,6 +382,7 @@ private fun MatchDetails(
                     } else {
                         "vs"
                     },
+                    modifier = Modifier.padding(horizontal = 8.dp),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )
@@ -372,6 +391,7 @@ private fun MatchDetails(
                     fixture.awayTeamName,
                     fixture.awayTeamLogoUrl,
                     onTeamSelected,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -470,9 +490,10 @@ private fun MatchTeam(
     name: String,
     logoUrl: String?,
     onSelected: (String, String, String?) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .then(
                 if (teamId == null) Modifier
                 else Modifier.clickable { onSelected(teamId, name, logoUrl) }
@@ -487,7 +508,12 @@ private fun MatchTeam(
             fallbackIcon = Icons.Default.Groups,
             modifier = Modifier.size(64.dp),
         )
-        Text(name, style = MaterialTheme.typography.titleSmall)
+        Text(
+            name,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.titleSmall,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

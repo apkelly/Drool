@@ -16,17 +16,10 @@ internal data class NestedResourceResponse<T>(
 
 @Serializable
 internal data class SignInResponse(
-    @SerialName("access_token") val accessToken: String? = null,
-    @SerialName("email") val email: String? = null,
-    @SerialName("data") val data: SignInPayload? = null,
-)
-
-@Serializable
-internal data class SignInPayload(
-    @SerialName("access_token") val accessToken: String? = null,
-    @SerialName("user") val user: PersonDto? = null,
-    @SerialName("related_users") val relatedUsers: List<PersonDto> = emptyList(),
-    @SerialName("accounts") val accounts: List<AccountDto> = emptyList(),
+    @SerialName("status") val status: Int,
+    @SerialName("token") val token: String,
+    @SerialName("user") val user: PersonDto,
+    @SerialName("refresh_token") val refreshToken: String? = null,
 )
 
 @Serializable
@@ -45,6 +38,8 @@ internal data class PersonDto(
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("name") val name: String? = null,
     @SerialName("email") val email: String? = null,
+    @SerialName("primary_email") val primaryEmail: String? = null,
+    @SerialName("sending_email_address") val sendingEmailAddress: String? = null,
     @SerialName("email_address") val emailAddress: String? = null,
     @SerialName("contact_email") val contactEmail: String? = null,
     @SerialName("value") val value: String? = null,
@@ -52,6 +47,7 @@ internal data class PersonDto(
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("profile_image") val profileImage: String? = null,
     @SerialName("image") val image: String? = null,
+    @SerialName("system_image") val systemImage: String? = null,
     @SerialName("dob") val dateOfBirth: String? = null,
     @SerialName("date_of_birth") val alternateDateOfBirth: String? = null,
     @SerialName("activated") val activated: Boolean? = null,
@@ -316,7 +312,9 @@ internal data class LadderEntryDto(
     @SerialName("team_id") val teamId: JsonPrimitive? = null,
     @SerialName("team_hash_id") val teamHashId: JsonPrimitive? = null,
     @SerialName("team_name") val teamName: String? = null,
+    @SerialName("league_name") val leagueName: String? = null,
     @SerialName("club_logo") val clubLogo: String? = null,
+    @SerialName("image") val image: String? = null,
     @SerialName("played") val played: Int? = null,
     @SerialName("won") val won: Int? = null,
     @SerialName("drawn") val drawn: Int? = null,

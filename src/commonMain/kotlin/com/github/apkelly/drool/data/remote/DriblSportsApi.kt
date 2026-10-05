@@ -56,6 +56,7 @@ import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.domain.model.Team
 import com.github.apkelly.drool.domain.model.TeamAssociation
 import com.github.apkelly.drool.domain.model.TeamHub
+import com.github.apkelly.drool.data.mapper.normalizedTeamName
 import com.github.apkelly.drool.domain.model.TeamRelationship
 
 private const val DISCOVER_PAGE_SIZE = 1_000
@@ -173,7 +174,9 @@ class DriblSportsApi(
                 parameter("require_championship", true)
             }
             val entries = detail.ladderEntries
-                .mapIndexedNotNull(::ladderEntryFromDto)
+                .mapIndexedNotNull { index, entry ->
+                    ladderEntryFromDto(index, entry, ladder.name)
+                }
             if (entries.any { it.teamId == teamId }) {
                 selectedName = ladder.name
                 selectedEntries = entries
@@ -183,7 +186,9 @@ class DriblSportsApi(
                 val formFixtures = (
                     selected?.upcomingMatches.orEmpty() +
                         selected?.recentMatches.orEmpty()
-                    ).mapIndexedNotNull { index, fixture -> fixture.toDto(index) }
+                    ).mapIndexedNotNull { index, fixture ->
+                        fixture.toDto(index, competitionName = ladder.name)
+                    }
                 fixtures = (fixtures + formFixtures)
                     .filter { it.involves(teamId) }
                     .distinctBy(Fixture::id)
@@ -446,14 +451,15 @@ private fun teamFromDto(index: Int, team: TeamDto): Team? =
 
 private fun TeamDto.toDto(index: Int): Team? {
     val resolvedName = name ?: parsedName ?: teamName ?: return null
+    val resolvedCompetitionName = competitionName ?: teamCompetitionName
     return Team(
         id = (teamId ?: id).textValue ?: "team-$index-$resolvedName",
         clubId = clubId.textValue,
-        name = resolvedName,
+        name = normalizedTeamName(resolvedName, resolvedCompetitionName),
         shortName = shortName,
         logoUrl = logoUrl ?: image,
         ageGroup = ageGroup,
-        competitionName = competitionName ?: teamCompetitionName,
+        competitionName = resolvedCompetitionName,
         active = active,
         primaryColor = primaryColor ?: color,
         secondaryColor = secondaryColor ?: accent,
@@ -569,14 +575,19 @@ private fun emergencyContactFromDto(
 private fun ladderEntryFromDto(
     index: Int,
     resource: LadderEntryResourceDto,
+    competitionName: String?,
 ): LadderEntry? {
     val entry = resource.fields()
     val teamName = entry.teamName ?: return null
     return LadderEntry(
         position = entry.position ?: index + 1,
         teamId = entry.teamIdentifier,
-        teamName = teamName,
-        logoUrl = entry.clubLogo,
+        teamName = normalizedTeamName(
+            name = teamName,
+            competitionName = entry.leagueName ?: competitionName,
+            allowEmbeddedLeaguePrefix = true,
+        ),
+        logoUrl = entry.clubLogo ?: entry.image,
         played = entry.played,
         won = entry.won,
         drawn = entry.drawn,
@@ -607,6 +618,7 @@ private fun FixtureDto.toDto(
 ): Fixture? {
     val resolvedHomeName = homeTeamName ?: homeTeam?.name ?: return null
     val resolvedAwayName = awayTeamName ?: awayTeam?.name ?: return null
+    val resolvedCompetitionName = this.competitionName ?: leagueName ?: competitionName
     return Fixture(
         id = (id ?: matchId).textValue
             ?: "fixture-$index-$resolvedHomeName-$resolvedAwayName",
@@ -615,13 +627,21 @@ private fun FixtureDto.toDto(
             ?: homeTeamHashId
             ?: homeTeam?.teamId
             ?: homeTeam?.id).textValue,
-        homeTeamName = resolvedHomeName,
+        homeTeamName = normalizedTeamName(
+            name = resolvedHomeName,
+            competitionName = resolvedCompetitionName,
+            allowEmbeddedLeaguePrefix = this.competitionName == null,
+        ),
         awayTeamId = (awayTeamId
             ?: awayTeamHashId
             ?: awayTeam?.teamId
             ?: awayTeam?.id).textValue,
-        awayTeamName = resolvedAwayName,
-        competitionName = this.competitionName ?: leagueName ?: competitionName,
+        awayTeamName = normalizedTeamName(
+            name = resolvedAwayName,
+            competitionName = resolvedCompetitionName,
+            allowEmbeddedLeaguePrefix = this.competitionName == null,
+        ),
+        competitionName = resolvedCompetitionName,
         venueName = this.venueName ?: groundName ?: venueName,
         userTeamId = this.userTeamId.textValue ?: userTeamId,
         status = (this.status ?: status).toFixtureStatus(),
@@ -635,17 +655,26 @@ private fun FixtureDto.toDto(
 private fun MatchResourceDto.toDomain(): Fixture =
     attributes.toDomain(id)
 
-private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture =
-    Fixture(
+private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture {
+    val resolvedCompetitionName = competitionName ?: leagueName
+    return Fixture(
         id = resourceId.textValue
             ?: throw DriblResponseException("Match response contained a blank id"),
         kickoffEpochMillis = date.epochMillis
             ?: throw DriblResponseException("Match response contained an invalid date"),
         homeTeamId = homeTeamId.textValue,
-        homeTeamName = homeTeamName,
+        homeTeamName = normalizedTeamName(
+            name = homeTeamName,
+            competitionName = resolvedCompetitionName,
+            allowEmbeddedLeaguePrefix = competitionName == null,
+        ),
         awayTeamId = awayTeamId.textValue,
-        awayTeamName = awayTeamName,
-        competitionName = competitionName ?: leagueName,
+        awayTeamName = normalizedTeamName(
+            name = awayTeamName,
+            competitionName = resolvedCompetitionName,
+            allowEmbeddedLeaguePrefix = competitionName == null,
+        ),
+        competitionName = resolvedCompetitionName,
         venueName = fieldName,
         userTeamId = null,
         status = status.toFixtureStatus(),
@@ -659,6 +688,7 @@ private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture =
         latitude = latitude?.doubleOrNull,
         longitude = longitude?.doubleOrNull,
     )
+}
 
 private fun Fixture.involves(teamId: String): Boolean =
     homeTeamId == teamId || awayTeamId == teamId || userTeamId == teamId

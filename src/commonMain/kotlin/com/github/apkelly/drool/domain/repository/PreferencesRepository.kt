@@ -6,4 +6,6 @@ import com.github.apkelly.drool.domain.model.ThemeMode
 interface PreferencesRepository {
     fun observeThemeMode(): Flow<ThemeMode>
     suspend fun setThemeMode(mode: ThemeMode)
+    fun observeObservabilityEnabled(): Flow<Boolean>
+    suspend fun setObservabilityEnabled(enabled: Boolean)
 }

@@ -14,6 +14,9 @@ class PreferencesRepositoryImplTest {
             assertEquals(ThemeMode.System, repository.observeThemeMode().first())
             repository.setThemeMode(ThemeMode.Dark)
             assertEquals(ThemeMode.Dark, repository.observeThemeMode().first())
+            assertEquals(false, repository.observeObservabilityEnabled().first())
+            repository.setObservabilityEnabled(true)
+            assertEquals(true, repository.observeObservabilityEnabled().first())
         }
     }
 }

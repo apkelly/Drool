@@ -11,10 +11,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-actual fun formatFixtureDateTime(epochMillis: Long): String =
-    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-        .withZone(ZoneId.systemDefault())
-        .format(Instant.ofEpochMilli(epochMillis))
+@Composable
+actual fun formatFixtureDateTime(epochMillis: Long): String {
+    val context = LocalContext.current
+    val date = Date(epochMillis)
+    val formattedDate = DateFormat.getMediumDateFormat(context).format(date)
+    val formattedTime = DateFormat.getTimeFormat(context).format(date)
+    return "$formattedDate, $formattedTime"
+}
 
 actual fun formatFixtureDateHeading(epochMillis: Long): String =
     DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)

@@ -83,6 +83,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         status = FixtureStatus.Unknown,
     )
     var teamHubRequest: Pair<String, String>? = null
+    var teamHubCalls = 0
     var matchDetailsRequest: Pair<String, String>? = null
     var linkCandidates: List<RelatedUser> = emptyList()
     var verifiedLink: Pair<String, String>? = null
@@ -210,6 +211,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
 
     override suspend fun fetchTeamHub(bearerToken: String, teamId: String): TeamHub {
         failure?.let { throw it }
+        teamHubCalls += 1
         teamHubRequest = bearerToken to teamId
         return teamHub
     }

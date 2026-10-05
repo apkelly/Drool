@@ -10,17 +10,23 @@
 		1A0000000000000000000001 /* Drool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Drool.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000000000000000000002 /* DroolApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroolApp.swift; sourceTree = "<group>"; };
 		1A0000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1A0000000000000000000006 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		1A000000000000000000000A /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXBuildFile section */
 		1A0000000000000000000004 /* DroolApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000002 /* DroolApp.swift */; };
 		1A0000000000000000000005 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000081 /* GoogleMaps */; };
+		1A0000000000000000000007 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000006 /* GoogleService-Info.plist */; };
+		1A0000000000000000000008 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000083 /* FirebaseAnalytics */; };
+		1A0000000000000000000009 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000084 /* FirebaseCrashlytics */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXGroup section */
 		1A0000000000000000000010 = {
 			isa = PBXGroup;
 			children = (
+				1A000000000000000000000A /* Config.xcconfig */,
 				1A0000000000000000000011 /* iosApp */,
 				1A0000000000000000000012 /* Products */,
 			);
@@ -31,6 +37,7 @@
 			children = (
 				1A0000000000000000000002 /* DroolApp.swift */,
 				1A0000000000000000000003 /* Info.plist */,
+				1A0000000000000000000006 /* GoogleService-Info.plist */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -62,6 +69,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A0000000000000000000005 /* GoogleMaps in Frameworks */,
+				1A0000000000000000000008 /* FirebaseAnalytics in Frameworks */,
+				1A0000000000000000000009 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,6 +81,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A0000000000000000000007 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,6 +107,30 @@
 			shellPath = /bin/sh;
 			shellScript = "if [ -z \"$JAVA_HOME\" ]; then\n  if [ -x \"$HOME/.sdkman/candidates/java/current/bin/java\" ]; then\n    export JAVA_HOME=\"$HOME/.sdkman/candidates/java/current\"\n  elif [ -x \"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java\" ]; then\n    export JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\"\n  elif [ -x \"/Applications/IntelliJ IDEA.app/Contents/jbr/Contents/Home/bin/java\" ]; then\n    export JAVA_HOME=\"/Applications/IntelliJ IDEA.app/Contents/jbr/Contents/Home\"\n  else\n    export JAVA_HOME=\"$(/usr/libexec/java_home 2>/dev/null)\"\n  fi\nfi\nif [ ! -x \"$JAVA_HOME/bin/java\" ]; then\n  echo \"error: A JDK is required to build DroolShared\"\n  exit 1\nfi\nexport PATH=\"$JAVA_HOME/bin:$PATH\"\ncd \"$SRCROOT/..\"\n./gradlew :embedAndSignAppleFrameworkForXcode\n";
 		};
+		1A0000000000000000000024 /* Upload Crashlytics Symbols */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Resources/DWARF/$(TARGET_NAME)",
+				"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Upload Crashlytics Symbols";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXNativeTarget section */
@@ -108,6 +142,7 @@
 				1A0000000000000000000020 /* Sources */,
 				1A0000000000000000000021 /* Frameworks */,
 				1A0000000000000000000022 /* Resources */,
+				1A0000000000000000000024 /* Upload Crashlytics Symbols */,
 			);
 			buildRules = (
 			);
@@ -116,6 +151,8 @@
 			name = Drool;
 			packageProductDependencies = (
 				1A0000000000000000000081 /* GoogleMaps */,
+				1A0000000000000000000083 /* FirebaseAnalytics */,
+				1A0000000000000000000084 /* FirebaseCrashlytics */,
 			);
 			productName = Drool;
 			productReference = 1A0000000000000000000001 /* Drool.app */;
@@ -147,6 +184,7 @@
 			mainGroup = 1A0000000000000000000010;
 			packageReferences = (
 				1A0000000000000000000080 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
+				1A0000000000000000000082 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = 1A0000000000000000000012 /* Products */;
 			projectDirPath = "";
@@ -165,7 +203,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -195,6 +233,7 @@
 		};
 		1A0000000000000000000062 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1A000000000000000000000A /* Config.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -228,6 +267,7 @@
 		};
 		1A0000000000000000000063 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1A000000000000000000000A /* Config.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -291,6 +331,14 @@
 				version = 11.2.0;
 			};
 		};
+		1A0000000000000000000082 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = exactVersion;
+				version = 12.19.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -298,6 +346,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1A0000000000000000000080 /* XCRemoteSwiftPackageReference "ios-maps-sdk" */;
 			productName = GoogleMaps;
+		};
+		1A0000000000000000000083 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000082 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		1A0000000000000000000084 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000082 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

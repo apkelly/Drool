@@ -1,5 +1,8 @@
 package com.github.apkelly.drool.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class TeamHub(
     val teamId: String,
     val matches: List<Fixture>,
@@ -8,6 +11,7 @@ data class TeamHub(
     val ladder: List<LadderEntry>,
 )
 
+@Serializable
 data class LadderEntry(
     val position: Int?,
     val teamId: String?,

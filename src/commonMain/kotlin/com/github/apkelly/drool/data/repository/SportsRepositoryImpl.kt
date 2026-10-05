@@ -6,12 +6,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerializationException
 import kotlinx.io.IOException
 import com.github.apkelly.drool.data.local.DroolDatabase
 import com.github.apkelly.drool.data.local.inTransaction
 import com.github.apkelly.drool.data.local.entity.CacheMetadataEntity
 import com.github.apkelly.drool.data.local.entity.TeamRelationshipEntity
+import com.github.apkelly.drool.data.local.entity.TeamHubCacheEntity
 import com.github.apkelly.drool.data.local.entity.ClubRelationshipEntity
 import com.github.apkelly.drool.data.mapper.toEntity
 import com.github.apkelly.drool.data.mapper.toLinkedEntity
@@ -287,13 +291,37 @@ class SportsRepositoryImpl(
         }
     }
 
-    override suspend fun loadTeamHub(profileId: String, teamId: String): TeamHub =
-        api.fetchTeamHub(profileToken(profileId), teamId).let { hub ->
-            hub.copy(
-                matches = hub.matches.map { it.copy(profileId = profileId) },
-                results = hub.results.map { it.copy(profileId = profileId) },
+    override suspend fun loadTeamHub(
+        profileId: String,
+        teamId: String,
+        force: Boolean,
+    ): CachedData<TeamHub> {
+        val cached = database.teamHubCacheDao().get(profileId, teamId)
+        if (!force && cached != null) {
+            return CachedData(
+                value = Json.decodeFromString(cached.payloadJson),
+                lastUpdatedEpochMillis = cached.updatedAtEpochMillis,
+                isStale = timeProvider.nowEpochMillis() - cached.updatedAtEpochMillis >=
+                    TEAM_HUB_TTL,
             )
         }
+        val hub = api.fetchTeamHub(profileToken(profileId), teamId).let { loaded ->
+            loaded.copy(
+                matches = loaded.matches.map { it.copy(profileId = profileId) },
+                results = loaded.results.map { it.copy(profileId = profileId) },
+            )
+        }
+        val updatedAt = timeProvider.nowEpochMillis()
+        database.teamHubCacheDao().upsert(
+            TeamHubCacheEntity(
+                profileId = profileId,
+                teamId = teamId,
+                payloadJson = Json.encodeToString(hub),
+                updatedAtEpochMillis = updatedAt,
+            )
+        )
+        return CachedData(hub, updatedAt, isStale = false)
+    }
 
     override suspend fun loadMatchDetails(profileId: String, matchId: String): Fixture =
         api.fetchMatchDetails(profileToken(profileId), matchId).copy(profileId = profileId)
@@ -405,5 +433,6 @@ class SportsRepositoryImpl(
         const val CLUBS_TTL = 24L * 60L * 60L * 1_000L
         const val TEAMS_TTL = 24L * 60L * 60L * 1_000L
         const val FIXTURES_TTL = 15L * 60L * 1_000L
+        const val TEAM_HUB_TTL = 24L * 60L * 60L * 1_000L
     }
 }

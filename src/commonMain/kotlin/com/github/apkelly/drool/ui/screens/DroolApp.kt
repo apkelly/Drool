@@ -2,6 +2,7 @@ package com.github.apkelly.drool.ui.screens
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,6 +49,7 @@ import com.github.apkelly.drool.ui.navigation.TopLevelDestination
 import com.github.apkelly.drool.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.ui.widgets.SplashContent
+import com.github.apkelly.drool.observability.AppScreen
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -65,8 +68,13 @@ fun DroolApp(
     sportsViewModel: SportsViewModel,
 ) {
     val sessionState by appViewModel.sessionState.collectAsState()
+    var initialSplashFinished by rememberSaveable { mutableStateOf(false) }
+    if (!initialSplashFinished || sessionState == SessionUiState.Bootstrapping) {
+        SplashContent(onAnimationFinished = { initialSplashFinished = true })
+        return
+    }
     when (val state = sessionState) {
-        SessionUiState.Bootstrapping -> SplashContent()
+        SessionUiState.Bootstrapping -> Unit
         SessionUiState.ReconnectRequired -> ReconnectScreen(appViewModel::restore)
         SessionUiState.AuthenticationRequired,
         SessionUiState.Authenticating,
@@ -74,6 +82,7 @@ fun DroolApp(
         -> AuthNavigation(
             sessionState = state,
             onSignIn = appViewModel::signIn,
+            onScreenViewed = appViewModel::trackScreen,
         )
         is SessionUiState.Authenticated -> {
             LaunchedEffect(state.profile.accountId) {
@@ -92,11 +101,21 @@ fun DroolApp(
 private fun AuthNavigation(
     sessionState: SessionUiState,
     onSignIn: (String, String) -> Unit,
+    onScreenViewed: (AppScreen) -> Unit,
 ) {
     val backStack = rememberNavBackStack(
         navigationStateConfiguration,
         AppRoute.Welcome as NavKey,
     )
+    LaunchedEffect(backStack.lastOrNull()) {
+        onScreenViewed(
+            when (backStack.lastOrNull()) {
+                AppRoute.SignIn -> AppScreen.SignIn
+                AppRoute.Register -> AppScreen.Register
+                else -> AppScreen.Welcome
+            }
+        )
+    }
     NavDisplay(
         backStack = backStack,
         onBack = {
@@ -147,6 +166,7 @@ private fun MainNavigation(
     val linkMemberState by appViewModel.linkMemberState.collectAsState()
     val relationships by sportsViewModel.relationships.collectAsState()
     val themeMode by appViewModel.themeMode.collectAsState()
+    val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
     val teamHubState by sportsViewModel.teamHubState.collectAsState()
     val matchDetailsState by sportsViewModel.matchDetailsState.collectAsState()
 
@@ -175,6 +195,22 @@ private fun MainNavigation(
         TopLevelDestination.Schedule -> scheduleStack
         TopLevelDestination.Discover -> discoverStack
         TopLevelDestination.Profile -> profileStack
+    }
+    LaunchedEffect(currentStack.lastOrNull(), selected) {
+        val screen = when (currentStack.lastOrNull()) {
+            AppRoute.Home -> AppScreen.Home
+            AppRoute.Schedule -> AppScreen.Schedule
+            AppRoute.Discover -> AppScreen.Discover
+            AppRoute.Profile -> AppScreen.Profile
+            is AppRoute.Club -> AppScreen.Club
+            is AppRoute.Team -> AppScreen.Team
+            is AppRoute.MatchDetails -> AppScreen.MatchDetails
+            is AppRoute.PersonalInformation -> AppScreen.PersonalInformation
+            AppRoute.LinkMember -> AppScreen.LinkMember
+            AppRoute.ApiDiagnostics -> AppScreen.ApiDiagnostics
+            else -> null
+        }
+        screen?.let(appViewModel::trackScreen)
     }
 
     val content: @Composable () -> Unit = {
@@ -274,6 +310,7 @@ private fun MainNavigation(
                             }
                         },
                         onLoad = sportsViewModel::loadTeam,
+                        onRefresh = sportsViewModel::refreshTeam,
                         onMatchSelected = { fixture ->
                             currentStack.add(
                                 AppRoute.MatchDetails(
@@ -311,7 +348,9 @@ private fun MainNavigation(
                     ProfileScreen(
                         profile = profile,
                         themeMode = themeMode,
+                        observabilityEnabled = observabilityEnabled,
                         onThemeChanged = appViewModel::updateTheme,
+                        onObservabilityChanged = appViewModel::updateObservability,
                         onOpenApiDiagnostics = {
                             currentStack.add(AppRoute.ApiDiagnostics)
                         },
@@ -388,7 +427,10 @@ private fun MainNavigation(
                 },
             ) { contentPadding ->
                 androidx.compose.foundation.layout.Box(
-                    modifier = Modifier.fillMaxSize().padding(contentPadding),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .consumeWindowInsets(contentPadding),
                 ) {
                     content()
                 }

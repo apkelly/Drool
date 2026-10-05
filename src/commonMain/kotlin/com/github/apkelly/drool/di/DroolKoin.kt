@@ -23,6 +23,7 @@ import com.github.apkelly.drool.domain.usecase.ObserveFamilyClubsUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveTeamRelationshipsUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveTeamsUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveThemeModeUseCase
+import com.github.apkelly.drool.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveProfileUseCase
 import com.github.apkelly.drool.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.domain.usecase.RefreshFixturesUseCase
@@ -36,10 +37,13 @@ import com.github.apkelly.drool.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.domain.usecase.SetTeamFollowingUseCase
 import com.github.apkelly.drool.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.ui.viewmodel.SportsViewModel
+import com.github.apkelly.drool.observability.Observability
+import com.github.apkelly.drool.observability.createPlatformObservability
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
@@ -51,7 +55,7 @@ private val sportsHttpClient = named("sportsHttpClient")
 
 private val dataModule = module {
     single<HttpClient>(authHttpClient) {
-        createPlatformHttpClient(logBodies = true, logTag = "OkHttp.Auth")
+        createPlatformHttpClient(logBodies = false, logTag = "OkHttp.Auth")
     }
     single<HttpClient>(sportsHttpClient) {
         createPlatformHttpClient(logBodies = true, logTag = "OkHttp.Api")
@@ -78,6 +82,7 @@ private val dataModule = module {
         )
     }
     single<PreferencesRepository> { PreferencesRepositoryImpl(store = get()) }
+    single<Observability> { createPlatformObservability() }
 }
 
 private val domainModule = module {
@@ -90,6 +95,8 @@ private val domainModule = module {
     factory { VerifyLinkedUserUseCase(repository = get()) }
     factory { ObserveThemeModeUseCase(repository = get()) }
     factory { SetThemeModeUseCase(repository = get()) }
+    factory { ObserveObservabilityEnabledUseCase(repository = get()) }
+    factory { SetObservabilityEnabledUseCase(repository = get()) }
     factory { ObserveClubsUseCase(repository = get()) }
     factory { ObserveTeamsUseCase(repository = get()) }
     factory { ObserveFixturesUseCase(repository = get()) }
@@ -117,6 +124,9 @@ private val uiModule = module {
             verifyLinkedUserUseCase = get(),
             observeThemeMode = get(),
             setThemeMode = get(),
+            observeObservabilityEnabled = get(),
+            setObservabilityEnabled = get(),
+            observability = get(),
         )
     }
     single {
@@ -134,6 +144,7 @@ private val uiModule = module {
             setTeamFollowing = get(),
             loadTeamHub = get(),
             loadMatchDetails = get(),
+            observability = get(),
         )
     }
 }

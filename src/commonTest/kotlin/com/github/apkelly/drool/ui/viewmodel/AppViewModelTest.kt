@@ -21,9 +21,11 @@ import com.github.apkelly.drool.domain.model.LinkMemberFailure
 import com.github.apkelly.drool.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.domain.repository.SessionRepository
 import com.github.apkelly.drool.domain.usecase.ObserveThemeModeUseCase
+import com.github.apkelly.drool.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveProfileUseCase
 import com.github.apkelly.drool.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.domain.usecase.RefreshProfileEndpointUseCase
@@ -109,35 +111,6 @@ class AppViewModelTest {
             signInResult = AuthenticatedSession("token", profile)
         }
 
-        @Test
-        fun linkMemberLoadsCandidatesValidatesTokenAndReportsFailures() = runTest {
-            val sessions = FakeViewModelSessionRepository()
-            val viewModel = viewModel(sessions, FakeViewModelPreferencesRepository())
-            advanceUntilIdle()
-            sessions.linkCandidates = listOf(RelatedUser("candidate", "Ethan", null, null))
-
-            viewModel.loadLinkCandidates()
-            advanceUntilIdle()
-            assertEquals(
-                LinkMemberUiState.Ready(sessions.linkCandidates),
-                viewModel.linkMemberState.value,
-            )
-
-            viewModel.verifyLinkedUser("candidate", "123")
-            assertEquals(null, sessions.verifiedLink)
-            viewModel.verifyLinkedUser("candidate", "123456")
-            advanceUntilIdle()
-            assertEquals("candidate" to "123456", sessions.verifiedLink)
-            assertEquals(LinkMemberUiState.Linked, viewModel.linkMemberState.value)
-
-            sessions.linkFailure = LinkMemberException(LinkMemberFailure.SessionExpired)
-            viewModel.loadLinkCandidates()
-            advanceUntilIdle()
-            assertEquals(
-                LinkMemberUiState.Failed(LinkMemberFailure.SessionExpired),
-                viewModel.linkMemberState.value,
-            )
-        }
         val preferences = FakeViewModelPreferencesRepository()
         val viewModel = viewModel(sessionRepository, preferences)
         advanceUntilIdle()
@@ -150,6 +123,10 @@ class AppViewModelTest {
         viewModel.updateTheme(ThemeMode.Dark)
         advanceUntilIdle()
         assertEquals(ThemeMode.Dark, preferences.theme.value)
+
+        viewModel.updateObservability(true)
+        advanceUntilIdle()
+        assertEquals(true, preferences.observabilityEnabled.value)
 
         viewModel.refreshRelatedUsers(" alex@example.com ")
         viewModel.refreshAccessAccounts()
@@ -171,6 +148,36 @@ class AppViewModelTest {
         assertIs<SessionUiState.AuthenticationRequired>(viewModel.sessionState.value)
     }
 
+    @Test
+    fun linkMemberLoadsCandidatesValidatesTokenAndReportsFailures() = runTest {
+        val sessions = FakeViewModelSessionRepository()
+        val viewModel = viewModel(sessions, FakeViewModelPreferencesRepository())
+        advanceUntilIdle()
+        sessions.linkCandidates = listOf(RelatedUser("candidate", "Ethan", null, null))
+
+        viewModel.loadLinkCandidates()
+        advanceUntilIdle()
+        assertEquals(
+            LinkMemberUiState.Ready(sessions.linkCandidates),
+            viewModel.linkMemberState.value,
+        )
+
+        viewModel.verifyLinkedUser("candidate", "123")
+        assertEquals(null, sessions.verifiedLink)
+        viewModel.verifyLinkedUser("candidate", "123456")
+        advanceUntilIdle()
+        assertEquals("candidate" to "123456", sessions.verifiedLink)
+        assertEquals(LinkMemberUiState.Linked, viewModel.linkMemberState.value)
+
+        sessions.linkFailure = LinkMemberException(LinkMemberFailure.SessionExpired)
+        viewModel.loadLinkCandidates()
+        advanceUntilIdle()
+        assertEquals(
+            LinkMemberUiState.Failed(LinkMemberFailure.SessionExpired),
+            viewModel.linkMemberState.value,
+        )
+    }
+
     private fun kotlinx.coroutines.test.TestScope.viewModel(
         sessions: FakeViewModelSessionRepository,
         preferences: FakeViewModelPreferencesRepository,
@@ -184,6 +191,8 @@ class AppViewModelTest {
         verifyLinkedUserUseCase = VerifyLinkedUserUseCase(sessions),
         observeThemeMode = ObserveThemeModeUseCase(preferences),
         setThemeMode = SetThemeModeUseCase(preferences),
+        observeObservabilityEnabled = ObserveObservabilityEnabledUseCase(preferences),
+        setObservabilityEnabled = SetObservabilityEnabledUseCase(preferences),
         scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler)),
     )
 }
@@ -230,10 +239,17 @@ private class FakeViewModelSessionRepository : SessionRepository {
 
 private class FakeViewModelPreferencesRepository : PreferencesRepository {
     val theme = MutableStateFlow(ThemeMode.System)
+    val observabilityEnabled = MutableStateFlow(false)
 
     override fun observeThemeMode(): Flow<ThemeMode> = theme
 
     override suspend fun setThemeMode(mode: ThemeMode) {
         theme.value = mode
+    }
+
+    override fun observeObservabilityEnabled(): Flow<Boolean> = observabilityEnabled
+
+    override suspend fun setObservabilityEnabled(enabled: Boolean) {
+        observabilityEnabled.value = enabled
     }
 }

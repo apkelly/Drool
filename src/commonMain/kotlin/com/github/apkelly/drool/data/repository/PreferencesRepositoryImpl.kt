@@ -11,4 +11,9 @@ class PreferencesRepositoryImpl(
 
     override suspend fun setThemeMode(mode: ThemeMode) =
         store.setThemeMode(mode)
+
+    override fun observeObservabilityEnabled() = store.observeObservabilityEnabled()
+
+    override suspend fun setObservabilityEnabled(enabled: Boolean) =
+        store.setObservabilityEnabled(enabled)
 }

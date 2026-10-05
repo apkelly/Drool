@@ -12,6 +12,7 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import com.github.apkelly.drool.data.remote.model.AuthApiRequest
+import com.github.apkelly.drool.data.mapper.normalizedTeamName
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.FixtureStatus
 import kotlin.test.Test
@@ -81,8 +82,9 @@ class DriblApiTest {
                                 "id": ${if (page == "1") "\"team-u12\"" else "\"team-u13\""},
                                 "attributes": {
                                   "club_id": "marrickville",
-                                  "name": ${if (page == "1") "\"Under 12 Red\"" else "\"Under 13 Blue\""},
-                                  "age_group": ${if (page == "1") "\"Under 12\"" else "\"Under 13\""}
+                                  "name": ${if (page == "1") "\"Red Devils\"" else "\"Marrickville Under 13 Mixed Cobh RAMBLERS\""},
+                                  "age_group": ${if (page == "1") "\"Under 12\"" else "\"Under 13\""},
+                                  "competition_name": ${if (page == "1") "\"Under 12 Mixed Red\"" else "\"Marrickville Under 13 Mixed\""}
                                 }
                               }],
                               "meta": {
@@ -104,9 +106,49 @@ class DriblApiTest {
 
         assertEquals(listOf<String?>("1", "2"), pages)
         assertEquals(listOf("team-u12", "team-u13"), teams.map { it.id })
-        assertEquals("Under 13 Blue", teams.last().name)
+        assertEquals(listOf("Red Devils", "Cobh RAMBLERS"), teams.map { it.name })
         assertEquals("Under 13", teams.last().ageGroup)
         assertEquals(setOf("marrickville"), teams.map { it.clubId }.toSet())
+    }
+
+    @Test
+    fun teamNameNormalizationOnlyRemovesACompleteCompetitionPrefix() {
+        assertEquals(
+            "Sheffield Wednesday",
+            normalizedTeamName(
+                "Marrickville  Under 13 Mixed - Sheffield Wednesday",
+                "marrickville under 13 mixed",
+            ),
+        )
+        assertEquals(
+            "Cobh RAMBLERS",
+            normalizedTeamName(
+                "Marrickville Under 13 Mixed: Cobh RAMBLERS",
+                "Marrickville Under 13 Mixed",
+            ),
+        )
+        assertEquals(
+            "Marrickville Under 13 Mixedwood",
+            normalizedTeamName(
+                "Marrickville Under 13 Mixedwood",
+                "Marrickville Under 13 Mixed",
+            ),
+        )
+        assertEquals(
+            "Marrickville Under 13 Mixed",
+            normalizedTeamName(
+                "Marrickville Under 13 Mixed",
+                "Marrickville Under 13 Mixed",
+            ),
+        )
+        assertEquals(
+            "Sheffield Wednesday",
+            normalizedTeamName(
+                name = "Marrickville Under 13 Mixed  Sheffield Wednesday",
+                competitionName = "Under 13 Mixed White Mixed",
+                allowEmbeddedLeaguePrefix = true,
+            ),
+        )
     }
 
     @Test
@@ -211,13 +253,32 @@ class DriblApiTest {
     }
 
     @Test
-    fun signInFindsNestedBearerToken() = runTest {
+    fun signInDecodesObservedTopLevelTokenAndUser() = runTest {
         val api = DriblApi(
             jsonClient(
-                """{"data":{"access_token":"secret","user":{"first_name":"Alex","avatar_url":"https://example.test/alex.png"}}}""",
+                """
+                {
+                  "status": 200,
+                  "token": "secret",
+                  "user": {
+                    "id": 6403118,
+                    "sending_email_address": "alex@example.com",
+                    "primary_email": "alex@example.com",
+                    "primary_email_id": 7222103,
+                    "last_login": "2026-10-05T04:12:25.144002Z",
+                    "first_name": "Alex",
+                    "last_name": "Player",
+                    "is_guest": 0,
+                    "image": null,
+                    "system_image": "https://example.test/alex.png"
+                  },
+                  "refresh_token": null
+                }
+                """.trimIndent(),
                 expectedMethod = HttpMethod.Post,
             )
         )
+
         val session = api.signIn(
             AuthApiRequest(
                 baseUrl = "https://example.test",
@@ -225,100 +286,18 @@ class DriblApiTest {
                 usernameField = "email",
                 passwordField = "password",
                 username = "alex@example.com",
-                password = "not-logged",
+                password = "password",
             )
         )
 
         assertEquals("secret", session.bearerToken)
+        assertEquals("6403118", session.identity?.id)
         assertEquals("Alex", session.identity?.firstName)
+        assertEquals("Player", session.identity?.lastName)
+        assertEquals("alex@example.com", session.identity?.email)
         assertEquals("https://example.test/alex.png", session.identity?.avatarUrl)
-    }
-
-    @Test
-    fun signInPrefersNestedFirstNameOverEnvelopeEmail() = runTest {
-        val api = DriblApi(
-            jsonClient(
-                """
-                {
-                  "email": "alex@example.com",
-                  "data": {
-                    "access_token": "secret",
-                    "user": {
-                      "first_name": "Alex",
-                      "last_name": "Player",
-                      "email": "alex@example.com"
-                    }
-                  }
-                }
-                """.trimIndent(),
-                expectedMethod = HttpMethod.Post,
-            )
-        )
-
-        val session = api.signIn(
-            AuthApiRequest(
-                baseUrl = "https://example.test",
-                path = "/signin",
-                usernameField = "email",
-                passwordField = "password",
-                username = "alex@example.com",
-                password = "password",
-            )
-        )
-
-        assertEquals("Alex", session.identity?.firstName)
-    }
-
-    @Test
-    fun signInRetainsRelatedUsersAccountsAndTheirRawFields() = runTest {
-        val api = DriblApi(
-            jsonClient(
-                """
-                {
-                  "data": {
-                    "access_token": "secret",
-                    "user": { "first_name": "Alex" },
-                    "related_users": [
-                      {
-                        "user_id": "related-1",
-                        "first_name": "Sam",
-                        "last_name": "Player",
-                        "email": "sam@example.com",
-                        "avatar_url": "https://example.test/sam.png",
-                        "status": "active"
-                      }
-                    ],
-                    "accounts": [
-                      {
-                        "account_id": "club-1",
-                        "account_name": "Example Club",
-                        "role": "Manager",
-                        "logo_url": "https://example.test/club.png",
-                        "status": "active"
-                      }
-                    ]
-                  }
-                }
-                """.trimIndent(),
-                expectedMethod = HttpMethod.Post,
-            )
-        )
-
-        val session = api.signIn(
-            AuthApiRequest(
-                baseUrl = "https://example.test",
-                path = "/signin",
-                usernameField = "email",
-                passwordField = "password",
-                username = "alex@example.com",
-                password = "password",
-            )
-        )
-
-        assertEquals("related-1", session.relatedUsers.single().id)
-        assertEquals("Sam Player", session.relatedUsers.single().displayName)
-        assertEquals("club-1", session.accounts.single().id)
-        assertEquals("Example Club", session.accounts.single().name)
+        assertEquals(emptyList(), session.relatedUsers)
+        assertEquals(emptyList(), session.accounts)
     }
 
     @Test
@@ -629,8 +608,9 @@ class DriblApiTest {
                             {"data":[
                               {"type":"matches","id":"match","attributes":{
                                "date":"2026-10-10T02:00:00Z",
-                               "home_team_id":"team","home_team_name":"Home",
-                               "away_team_id":"away","away_team_name":"Away",
+                               "home_team_id":"team","home_team_name":"Marrickville Under 13 Mixed  Sheffield Wednesday",
+                               "away_team_id":"away","away_team_name":"Marrickville Under 13 Mixed  Cobh RAMBLERS",
+                               "league_name":"Under 13 Mixed White Mixed",
                                "status":"complete",
                                "home_team_score":2,"away_team_score":1}},
                               {"type":"matches","id":"other","attributes":{
@@ -640,20 +620,23 @@ class DriblApiTest {
                             ]}
                             """.trimIndent()
                         "/api/universal/ladders" ->
-                            """{"data":[{"id":"ladder-a","name":"Other"},{"id":"ladder-b","name":"Division 1"}]}"""
+                            """{"data":[{"id":"ladder-a","name":"Other"},{"id":"ladder-b","name":"Under 13 Mixed White Mixed"}]}"""
                         "/api/universal/ladders/ladder-a" ->
                             """{"ladder_entries":[{"attributes":{"team_hash_id":"other","team_name":"Other","position":1}}]}"""
                         "/api/universal/ladders/ladder-b" ->
                             """
                             {"ladder_entries":[
-                              {"attributes":{"team_hash_id":"team","team_name":"Home",
+                              {"attributes":{"team_hash_id":"team",
+                               "league_name":"Under 13 Mixed White Mixed",
+                               "team_name":"Marrickville Under 13 Mixed  Sheffield Wednesday",
+                               "image":"home.png",
                                "position":1,"played":5,"won":4,"drawn":1,"lost":0,
                                "goals_for":12,"goals_against":3,"goal_difference":9,
                                "points":13,"club_logo":"home.png",
                                "upcoming_matches":[
                                  {"id":"form","date":"2026-10-20T02:00:00Z",
-                                  "home_team_hash_id":"away","home_team_name":"Away",
-                                  "away_team_hash_id":"team","away_team_name":"Home"}
+                                  "home_team_hash_id":"away","home_team_name":"Marrickville Under 13 Mixed  Cobh RAMBLERS",
+                                  "away_team_hash_id":"team","away_team_name":"Marrickville Under 13 Mixed  Sheffield Wednesday"}
                                ]}}
                             ]}
                             """.trimIndent()
@@ -661,14 +644,14 @@ class DriblApiTest {
                             """
                             {"data":{"type":"matches","id":"match","attributes":{
                               "date":"2026-10-10T02:00:00Z",
-                              "home_team_id":"team","home_team_name":"Home",
-                              "away_team_id":"away","away_team_name":"Away",
+                              "home_team_id":"team","home_team_name":"Marrickville Under 13 Mixed  Sheffield Wednesday",
+                              "away_team_id":"away","away_team_name":"Marrickville Under 13 Mixed  Cobh RAMBLERS",
                               "home_team_score":2,"away_team_score":1,
                               "status":"pending","round_label":"Round 5",
                               "address":"1 Main Street",
                               "latitude":"-33.9000","longitude":"151.1700",
                               "home_team_logo":"home.png","away_team_logo":"away.png",
-                              "league_name":"Division 1","field_name":"Main Field"}}}
+                              "league_name":"Under 13 Mixed White Mixed","field_name":"Main Field"}}}
                             """.trimIndent()
                         else -> error("Unexpected request ${request.url}")
                     }
@@ -690,11 +673,17 @@ class DriblApiTest {
             (hub.results + hub.matches).map { it.id },
         )
         assertEquals(2, hub.results.first().homeScore)
-        assertEquals("Division 1", hub.ladderName)
+        assertEquals("Sheffield Wednesday", hub.results.first().homeTeamName)
+        assertEquals("Cobh RAMBLERS", hub.results.first().awayTeamName)
+        assertEquals("Under 13 Mixed White Mixed", hub.ladderName)
         assertEquals("team", hub.ladder.single().teamId)
+        assertEquals("Sheffield Wednesday", hub.ladder.single().teamName)
+        assertEquals("home.png", hub.ladder.single().logoUrl)
         assertEquals(13, hub.ladder.single().points)
         assertEquals("home.png", details.homeTeamLogoUrl)
         assertEquals("away.png", details.awayTeamLogoUrl)
+        assertEquals("Sheffield Wednesday", details.homeTeamName)
+        assertEquals("Cobh RAMBLERS", details.awayTeamName)
         assertEquals("Main Field", details.venueName)
         assertEquals("1 Main Street", details.venueAddress)
         assertEquals("Round 5", details.roundLabel)

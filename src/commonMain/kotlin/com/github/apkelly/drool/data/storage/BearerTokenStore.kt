@@ -3,6 +3,7 @@ package com.github.apkelly.drool.data.storage
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
@@ -57,10 +58,22 @@ class BearerTokenStore(private val dataStore: DataStore<Preferences>) {
         }
     }
 
+    fun observeObservabilityEnabled(): Flow<Boolean> =
+        dataStore.data.map { preferences ->
+            preferences[ObservabilityEnabledKey] ?: false
+        }
+
+    suspend fun setObservabilityEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ObservabilityEnabledKey] = enabled
+        }
+    }
+
     private companion object {
         val BearerTokenKey = stringPreferencesKey("bearer_token")
         val ActiveAccountKey = stringPreferencesKey("active_account_id")
         val ThemeModeKey = stringPreferencesKey("theme_mode")
+        val ObservabilityEnabledKey = booleanPreferencesKey("observability_enabled")
     }
 }
 

@@ -1,5 +1,8 @@
 package com.github.apkelly.drool.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Fixture(
     val id: String,
     val profileId: String? = null,
@@ -22,6 +25,7 @@ data class Fixture(
     val longitude: Double? = null,
 )
 
+@Serializable
 enum class FixtureStatus {
     Pending,
     Scheduled,

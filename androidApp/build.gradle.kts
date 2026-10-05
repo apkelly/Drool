@@ -1,6 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+}
+
+val localProperties = Properties().apply {
+    rootProject.file("local.properties")
+        .takeIf { it.isFile }
+        ?.inputStream()
+        ?.use(::load)
 }
 
 android {
@@ -16,6 +27,11 @@ android {
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] =
             providers.gradleProperty("GOOGLE_MAPS_API_KEY")
                 .orElse(providers.environmentVariable("GOOGLE_MAPS_API_KEY"))
+                .orElse(
+                    providers.provider {
+                        localProperties.getProperty("GOOGLE_MAPS_API_KEY").orEmpty()
+                    }
+                )
                 .orElse("")
                 .get()
     }
