@@ -2,16 +2,17 @@ import java.util.Properties
 import org.gradle.api.tasks.JavaExec
 
 plugins {
-    kotlin("multiplatform") version "2.4.20"
-    kotlin("plugin.serialization") version "2.4.20"
-    id("org.jetbrains.kotlin.plugin.compose") version "2.4.20"
-    id("org.jetbrains.compose") version "1.12.1"
-    id("com.android.kotlin.multiplatform.library") version "9.4.1"
-    id("com.google.devtools.ksp") version "2.3.12"
-    id("androidx.room") version "2.8.5"
-    id("org.jetbrains.kotlinx.kover") version "0.9.11"
-    id("com.google.gms.google-services") version "4.5.0" apply false
-    id("com.google.firebase.crashlytics") version "3.0.6" apply false
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.kmp.library)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics) apply false
 }
 
 group = "com.github.apkelly.drool"
@@ -63,61 +64,61 @@ kotlin {
     sourceSets {
         val commonMain = getByName("commonMain") {
             dependencies {
-                implementation("org.jetbrains.compose.runtime:runtime:1.12.1")
-                implementation("org.jetbrains.compose.foundation:foundation:1.12.1")
-                implementation("org.jetbrains.compose.material3:material3:1.9.0")
-                implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
-                implementation("org.jetbrains.compose.components:components-resources:1.12.1")
-                implementation("androidx.datastore:datastore-preferences-core:1.2.1")
-                implementation("androidx.room:room-runtime:2.8.5")
-                implementation("androidx.sqlite:sqlite-bundled:2.7.1")
-                implementation("org.jetbrains.androidx.navigation3:navigation3-ui:1.1.2")
-                implementation("io.github.alexzhirkevich:compottie:2.3.2")
-                implementation("io.github.alexzhirkevich:compottie-resources:2.3.2")
-                implementation("io.coil-kt.coil3:coil-compose:3.6.3")
-                implementation("io.coil-kt.coil3:coil-network-ktor3:3.6.3")
-                implementation("io.ktor:ktor-client-core:3.6.0")
-                implementation("io.ktor:ktor-client-content-negotiation:3.6.0")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.0")
-                implementation("io.insert-koin:koin-core:4.2.2")
-                implementation("co.touchlab:kermit:2.2.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.material.icons.extended)
+                implementation(libs.compose.components.resources)
+                implementation(libs.androidx.datastore.preferences)
+                implementation(libs.androidx.room.runtime)
+                implementation(libs.androidx.sqlite.bundled)
+                implementation(libs.navigation3.ui)
+                implementation(libs.compottie)
+                implementation(libs.compottie.resources)
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network.ktor)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.json)
+                implementation(libs.koin.core)
+                implementation(libs.kermit)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.json)
             }
         }
 
         getByName("commonTest") {
             dependencies {
-                implementation(kotlin("test"))
-                implementation("app.cash.turbine:turbine:1.2.1")
-                implementation("io.ktor:ktor-client-mock:3.6.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+                implementation(libs.kotlin.test)
+                implementation(libs.turbine)
+                implementation(libs.ktor.client.mock)
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
 
         getByName("androidMain") {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:3.6.0")
-                implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
-                implementation("com.google.android.gms:play-services-maps:20.0.0")
-                implementation(project.dependencies.platform("com.google.firebase:firebase-bom:34.19.0"))
-                implementation("com.google.firebase:firebase-analytics")
-                implementation("com.google.firebase:firebase-crashlytics")
+                implementation(libs.ktor.client.okhttp)
+                implementation(libs.okhttp.logging)
+                implementation(libs.google.maps)
+                implementation(project.dependencies.platform(libs.firebase.bom))
+                implementation(libs.firebase.analytics)
+                implementation(libs.firebase.crashlytics)
             }
         }
 
         getByName("desktopMain") {
             dependencies {
                 implementation(compose.desktop.currentOs)
-                implementation("io.ktor:ktor-client-okhttp:3.6.0")
-                implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
+                implementation(libs.ktor.client.okhttp)
+                implementation(libs.okhttp.logging)
             }
         }
 
         val iosMain = create("iosMain") {
             dependsOn(commonMain)
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:3.6.0")
+                implementation(libs.ktor.client.darwin)
             }
         }
         getByName("iosArm64Main") { dependsOn(iosMain) }
@@ -126,10 +127,10 @@ kotlin {
 }
 
 dependencies {
-    add("kspAndroid", "androidx.room:room-compiler:2.8.5")
-    add("kspDesktop", "androidx.room:room-compiler:2.8.5")
-    add("kspIosArm64", "androidx.room:room-compiler:2.8.5")
-    add("kspIosSimulatorArm64", "androidx.room:room-compiler:2.8.5")
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspDesktop", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
 
 room {

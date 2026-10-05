@@ -1,10 +1,10 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 val localProperties = Properties().apply {
@@ -39,6 +39,6 @@ android {
 
 dependencies {
     implementation(project(":"))
-    implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("io.insert-koin:koin-core:4.2.2")
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.koin.core)
 }
