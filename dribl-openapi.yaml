@@ -643,6 +643,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/auth/token/refresh":
+    x-discovered-source: "Live Android client probe"
+    x-live-verified: "2026-10-06"
+    post:
+      operationId: post_auth_token_refresh
+      tags: ["Auth"]
+      summary: "Renew an access token"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      responses:
+        "200":
+          description: Replacement JWT returned as the raw response body
+          content:
+            text/html:
+              schema:
+                type: string
+                description: JWT bearer token
+        "401":
+          description: Token cannot be renewed
+        default:
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/auth/verify-email":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
     post:

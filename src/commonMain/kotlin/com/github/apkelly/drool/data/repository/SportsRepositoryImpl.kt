@@ -164,7 +164,10 @@ class SportsRepositoryImpl(
         if (!force && !metadata.isStale(FIXTURES_TTL)) return RefreshResult.NotModified
 
         return runRefresh(existingCount > 0) {
-            val fixtures = api.fetchFixtures(token, accountId)
+            val fixtures = (
+                api.fetchFixtures(token, accountId) +
+                    api.fetchRefereeFixtures(token, accountId)
+                ).distinctBy { it.id to it.role }
             database.inTransaction {
                 database.fixtureDao().deleteForAccount(accountId)
                 database.fixtureDao().upsertAll(fixtures.map { it.toEntity(accountId) })
@@ -202,7 +205,10 @@ class SportsRepositoryImpl(
                             api.createProfileSession(rootToken, profile.id)
                         }
                         if (refreshSports) {
-                            val fixtures = api.fetchFixtures(token, profile.id)
+                            val fixtures = (
+                                api.fetchFixtures(token, profile.id) +
+                                    api.fetchRefereeFixtures(token, profile.id)
+                                ).distinctBy { it.id to it.role }
                             val teams = api.fetchProfileTeams(token)
                             val clubs = api.fetchProfileClubs(token)
                             database.inTransaction {

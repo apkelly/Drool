@@ -50,9 +50,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FixtureStatus
 import com.github.apkelly.drool.domain.model.LadderEntry
+import com.github.apkelly.drool.domain.model.MatchWeather
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.action_retry
 import com.github.apkelly.drool.resources.content_team_logo
@@ -80,6 +83,15 @@ import com.github.apkelly.drool.resources.match_status_scheduled
 import com.github.apkelly.drool.resources.match_status_unknown
 import com.github.apkelly.drool.resources.match_status_washout
 import com.github.apkelly.drool.resources.match_venue
+import com.github.apkelly.drool.resources.match_weather
+import com.github.apkelly.drool.resources.match_weather_humidity
+import com.github.apkelly.drool.resources.match_weather_loading
+import com.github.apkelly.drool.resources.match_weather_rain
+import com.github.apkelly.drool.resources.match_weather_sunscreen
+import com.github.apkelly.drool.resources.match_weather_temperature
+import com.github.apkelly.drool.resources.match_weather_unavailable
+import com.github.apkelly.drool.resources.match_weather_uv
+import com.github.apkelly.drool.resources.match_weather_washout
 import com.github.apkelly.drool.resources.team_ladders
 import com.github.apkelly.drool.resources.team_load_failed
 import com.github.apkelly.drool.resources.team_matches
@@ -257,7 +269,6 @@ fun MatchDetailsScreen(
     LaunchedEffect(profileId, matchId) { onLoad(profileId, matchId) }
     val details = (state as? MatchDetailsUiState.Content)
         ?.takeIf { it.profileId == profileId && it.matchId == matchId }
-        ?.fixture
     Scaffold(
         topBar = {
             TopAppBar(
@@ -286,7 +297,10 @@ fun MatchDetailsScreen(
                 }
             }
             else -> MatchDetails(
-                fixture = details,
+                fixture = details.fixture,
+                weather = details.weather,
+                isWeatherLoading = details.isWeatherLoading,
+                weatherUnavailable = details.weatherUnavailable,
                 contentPadding = padding,
                 onTeamSelected = onTeamSelected,
             )
@@ -347,6 +361,9 @@ private fun FixtureList(
 @Composable
 private fun MatchDetails(
     fixture: Fixture,
+    weather: MatchWeather?,
+    isWeatherLoading: Boolean,
+    weatherUnavailable: Boolean,
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
     onTeamSelected: (String, String, String?) -> Unit,
 ) {
@@ -416,6 +433,13 @@ private fun MatchDetails(
                 )
             }
         }
+        item {
+            MatchWeatherSection(
+                weather = weather,
+                isLoading = isWeatherLoading,
+                unavailable = weatherUnavailable,
+            )
+        }
         if (fixture.venueName != null || fixture.venueAddress != null) {
             item {
                 MatchDetailSection(stringResource(Res.string.match_venue)) {
@@ -452,6 +476,74 @@ private fun MatchDetails(
             item { Text(stringResource(Res.string.fixture_competition, it)) }
         }
     }
+}
+
+@Composable
+private fun MatchWeatherSection(
+    weather: MatchWeather?,
+    isLoading: Boolean,
+    unavailable: Boolean,
+) {
+    MatchDetailSection(stringResource(Res.string.match_weather)) {
+        when {
+            isLoading -> {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text(stringResource(Res.string.match_weather_loading))
+                }
+            }
+            weather != null -> {
+                weather.condition?.let {
+                    Text(it, style = MaterialTheme.typography.titleMedium)
+                }
+                Text(
+                    stringResource(
+                        Res.string.match_weather_temperature,
+                        weather.minimumTemperatureCelsius.roundToInt().toString(),
+                        weather.maximumTemperatureCelsius.roundToInt().toString(),
+                    )
+                )
+                Text(
+                    stringResource(
+                        Res.string.match_weather_humidity,
+                        "${weather.relativeHumidityPercent}%",
+                    )
+                )
+                Text(
+                    stringResource(
+                        Res.string.match_weather_rain,
+                        "${weather.rainfallProbabilityPercent}%",
+                        weather.rainfallAmountMillimetres.toOneDecimalString(),
+                    )
+                )
+                Text(stringResource(Res.string.match_weather_uv, weather.uvIndex))
+                if (weather.sunscreenRecommended) {
+                    Text(
+                        stringResource(Res.string.match_weather_sunscreen),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                if (weather.hasElevatedWashoutRisk) {
+                    Text(
+                        stringResource(Res.string.match_weather_washout),
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            unavailable -> Text(stringResource(Res.string.match_weather_unavailable))
+        }
+    }
+}
+
+private fun Double.toOneDecimalString(): String {
+    val tenths = (this * 10).roundToInt()
+    val absoluteTenths = abs(tenths)
+    val sign = if (tenths < 0) "-" else ""
+    return "$sign${absoluteTenths / 10}.${absoluteTenths % 10}"
 }
 
 @Composable

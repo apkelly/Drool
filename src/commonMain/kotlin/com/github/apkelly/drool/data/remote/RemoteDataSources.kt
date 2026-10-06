@@ -23,6 +23,10 @@ interface SportsRemoteDataSource {
         bearerToken: String,
         userId: String? = null,
     ): List<Fixture>
+    suspend fun fetchRefereeFixtures(
+        bearerToken: String,
+        userId: String,
+    ): List<Fixture>
     suspend fun fetchProfile(bearerToken: String): Profile
     suspend fun fetchRelatedUsers(bearerToken: String, email: String): List<RelatedUser>
     suspend fun fetchAccounts(bearerToken: String): List<Account>

@@ -9,6 +9,7 @@ import io.ktor.serialization.kotlinx.json.json
 actual fun createPlatformHttpClient(
     logBodies: Boolean,
     logTag: String,
+    loggingEnabled: Boolean,
 ): HttpClient =
     HttpClient(Darwin) {
         install(ContentNegotiation) {

@@ -39,6 +39,7 @@ import com.github.apkelly.drool.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.domain.usecase.SetTeamFollowingUseCase
 import com.github.apkelly.drool.domain.usecase.LoadTeamHubUseCase
 import com.github.apkelly.drool.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.domain.usecase.LoadMatchWeatherUseCase
 import com.github.apkelly.drool.logging.DroolLog
 import com.github.apkelly.drool.ui.model.CollectionUiState
 import com.github.apkelly.drool.ui.model.TeamHubUiState
@@ -81,6 +82,7 @@ class SportsViewModel(
     private val setTeamFollowing: SetTeamFollowingUseCase,
     private val loadTeamHub: LoadTeamHubUseCase,
     private val loadMatchDetails: LoadMatchDetailsUseCase,
+    private val loadMatchWeather: LoadMatchWeatherUseCase,
     private val observability: Observability = NoOpObservability,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
@@ -102,6 +104,7 @@ class SportsViewModel(
     private val mutableMatchDetailsState =
         MutableStateFlow<MatchDetailsUiState>(MatchDetailsUiState.Idle)
     private val matchCache = MutableStateFlow<Map<MatchCacheKey, Fixture>>(emptyMap())
+    private val resolvedMatchDetails = MutableStateFlow<Set<MatchCacheKey>>(emptySet())
     private var cacheOwnerAccountId: String? = null
 
     val familyProfiles: StateFlow<List<FamilyProfile>> = mutableFamilyProfiles
@@ -198,6 +201,7 @@ class SportsViewModel(
         if (cacheOwnerAccountId != profile.accountId) {
             cacheOwnerAccountId = profile.accountId
             matchCache.value = emptyMap()
+            resolvedMatchDetails.value = emptySet()
             mutableTeamHubState.value = TeamHubUiState.Idle
             mutableMatchDetailsState.value = MatchDetailsUiState.Idle
         }
@@ -339,34 +343,63 @@ class SportsViewModel(
 
     fun loadMatch(profileId: String, matchId: String) {
         val key = MatchCacheKey(profileId, matchId)
-        matchCache.value[key]?.let { cached ->
-            mutableMatchDetailsState.value =
-                MatchDetailsUiState.Content(profileId, matchId, cached)
+        if (key in resolvedMatchDetails.value &&
+            (mutableMatchDetailsState.value as? MatchDetailsUiState.Content)
+                ?.let { it.profileId == profileId && it.matchId == matchId } == true
+        ) {
             return
+        }
+        val cached = matchCache.value[key]
+        cached?.let {
+            mutableMatchDetailsState.value =
+                MatchDetailsUiState.Content(profileId, matchId, it)
         }
         if (mutableMatchDetailsState.value == MatchDetailsUiState.Loading(profileId, matchId)) {
             return
         }
-        val request = MatchDetailsUiState.Loading(profileId, matchId)
-        mutableMatchDetailsState.value = request
+        if (cached == null) {
+            mutableMatchDetailsState.value = MatchDetailsUiState.Loading(profileId, matchId)
+        }
         scope.launch {
-            try {
+            val fixture = try {
                 val fixture = loadMatchDetails(profileId, matchId)
                 matchCache.update {
                     it.withCachedEntries(mapOf(key to fixture), MATCH_CACHE_SIZE)
                 }
-                if (mutableMatchDetailsState.value == request) {
-                    mutableMatchDetailsState.value =
-                        MatchDetailsUiState.Content(profileId, matchId, fixture)
-                }
+                resolvedMatchDetails.update { it + key }
+                fixture
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
             } catch (error: Exception) {
                 logger.w { "Unable to load match details (${error::class.simpleName})" }
-                if (mutableMatchDetailsState.value == request) {
+                if (cached == null) {
                     mutableMatchDetailsState.value =
                         MatchDetailsUiState.Failed(profileId, matchId)
+                    return@launch
                 }
+                cached
+            }
+            mutableMatchDetailsState.value = MatchDetailsUiState.Content(
+                profileId = profileId,
+                matchId = matchId,
+                fixture = fixture,
+                isWeatherLoading = fixture.latitude != null && fixture.longitude != null,
+            )
+            val weather = try {
+                loadMatchWeather(fixture)
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                logger.w { "Unable to load match weather (${error::class.simpleName})" }
+                null
+            }
+            val current = mutableMatchDetailsState.value as? MatchDetailsUiState.Content
+            if (current?.profileId == profileId && current.matchId == matchId) {
+                mutableMatchDetailsState.value = current.copy(
+                    weather = weather,
+                    isWeatherLoading = false,
+                    weatherUnavailable = weather == null,
+                )
             }
         }
     }

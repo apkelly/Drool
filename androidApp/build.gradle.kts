@@ -13,6 +13,24 @@ val localProperties = Properties().apply {
         ?.inputStream()
         ?.use(::load)
 }
+val mapsApiKey = providers.gradleProperty("GOOGLE_MAPS_API_KEY")
+    .orElse(providers.environmentVariable("GOOGLE_MAPS_API_KEY"))
+    .orElse(
+        providers.provider {
+            localProperties.getProperty("GOOGLE_MAPS_API_KEY").orEmpty()
+        }
+    )
+    .orElse("")
+val configuredWeatherApiKey = providers.gradleProperty("GOOGLE_WEATHER_API_KEY")
+    .orElse(providers.environmentVariable("GOOGLE_WEATHER_API_KEY"))
+    .orElse(
+        providers.provider {
+            localProperties.getProperty("GOOGLE_WEATHER_API_KEY").orEmpty()
+        }
+    )
+val weatherApiKey = configuredWeatherApiKey
+    .map { it.ifBlank { mapsApiKey.get() } }
+    .orElse(mapsApiKey)
 
 android {
     namespace = "com.github.apkelly.drool"
@@ -24,16 +42,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
-        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] =
-            providers.gradleProperty("GOOGLE_MAPS_API_KEY")
-                .orElse(providers.environmentVariable("GOOGLE_MAPS_API_KEY"))
-                .orElse(
-                    providers.provider {
-                        localProperties.getProperty("GOOGLE_MAPS_API_KEY").orEmpty()
-                    }
-                )
-                .orElse("")
-                .get()
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = mapsApiKey.get()
+        manifestPlaceholders["GOOGLE_WEATHER_API_KEY"] = weatherApiKey.get()
     }
 }
 

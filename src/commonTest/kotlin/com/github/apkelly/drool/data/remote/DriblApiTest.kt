@@ -15,6 +15,7 @@ import com.github.apkelly.drool.data.remote.model.AuthApiRequest
 import com.github.apkelly.drool.data.mapper.normalizedTeamName
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.FixtureStatus
+import com.github.apkelly.drool.domain.model.FixtureRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -160,21 +161,33 @@ class DriblApiTest {
                   "data": [
                     {
                       "id": "seconds",
-                      "home_team_name": "Home",
-                      "away_team_name": "Away",
-                      "kickoff_at": 1234567890
+                      "attributes": {
+                        "date": 1234567890,
+                        "home_team_id": "home",
+                        "home_team_name": "Home",
+                        "away_team_id": "away",
+                        "away_team_name": "Away"
+                      }
                     },
                     {
                       "id": "milliseconds",
-                      "home_team_name": "Home",
-                      "away_team_name": "Away",
-                      "kickoff_at": 1791003216000
+                      "attributes": {
+                        "date": 1791003216000,
+                        "home_team_id": "home",
+                        "home_team_name": "Home",
+                        "away_team_id": "away",
+                        "away_team_name": "Away"
+                      }
                     },
                     {
                       "id": "iso",
-                      "home_team_name": "Home",
-                      "away_team_name": "Away",
-                      "kickoff_at": "2026-10-03T04:53:36Z"
+                      "attributes": {
+                        "date": "2026-10-03T04:53:36Z",
+                        "home_team_id": "home",
+                        "home_team_name": "Home",
+                        "away_team_id": "away",
+                        "away_team_name": "Away"
+                      }
                     }
                   ]
                 }
@@ -710,23 +723,33 @@ class DriblApiTest {
     }
 
     @Test
-    fun allocationScheduleUsesSubjectUserId() = runTest {
-        var query = ""
+    fun refereeAllocationScheduleUsesRecoveredContractAndSubjectUserId() = runTest {
+        var parameters: io.ktor.http.Parameters? = null
         val client = HttpClient(MockEngine) {
             install(ContentNegotiation) { json(networkJson) }
             engine {
                 addHandler { request ->
-                    query = request.url.encodedQuery
+                    parameters = request.url.parameters
                     respond(
                         content = """
                             {
                               "allocations": [{
-                                "id": "allocation",
-                                "fixture": {
-                                  "id": "fixture",
-                                  "home_team": {"id":"home","name":"Home"},
-                                  "away_team": {"id":"away","name":"Away"},
-                                  "kickoff_at": 1234567890
+                                "type": "allocations",
+                                "id": 123,
+                                "attributes": {
+                                  "event_id": 456,
+                                  "date": "2026-10-18T03:00:00Z",
+                                  "home_team_id": 10,
+                                  "home_club_name": "Home FC",
+                                  "away_team_id": 20,
+                                  "away_club_name": "Away FC",
+                                  "home_club_image": "home.png",
+                                  "away_club_image": "away.png",
+                                  "competition_name": "Under 13 Mixed",
+                                  "ground": "Main Oval",
+                                  "field": "Field 1",
+                                  "referee_role": "AR1",
+                                  "referee_status": "accepted"
                                 }
                               }]
                             }
@@ -738,16 +761,20 @@ class DriblApiTest {
         }
 
         val fixture = DriblSportsApi(client, "https://example.test/api")
-            .fetchFixtures("token", "29167")
+            .fetchRefereeFixtures("token", "29167")
             .single()
 
-        assertEquals("fixture", fixture.id)
-        assertEquals("Home", fixture.homeTeamName)
-        assertEquals("Away", fixture.awayTeamName)
-        assertEquals(
-            "user_id=29167&direction=asc&skip_first=false&require_payrun=false",
-            query,
-        )
+        assertEquals("456", fixture.id)
+        assertEquals("Home FC", fixture.homeTeamName)
+        assertEquals("Away FC", fixture.awayTeamName)
+        assertEquals("Main Oval - Field 1", fixture.venueName)
+        assertEquals(FixtureRole.Referee, fixture.role)
+        assertEquals("AR1", fixture.refereeRole)
+        assertEquals("29167", parameters?.get("user_id"))
+        assertEquals("asc", parameters?.get("direction"))
+        assertEquals("false", parameters?.get("skip_first"))
+        assertEquals("false", parameters?.get("require_payrun"))
+        assertEquals(true, parameters?.get("start_date")?.isNotBlank())
     }
 
     @Test

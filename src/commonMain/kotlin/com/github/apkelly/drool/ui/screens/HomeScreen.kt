@@ -56,6 +56,7 @@ fun HomeScreen(
     fixtures: CollectionUiState<Fixture>,
     onRefresh: () -> Unit,
     onSignInAgain: () -> Unit,
+    onFixtureSelected: (Fixture) -> Unit,
     onTeamSelected: (FamilyTeam) -> Unit,
 ) {
     val expiredProfileNames = familyRefreshResults
@@ -170,8 +171,12 @@ fun HomeScreen(
                 }
                 item {
                     FixtureCard(
-                        next,
-                        familyProfiles.profileNameFor(next.profileId, selectedProfileId),
+                        fixture = next,
+                        profileName = familyProfiles.profileNameFor(
+                            next.profileId,
+                            selectedProfileId,
+                        ),
+                        onClick = { onFixtureSelected(next) },
                     )
                 }
             }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.FixtureRole
 import com.github.apkelly.drool.domain.model.FamilyProfile
 import com.github.apkelly.drool.domain.model.FamilyTeam
 import com.github.apkelly.drool.domain.model.FamilyClub
@@ -44,12 +46,16 @@ import com.github.apkelly.drool.resources.content_club_logo
 import com.github.apkelly.drool.resources.fixture_competition
 import com.github.apkelly.drool.resources.fixture_venue
 import com.github.apkelly.drool.resources.fixture_versus
+import com.github.apkelly.drool.resources.fixture_role_player
+import com.github.apkelly.drool.resources.fixture_role_referee
+import com.github.apkelly.drool.resources.fixture_role_referee_named
 import com.github.apkelly.drool.resources.family_all_profiles
 import com.github.apkelly.drool.resources.family_profile_item
 import com.github.apkelly.drool.resources.team_age_group
 import com.github.apkelly.drool.resources.content_team_logo
 import com.github.apkelly.drool.resources.team_your_team
 import com.github.apkelly.drool.ui.format.formatFixtureDateTime
+import com.github.apkelly.drool.ui.icons.WhistleIcon
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -157,11 +163,54 @@ fun FixtureCard(
         modifier = modifier
             .fillMaxWidth()
             .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
+        colors = if (fixture.role == FixtureRole.Referee) {
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        } else {
+            CardDefaults.cardColors()
+        },
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = if (fixture.role == FixtureRole.Referee) {
+                        WhistleIcon
+                    } else {
+                        Icons.Default.SportsSoccer
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = if (fixture.role == FixtureRole.Referee) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
+                Text(
+                    text = when {
+                        fixture.role == FixtureRole.Referee &&
+                            fixture.refereeRole != null -> {
+                            stringResource(
+                                Res.string.fixture_role_referee_named,
+                                fixture.refereeRole,
+                            )
+                        }
+                        fixture.role == FixtureRole.Referee ->
+                            stringResource(Res.string.fixture_role_referee)
+                        else -> stringResource(Res.string.fixture_role_player)
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             profileName?.let {
                 Text(
                     text = stringResource(Res.string.family_profile_item, it),

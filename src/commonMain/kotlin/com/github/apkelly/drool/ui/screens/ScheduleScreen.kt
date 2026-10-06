@@ -36,6 +36,7 @@ fun ScheduleScreen(
     selectedProfileId: String?,
     onProfileSelected: (String?) -> Unit,
     onRefresh: () -> Unit,
+    onFixtureSelected: (Fixture) -> Unit,
 ) {
     androidx.compose.material3.Scaffold(
         topBar = {
@@ -91,7 +92,7 @@ fun ScheduleScreen(
                             }
                             items(
                                 fixtures,
-                                key = { "${it.profileId}:${it.id}" },
+                                key = { "${it.profileId}:${it.id}:${it.role}" },
                             ) { fixture ->
                                 FixtureCard(
                                     fixture = fixture,
@@ -102,6 +103,7 @@ fun ScheduleScreen(
                                     } else {
                                         null
                                     },
+                                    onClick = { onFixtureSelected(fixture) },
                                 )
                         }
                     }

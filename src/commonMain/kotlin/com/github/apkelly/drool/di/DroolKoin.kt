@@ -4,18 +4,26 @@ import io.ktor.client.HttpClient
 import com.github.apkelly.drool.data.local.createDroolDatabase
 import com.github.apkelly.drool.data.remote.DriblApi
 import com.github.apkelly.drool.data.remote.DriblSportsApi
+import com.github.apkelly.drool.data.remote.DriblTokenRenewer
 import com.github.apkelly.drool.data.remote.AuthRemoteDataSource
 import com.github.apkelly.drool.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.data.remote.createPlatformHttpClient
+import com.github.apkelly.drool.data.remote.withAutomaticDriblTokenRenewal
 import com.github.apkelly.drool.data.repository.PreferencesRepositoryImpl
 import com.github.apkelly.drool.data.repository.SessionRepositoryImpl
 import com.github.apkelly.drool.data.repository.SportsRepositoryImpl
+import com.github.apkelly.drool.data.weather.GoogleWeatherApi
+import com.github.apkelly.drool.data.weather.MatchWeatherRepositoryImpl
+import com.github.apkelly.drool.data.weather.WeatherRemoteDataSource
+import com.github.apkelly.drool.data.weather.platformWeatherApiKey
+import com.github.apkelly.drool.data.weather.platformWeatherRequestHeaders
 import com.github.apkelly.drool.data.storage.createPlatformBearerTokenStore
 import com.github.apkelly.drool.data.time.SystemTimeProvider
 import com.github.apkelly.drool.data.time.TimeProvider
 import com.github.apkelly.drool.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.domain.repository.SessionRepository
 import com.github.apkelly.drool.domain.repository.SportsRepository
+import com.github.apkelly.drool.domain.repository.MatchWeatherRepository
 import com.github.apkelly.drool.domain.usecase.ObserveClubsUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.domain.usecase.ObserveFamilyTeamsUseCase
@@ -33,6 +41,7 @@ import com.github.apkelly.drool.domain.usecase.RefreshProfileEndpointUseCase
 import com.github.apkelly.drool.domain.usecase.GetLinkCandidatesUseCase
 import com.github.apkelly.drool.domain.usecase.LoadTeamHubUseCase
 import com.github.apkelly.drool.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.domain.usecase.LoadMatchWeatherUseCase
 import com.github.apkelly.drool.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.domain.usecase.SetTeamFollowingUseCase
@@ -52,6 +61,7 @@ import org.koin.mp.KoinPlatform
 
 private val authHttpClient = named("authHttpClient")
 private val sportsHttpClient = named("sportsHttpClient")
+private val weatherHttpClient = named("weatherHttpClient")
 
 private val dataModule = module {
     single<HttpClient>(authHttpClient) {
@@ -59,12 +69,27 @@ private val dataModule = module {
     }
     single<HttpClient>(sportsHttpClient) {
         createPlatformHttpClient(logBodies = true, logTag = "OkHttp.Api")
+            .withAutomaticDriblTokenRenewal(get())
+    }
+    single<HttpClient>(weatherHttpClient) {
+        createPlatformHttpClient(
+            logBodies = false,
+            logTag = "GoogleWeather",
+            loggingEnabled = false,
+        )
     }
     single { createPlatformBearerTokenStore() }
+    single { DriblTokenRenewer(get(authHttpClient), get()) }
     single { createDroolDatabase() }
     single<TimeProvider> { SystemTimeProvider }
     single<AuthRemoteDataSource> { DriblApi(client = get(authHttpClient)) }
     single<SportsRemoteDataSource> { DriblSportsApi(client = get(sportsHttpClient)) }
+    single<WeatherRemoteDataSource> {
+        GoogleWeatherApi(
+            client = get(weatherHttpClient),
+            requestHeaders = platformWeatherRequestHeaders(),
+        )
+    }
     single<SessionRepository> {
         SessionRepositoryImpl(
             authApi = get(),
@@ -82,6 +107,14 @@ private val dataModule = module {
         )
     }
     single<PreferencesRepository> { PreferencesRepositoryImpl(store = get()) }
+    single<MatchWeatherRepository> {
+        MatchWeatherRepositoryImpl(
+            api = get(),
+            database = get(),
+            timeProvider = get(),
+            apiKey = platformWeatherApiKey(),
+        )
+    }
     single<Observability> { createPlatformObservability() }
 }
 
@@ -110,6 +143,7 @@ private val domainModule = module {
     factory { SetTeamFollowingUseCase(repository = get()) }
     factory { LoadTeamHubUseCase(repository = get()) }
     factory { LoadMatchDetailsUseCase(repository = get()) }
+    factory { LoadMatchWeatherUseCase(repository = get()) }
 }
 
 private val uiModule = module {
@@ -144,6 +178,7 @@ private val uiModule = module {
             setTeamFollowing = get(),
             loadTeamHub = get(),
             loadMatchDetails = get(),
+            loadMatchWeather = get(),
             observability = get(),
         )
     }

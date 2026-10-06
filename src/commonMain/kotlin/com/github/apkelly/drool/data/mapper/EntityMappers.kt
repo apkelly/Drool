@@ -13,6 +13,7 @@ import com.github.apkelly.drool.domain.model.Account
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FixtureStatus
+import com.github.apkelly.drool.domain.model.FixtureRole
 import com.github.apkelly.drool.domain.model.Profile
 import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.domain.model.Team
@@ -71,6 +72,8 @@ fun Fixture.toEntity(accountId: String) =
         venueName = venueName,
         userTeamId = userTeamId,
         status = status.name,
+        role = role.name,
+        refereeRole = refereeRole,
     )
 
 fun FixtureEntity.toDomain() =
@@ -107,6 +110,8 @@ fun FixtureEntity.toDomain() =
         awayScore = null,
         homeTeamLogoUrl = null,
         awayTeamLogoUrl = null,
+        role = runCatching { FixtureRole.valueOf(role) }.getOrDefault(FixtureRole.Player),
+        refereeRole = refereeRole,
     )
 
 fun Profile.toEntity() =

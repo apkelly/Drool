@@ -3,6 +3,7 @@ package com.github.apkelly.drool.ui.model
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.RefreshFailure
 import com.github.apkelly.drool.domain.model.TeamHub
+import com.github.apkelly.drool.domain.model.MatchWeather
 
 sealed interface TeamHubUiState {
     data object Idle : TeamHubUiState
@@ -26,6 +27,9 @@ sealed interface MatchDetailsUiState {
         val profileId: String,
         val matchId: String,
         val fixture: Fixture,
+        val weather: MatchWeather? = null,
+        val isWeatherLoading: Boolean = false,
+        val weatherUnavailable: Boolean = false,
     ) : MatchDetailsUiState
     data class Failed(val profileId: String, val matchId: String) : MatchDetailsUiState
 }

@@ -348,6 +348,7 @@ class SportsRepositoryImplTest {
                 )
                 assertEquals(listOf("child"), remote.profileSessionUsers)
                 assertEquals(listOf<String?>("root", "child"), remote.fixtureUserIds)
+                assertEquals(listOf("root", "child"), remote.refereeFixtureUserIds)
 
                 val fixtures = repository.observeFamilyFixtures(setOf("root", "child")).first()
                 assertEquals(2, fixtures.size)

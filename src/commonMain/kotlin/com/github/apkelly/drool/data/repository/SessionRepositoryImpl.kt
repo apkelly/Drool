@@ -69,44 +69,55 @@ class SessionRepositoryImpl(
 
     override suspend fun restoreSession(): AuthenticatedSession? {
         val token = store.getBearerToken() ?: return null
-        val cachedProfile = database.profileDao().getActive()?.let { profile ->
-            profile.toDomain(
-                relatedUsers = database.profileDao().getRelatedUsers(profile.accountId)
-                    .map { it.toDomain() },
-                accounts = database.profileDao().getAccounts(profile.accountId)
-                    .map { it.toDomain() },
-            )
-        }
-        val tokenProfile = profileFromBearerToken(token)
-        if (cachedProfile != null) {
-            val repairedProfile = tokenProfile?.takeIf {
-                cachedProfile.displayName.needsRepair(cachedProfile.accountId) &&
-                    it.accountId == cachedProfile.accountId &&
-                    !it.displayName.needsRepair(it.accountId)
+        return try {
+            val cachedProfile = database.profileDao().getActive()?.let { profile ->
+                profile.toDomain(
+                    relatedUsers = database.profileDao().getRelatedUsers(profile.accountId)
+                        .map { it.toDomain() },
+                    accounts = database.profileDao().getAccounts(profile.accountId)
+                        .map { it.toDomain() },
+                )
             }
-            if (repairedProfile != null) {
-                persistProfile(repairedProfile)
+            val tokenProfile = profileFromBearerToken(token)
+            if (cachedProfile != null) {
+                val repairedProfile = tokenProfile?.takeIf {
+                    cachedProfile.displayName.needsRepair(cachedProfile.accountId) &&
+                        it.accountId == cachedProfile.accountId &&
+                        !it.displayName.needsRepair(it.accountId)
+                }
+                if (repairedProfile != null) {
+                    persistProfile(repairedProfile)
+                    refreshAssociations(
+                        token,
+                        repairedProfile.accountId,
+                        repairedProfile.email ?: cachedProfile.email,
+                        rejectUnauthorized = true,
+                    )
+                    return AuthenticatedSession(
+                        token,
+                        attachAssociations(repairedProfile),
+                    )
+                }
                 refreshAssociations(
                     token,
-                    repairedProfile.accountId,
-                    repairedProfile.email ?: cachedProfile.email,
+                    cachedProfile.accountId,
+                    cachedProfile.email,
+                    rejectUnauthorized = true,
                 )
                 return AuthenticatedSession(
                     token,
-                    attachAssociations(repairedProfile),
+                    attachAssociations(cachedProfile),
                 )
             }
-            refreshAssociations(token, cachedProfile.accountId, cachedProfile.email)
-            return AuthenticatedSession(
-                token,
-                attachAssociations(cachedProfile),
-            )
-        }
 
-        return try {
             val profileDto = tokenProfile ?: sportsApi.fetchProfile(token)
             persistProfile(profileDto)
-            refreshAssociations(token, profileDto.accountId, profileDto.email)
+            refreshAssociations(
+                token,
+                profileDto.accountId,
+                profileDto.email,
+                rejectUnauthorized = true,
+            )
             AuthenticatedSession(
                 token,
                 attachAssociations(profileDto),
@@ -178,15 +189,16 @@ class SessionRepositoryImpl(
         token: String,
         accountId: String,
         relatedUsersEmail: String?,
+        rejectUnauthorized: Boolean = false,
     ) {
-        val accountEmail = refreshAccounts(token, accountId)
+        val accountEmail = refreshAccounts(token, accountId, rejectUnauthorized)
         val email = relatedUsersEmail ?: accountEmail
         if (email == null) {
             logger.w { "Unable to refresh related users; profile has no email identifier" }
         } else {
-            refreshRelatedUsers(token, accountId, email)
+            refreshRelatedUsers(token, accountId, email, rejectUnauthorized)
         }
-        refreshLinkedUsers(token, accountId)
+        refreshLinkedUsers(token, accountId, rejectUnauthorized)
     }
 
     override suspend fun refreshProfileEndpoint(
@@ -232,8 +244,9 @@ class SessionRepositoryImpl(
         token: String,
         accountId: String,
         email: String,
+        rejectUnauthorized: Boolean = false,
     ) {
-        refreshAssociation("related users") {
+        refreshAssociation("related users", rejectUnauthorized) {
             val users = sportsApi.fetchRelatedUsers(token, email)
             database.inTransaction {
                 database.profileDao().getActive()
@@ -251,8 +264,12 @@ class SessionRepositoryImpl(
         }
     }
 
-    private suspend fun refreshLinkedUsers(token: String, accountId: String) {
-        refreshAssociation("linked users") {
+    private suspend fun refreshLinkedUsers(
+        token: String,
+        accountId: String,
+        rejectUnauthorized: Boolean = false,
+    ) {
+        refreshAssociation("linked users", rejectUnauthorized) {
             val users = sportsApi.fetchLinkedUsers(token)
             database.inTransaction {
                 database.profileDao().getActive()
@@ -270,9 +287,13 @@ class SessionRepositoryImpl(
         }
     }
 
-    private suspend fun refreshAccounts(token: String, accountId: String): String? {
+    private suspend fun refreshAccounts(
+        token: String,
+        accountId: String,
+        rejectUnauthorized: Boolean = false,
+    ): String? {
         var accountEmail: String? = null
-        refreshAssociation("accounts") {
+        refreshAssociation("accounts", rejectUnauthorized) {
             val accounts = sportsApi.fetchAccounts(token)
             accountEmail = accounts.emailAddress()
             database.inTransaction {
@@ -288,11 +309,22 @@ class SessionRepositoryImpl(
         return accountEmail
     }
 
-    private suspend fun refreshAssociation(name: String, refresh: suspend () -> Unit) {
+    private suspend fun refreshAssociation(
+        name: String,
+        rejectUnauthorized: Boolean,
+        refresh: suspend () -> Unit,
+    ) {
         try {
             refresh()
         } catch (error: CancellationException) {
             throw error
+        } catch (error: DriblHttpException) {
+            if (rejectUnauthorized && (error.statusCode == 401 || error.statusCode == 403)) {
+                throw error
+            }
+            logger.w {
+                "Unable to refresh $name; preserving cached data (${error::class.simpleName})"
+            }
         } catch (error: Exception) {
             logger.w {
                 "Unable to refresh $name; preserving cached data (${error::class.simpleName})"
@@ -378,6 +410,7 @@ class SessionRepositoryImpl(
             database.teamDao().deleteAll()
             database.clubDao().deleteAll()
             database.teamHubCacheDao().deleteAll()
+            database.matchWeatherCacheDao().deleteAll()
         }
     }
 

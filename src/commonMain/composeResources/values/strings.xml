@@ -78,6 +78,15 @@
     <string name="match_directions">Open driving directions</string>
     <string name="match_score">%1$d–%2$d</string>
     <string name="match_load_failed">Couldn’t load match details. Try again.</string>
+    <string name="match_weather">Match-day weather</string>
+    <string name="match_weather_loading">Loading forecast…</string>
+    <string name="match_weather_unavailable">A forecast isn’t available for this match yet.</string>
+    <string name="match_weather_temperature">%1$s–%2$s °C</string>
+    <string name="match_weather_humidity">Humidity: %1$s</string>
+    <string name="match_weather_rain">Rain: %1$s chance, %2$s mm predicted</string>
+    <string name="match_weather_uv">UV index: %1$d</string>
+    <string name="match_weather_sunscreen">Sunscreen recommended.</string>
+    <string name="match_weather_washout">Heavy rain is possible, so there may be a higher washout risk. Check the official match status before travelling.</string>
     <string name="ladder_played">P</string>
     <string name="ladder_won">W</string>
     <string name="ladder_drawn">D</string>
@@ -87,6 +96,9 @@
     <string name="fixture_versus">%1$s vs %2$s</string>
     <string name="fixture_venue">At %1$s</string>
     <string name="fixture_competition">%1$s</string>
+    <string name="fixture_role_player">Playing</string>
+    <string name="fixture_role_referee">Refereeing</string>
+    <string name="fixture_role_referee_named">Refereeing · %1$s</string>
     <string name="profile_title">Profile</string>
     <string name="profile_link_member">Link family member</string>
     <string name="profile_link_candidates_empty">No additional accounts are available to link.</string>

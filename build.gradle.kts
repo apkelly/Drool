@@ -31,6 +31,16 @@ val desktopMapsApiKey = providers.gradleProperty("GOOGLE_MAPS_STATIC_API_KEY")
             localProperties.getProperty("GOOGLE_MAPS_STATIC_API_KEY").orEmpty()
         }
     )
+val configuredDesktopWeatherApiKey = providers.gradleProperty("GOOGLE_WEATHER_API_KEY")
+    .orElse(providers.environmentVariable("GOOGLE_WEATHER_API_KEY"))
+    .orElse(
+        providers.provider {
+            localProperties.getProperty("GOOGLE_WEATHER_API_KEY").orEmpty()
+        }
+    )
+val desktopWeatherApiKey = configuredDesktopWeatherApiKey
+    .map { it.ifBlank { desktopMapsApiKey.get() } }
+    .orElse(desktopMapsApiKey)
 
 kotlin {
     compilerOptions {
@@ -151,6 +161,9 @@ tasks.withType<JavaExec>().configureEach {
         desktopMapsApiKey.orNull
             ?.takeIf { it.isNotBlank() }
             ?.let { systemProperty("GOOGLE_MAPS_STATIC_API_KEY", it) }
+        desktopWeatherApiKey.orNull
+            ?.takeIf { it.isNotBlank() }
+            ?.let { systemProperty("GOOGLE_WEATHER_API_KEY", it) }
     }
 }
 

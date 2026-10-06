@@ -232,6 +232,16 @@ private fun MainNavigation(
                         fixtures = fixtures,
                         onRefresh = sportsViewModel::refreshFixtures,
                         onSignInAgain = appViewModel::signOut,
+                        onFixtureSelected = { fixture ->
+                            fixture.profileId?.let { profileId ->
+                                currentStack.add(
+                                    AppRoute.MatchDetails(
+                                        profileId = profileId,
+                                        matchId = fixture.id,
+                                    )
+                                )
+                            }
+                        },
                         onTeamSelected = { familyTeam ->
                             val team = familyTeam.team
                             currentStack.add(
@@ -254,6 +264,16 @@ private fun MainNavigation(
                         selectedProfileId = selectedProfileId,
                         onProfileSelected = sportsViewModel::selectFamilyProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
+                        onFixtureSelected = { fixture ->
+                            fixture.profileId?.let { profileId ->
+                                currentStack.add(
+                                    AppRoute.MatchDetails(
+                                        profileId = profileId,
+                                        matchId = fixture.id,
+                                    )
+                                )
+                            }
+                        },
                     )
                 }
                 entry<AppRoute.Discover> {

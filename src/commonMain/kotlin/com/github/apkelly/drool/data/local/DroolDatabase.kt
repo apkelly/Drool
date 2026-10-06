@@ -12,6 +12,7 @@ import com.github.apkelly.drool.data.local.dao.FixtureDao
 import com.github.apkelly.drool.data.local.dao.ProfileDao
 import com.github.apkelly.drool.data.local.dao.TeamDao
 import com.github.apkelly.drool.data.local.dao.TeamHubCacheDao
+import com.github.apkelly.drool.data.local.dao.MatchWeatherCacheDao
 import com.github.apkelly.drool.data.local.entity.CacheMetadataEntity
 import com.github.apkelly.drool.data.local.entity.AccountEntity
 import com.github.apkelly.drool.data.local.entity.ClubEntity
@@ -22,6 +23,7 @@ import com.github.apkelly.drool.data.local.entity.RelatedUserEntity
 import com.github.apkelly.drool.data.local.entity.TeamEntity
 import com.github.apkelly.drool.data.local.entity.TeamRelationshipEntity
 import com.github.apkelly.drool.data.local.entity.TeamHubCacheEntity
+import com.github.apkelly.drool.data.local.entity.MatchWeatherCacheEntity
 
 @Database(
     entities = [
@@ -35,8 +37,9 @@ import com.github.apkelly.drool.data.local.entity.TeamHubCacheEntity
         TeamEntity::class,
         TeamRelationshipEntity::class,
         TeamHubCacheEntity::class,
+        MatchWeatherCacheEntity::class,
     ],
-    version = 8,
+    version = 10,
     exportSchema = true,
 )
 @ConstructedBy(DroolDatabaseConstructor::class)
@@ -47,6 +50,7 @@ abstract class DroolDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun teamDao(): TeamDao
     abstract fun teamHubCacheDao(): TeamHubCacheDao
+    abstract fun matchWeatherCacheDao(): MatchWeatherCacheDao
 }
 
 @Suppress("KotlinNoActualForExpect")

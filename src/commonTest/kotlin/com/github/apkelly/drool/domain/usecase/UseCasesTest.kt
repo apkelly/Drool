@@ -25,10 +25,12 @@ import com.github.apkelly.drool.domain.model.Team
 import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.domain.model.TeamHub
 import com.github.apkelly.drool.domain.model.FixtureStatus
+import com.github.apkelly.drool.domain.model.MatchWeather
 import com.github.apkelly.drool.domain.model.ThemeMode
 import com.github.apkelly.drool.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.domain.repository.SessionRepository
 import com.github.apkelly.drool.domain.repository.SportsRepository
+import com.github.apkelly.drool.domain.repository.MatchWeatherRepository
 import com.github.apkelly.drool.ui.viewmodel.SportsViewModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -103,6 +105,7 @@ class UseCasesTest {
     @Test
     fun sportsMutationUseCasesDelegateToRepository() = runTest {
         val repository = FakeSportsRepository()
+        val weatherRepository = FakeMatchWeatherRepository()
         assertEquals(RefreshResult.Updated, RefreshClubsUseCase(repository)(false))
         assertEquals(false, repository.lastForce)
         val profiles = listOf(FamilyProfile("1", "Alex", null, true))
@@ -134,6 +137,11 @@ class UseCasesTest {
             LoadMatchDetailsUseCase(repository)("profile", "match"),
         )
         assertEquals("profile" to "match", repository.lastMatchDetails)
+        assertEquals(
+            weatherRepository.weather,
+            LoadMatchWeatherUseCase(weatherRepository)(repository.matchDetails),
+        )
+        assertEquals(repository.matchDetails, weatherRepository.lastFixture)
     }
 
     @Test
@@ -147,6 +155,7 @@ class UseCasesTest {
             ladder = emptyList(),
         )
         val scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        val weatherRepository = FakeMatchWeatherRepository()
         val viewModel = SportsViewModel(
             observeClubs = ObserveClubsUseCase(repository),
             observeTeams = ObserveTeamsUseCase(repository),
@@ -161,6 +170,7 @@ class UseCasesTest {
             setTeamFollowing = SetTeamFollowingUseCase(repository),
             loadTeamHub = LoadTeamHubUseCase(repository),
             loadMatchDetails = LoadMatchDetailsUseCase(repository),
+            loadMatchWeather = LoadMatchWeatherUseCase(weatherRepository),
             scope = scope,
         )
         try {
@@ -178,16 +188,26 @@ class UseCasesTest {
 
             viewModel.loadMatch("profile", "match")
             advanceUntilIdle()
-            assertEquals(0, repository.matchDetailsCalls)
+            assertEquals(1, repository.matchDetailsCalls)
 
             viewModel.loadMatch("profile", "uncached")
             advanceUntilIdle()
             viewModel.loadMatch("profile", "uncached")
             advanceUntilIdle()
-            assertEquals(1, repository.matchDetailsCalls)
+            assertEquals(2, repository.matchDetailsCalls)
         } finally {
             scope.cancel()
         }
+    }
+}
+
+private class FakeMatchWeatherRepository : MatchWeatherRepository {
+    val weather = MatchWeather("Sunny", 16.0, 24.0, 55, 10, 0.0, 6)
+    var lastFixture: Fixture? = null
+
+    override suspend fun loadMatchWeather(fixture: Fixture): MatchWeather {
+        lastFixture = fixture
+        return weather
     }
 }
 

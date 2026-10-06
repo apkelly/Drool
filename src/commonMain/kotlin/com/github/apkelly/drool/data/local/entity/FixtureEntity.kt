@@ -5,7 +5,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    primaryKeys = ["accountId", "id"],
+    primaryKeys = ["accountId", "id", "role"],
     indices = [Index("kickoffEpochMillis"), Index("userTeamId")],
 )
 data class FixtureEntity(
@@ -20,4 +20,6 @@ data class FixtureEntity(
     val venueName: String?,
     val userTeamId: String?,
     val status: String,
+    val role: String = "Player",
+    val refereeRole: String? = null,
 )

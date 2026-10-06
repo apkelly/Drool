@@ -24,6 +24,8 @@
 	<true/>
 	<key>GOOGLE_MAPS_API_KEY</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
+	<key>GOOGLE_WEATHER_API_KEY</key>
+	<string>$(GOOGLE_WEATHER_API_KEY)</string>
 	<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
 	<false/>
 	<key>FirebaseCrashlyticsCollectionEnabled</key>

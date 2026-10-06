@@ -11,26 +11,29 @@ import okhttp3.logging.HttpLoggingInterceptor
 actual fun createPlatformHttpClient(
     logBodies: Boolean,
     logTag: String,
+    loggingEnabled: Boolean,
 ): HttpClient =
     HttpClient(OkHttp) {
         engine {
             config {
-                addInterceptor(
-                    HttpLoggingInterceptor { message ->
-                        DroolLog.withTag(logTag).d {
-                            redactSensitiveHttpLogMessage(message)
+                if (loggingEnabled) {
+                    addInterceptor(
+                        HttpLoggingInterceptor { message ->
+                            DroolLog.withTag(logTag).d {
+                                redactSensitiveHttpLogMessage(message)
+                            }
+                        }.apply {
+                            level = if (logBodies) {
+                                HttpLoggingInterceptor.Level.BODY
+                            } else {
+                                HttpLoggingInterceptor.Level.HEADERS
+                            }
+                            redactHeader("Authorization")
+                            redactHeader("Cookie")
+                            redactHeader("Set-Cookie")
                         }
-                    }.apply {
-                        level = if (logBodies) {
-                            HttpLoggingInterceptor.Level.BODY
-                        } else {
-                            HttpLoggingInterceptor.Level.HEADERS
-                        }
-                        redactHeader("Authorization")
-                        redactHeader("Cookie")
-                        redactHeader("Set-Cookie")
-                    }
-                )
+                    )
+                }
             }
         }
         install(ContentNegotiation) {

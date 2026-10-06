@@ -23,7 +23,15 @@ data class Fixture(
     val venueAddress: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val role: FixtureRole = FixtureRole.Player,
+    val refereeRole: String? = null,
 )
+
+@Serializable
+enum class FixtureRole {
+    Player,
+    Referee,
+}
 
 @Serializable
 enum class FixtureStatus {

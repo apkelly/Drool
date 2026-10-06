@@ -23,7 +23,6 @@ import com.github.apkelly.drool.data.remote.dto.ClubListResponse
 import com.github.apkelly.drool.data.remote.dto.ClubDto
 import com.github.apkelly.drool.data.remote.dto.EmergencyContactDto
 import com.github.apkelly.drool.data.remote.dto.EmergencyContactResourceDto
-import com.github.apkelly.drool.data.remote.dto.FixtureListResponse
 import com.github.apkelly.drool.data.remote.dto.FixtureDto
 import com.github.apkelly.drool.data.remote.dto.ImpersonationResponse
 import com.github.apkelly.drool.data.remote.dto.LadderDetailResponse
@@ -41,6 +40,8 @@ import com.github.apkelly.drool.data.remote.dto.PersonDto
 import com.github.apkelly.drool.data.remote.dto.ProfileResponse
 import com.github.apkelly.drool.data.remote.dto.ResourceList
 import com.github.apkelly.drool.data.remote.dto.ShortcutResponse
+import com.github.apkelly.drool.data.remote.dto.ScheduleAllocationResourceDto
+import com.github.apkelly.drool.data.remote.dto.ScheduleResponse
 import com.github.apkelly.drool.data.remote.dto.TeamListResponse
 import com.github.apkelly.drool.data.remote.dto.TeamDto
 import com.github.apkelly.drool.data.remote.dto.TokenVerificationRequest
@@ -50,6 +51,8 @@ import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FixtureStatus
+import com.github.apkelly.drool.domain.model.FixtureRole
+import com.github.apkelly.drool.data.time.platformEpochMillis
 import com.github.apkelly.drool.domain.model.LadderEntry
 import com.github.apkelly.drool.domain.model.Profile
 import com.github.apkelly.drool.domain.model.RelatedUser
@@ -118,27 +121,28 @@ class DriblSportsApi(
         bearerToken: String,
         userId: String?,
     ): List<Fixture> {
-        val response = getBody<FixtureListResponse>("/universal/schedule", bearerToken) {
+        val response = getBody<MatchListResponse>("/universal/matches", bearerToken) {
             userId?.let { parameter("user_id", it) }
+            parameter("start_date", upcomingScheduleStart())
+            parameter("remove_byes", true)
+            parameter("require_adherance", true)
+            parameter("sort", "+date,+home_team")
+        }
+        return response.data.map(MatchResourceDto::toDomain)
+    }
+
+    override suspend fun fetchRefereeFixtures(
+        bearerToken: String,
+        userId: String,
+    ): List<Fixture> {
+        val response = getBody<ScheduleResponse>("/universal/schedule", bearerToken) {
+            parameter("start_date", upcomingScheduleStart())
             parameter("direction", "asc")
+            parameter("user_id", userId)
             parameter("skip_first", false)
             parameter("require_payrun", false)
         }
-        val fixtures = if (response.allocations.isNotEmpty()) {
-            response.allocations.mapIndexedNotNull { index, allocation ->
-                allocation.fixture?.toDto(
-                    index = index,
-                    competitionName = allocation.competitionName,
-                    venueName = allocation.venueName,
-                    userTeamId = allocation.userTeamId,
-                    status = allocation.status,
-                )
-            }
-        } else {
-            response.matches.ifEmpty { response.data }
-                .mapIndexedNotNull { index, fixture -> fixture.toDto(index) }
-        }
-        return fixtures
+        return response.allocations.mapNotNull(ScheduleAllocationResourceDto::toDomain)
     }
 
     override suspend fun fetchTeamHub(
@@ -690,6 +694,39 @@ private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture {
     )
 }
 
+private fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
+    val matchId = attributes.eventId.textValue ?: id.textValue ?: return null
+    val kickoff = attributes.date.epochMillis ?: return null
+    val homeName = attributes.homeTeamName ?: attributes.homeClubName ?: return null
+    val awayName = attributes.awayTeamName ?: attributes.awayClubName ?: return null
+    val competition = attributes.competitionName ?: attributes.leagueName
+    return Fixture(
+        id = matchId,
+        kickoffEpochMillis = kickoff,
+        homeTeamId = attributes.homeTeamId.textValue,
+        homeTeamName = normalizedTeamName(homeName, competition),
+        awayTeamId = attributes.awayTeamId.textValue,
+        awayTeamName = normalizedTeamName(awayName, competition),
+        competitionName = competition,
+        venueName = listOfNotNull(attributes.ground, attributes.field)
+            .filter(String::isNotBlank)
+            .distinct()
+            .joinToString(" - ")
+            .takeIf(String::isNotBlank),
+        userTeamId = null,
+        status = attributes.status.toFixtureStatus().takeUnless {
+            it == FixtureStatus.Unknown
+        } ?: FixtureStatus.Scheduled,
+        homeTeamLogoUrl = attributes.homeClubImage,
+        awayTeamLogoUrl = attributes.awayClubImage,
+        role = FixtureRole.Referee,
+        refereeRole = attributes.refereeRole?.takeIf(String::isNotBlank),
+    )
+}
+
+private fun upcomingScheduleStart(): String =
+    Instant.fromEpochMilliseconds(platformEpochMillis() - ScheduleLookbackMillis).toString()
+
 private fun Fixture.involves(teamId: String): Boolean =
     homeTeamId == teamId || awayTeamId == teamId || userTeamId == teamId
 
@@ -707,6 +744,8 @@ private fun String?.toFixtureStatus(): FixtureStatus =
 
 private val JsonPrimitive?.textValue: String?
     get() = this?.contentOrNull?.takeUnless { it.isBlank() || it == "null" }
+
+private const val ScheduleLookbackMillis = 24L * 60L * 60L * 1_000L
 
 private val JsonPrimitive?.epochMillis: Long?
     get() = this?.longOrNull?.let { raw ->

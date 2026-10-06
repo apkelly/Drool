@@ -90,6 +90,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     val profileSessionUsers = mutableListOf<String>()
     val profileSessionFailureUsers = mutableSetOf<String>()
     val fixtureUserIds = mutableListOf<String?>()
+    val refereeFixtureUserIds = mutableListOf<String>()
     var teamClubId: String? = null
     var relatedUsersCalls = 0
     var relatedUsersEmail: String? = null
@@ -116,6 +117,15 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         failure?.let { throw it }
         fixtureUserIds += userId
         return fixtures
+    }
+
+    override suspend fun fetchRefereeFixtures(
+        bearerToken: String,
+        userId: String,
+    ): List<Fixture> {
+        failure?.let { throw it }
+        refereeFixtureUserIds += userId
+        return emptyList()
     }
 
     override suspend fun fetchProfile(bearerToken: String): Profile {

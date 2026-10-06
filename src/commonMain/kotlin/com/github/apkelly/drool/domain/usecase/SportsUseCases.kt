@@ -1,6 +1,8 @@
 package com.github.apkelly.drool.domain.usecase
 
 import com.github.apkelly.drool.domain.repository.SportsRepository
+import com.github.apkelly.drool.domain.repository.MatchWeatherRepository
+import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FamilyProfile
 
 class ObserveClubsUseCase(private val repository: SportsRepository) {
@@ -59,4 +61,8 @@ class LoadTeamHubUseCase(private val repository: SportsRepository) {
 class LoadMatchDetailsUseCase(private val repository: SportsRepository) {
     suspend operator fun invoke(profileId: String, matchId: String) =
         repository.loadMatchDetails(profileId, matchId)
+}
+
+class LoadMatchWeatherUseCase(private val repository: MatchWeatherRepository) {
+    suspend operator fun invoke(fixture: Fixture) = repository.loadMatchWeather(fixture)
 }

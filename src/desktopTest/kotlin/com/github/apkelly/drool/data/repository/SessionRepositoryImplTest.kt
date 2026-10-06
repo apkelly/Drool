@@ -221,6 +221,27 @@ class SessionRepositoryImplTest {
     }
 
     @Test
+    fun restoreClearsRejectedTokenWhenCachedProfileExists() = runTest {
+        fixture { repository, _, sports, store, database ->
+            database.profileDao().upsert(ProfileEntity("account", "Taylor", null, true))
+
+            listOf(401, 403).forEach { status ->
+                store.saveBearerToken("rejected")
+                sports.failure = DriblHttpException(status, "url", "body")
+
+                assertNull(repository.restoreSession())
+                assertNull(store.getBearerToken())
+            }
+
+            store.saveBearerToken("saved")
+            sports.failure = DriblHttpException(500, "url", "body")
+
+            assertEquals("Taylor", repository.restoreSession()?.profile?.displayName)
+            assertEquals("saved", store.getBearerToken())
+        }
+    }
+
+    @Test
     fun signInPersistsProfileTokenAndPlayingTeams() = runTest {
         fixture { repository, auth, sports, store, database ->
             auth.result = com.github.apkelly.drool.domain.model.AuthenticationResult(
@@ -529,6 +550,13 @@ class SessionRepositoryImplTest {
             assertEquals("child", preservedUser.id)
             assertEquals("2012-03-04", preservedUser.dateOfBirth)
             assertEquals(true, preservedUser.isLinked)
+
+            sports.failure = DriblHttpException(401, "url", "body")
+            repository.refreshProfileEndpoint(
+                ProfileApiEndpoint.RelatedUsers,
+                "alex@example.com",
+            )
+            assertEquals(3, sports.relatedUsersCalls)
         }
     }
 
