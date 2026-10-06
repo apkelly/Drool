@@ -6,14 +6,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,6 +38,7 @@ import com.github.apkelly.drool.resources.home_next_game
 import com.github.apkelly.drool.resources.home_no_games
 import com.github.apkelly.drool.resources.home_no_games_body
 import com.github.apkelly.drool.resources.home_overview
+import com.github.apkelly.drool.resources.home_view_schedule
 import com.github.apkelly.drool.resources.family_teams
 import com.github.apkelly.drool.resources.family_clubs
 import com.github.apkelly.drool.resources.family_profile_refresh_failed
@@ -57,6 +66,7 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onSignInAgain: () -> Unit,
     onFixtureSelected: (Fixture) -> Unit,
+    onViewSchedule: () -> Unit,
     onTeamSelected: (FamilyTeam) -> Unit,
 ) {
     val expiredProfileNames = familyRefreshResults
@@ -149,6 +159,26 @@ fun HomeScreen(
                 )
             }
             val next = fixtures.items.firstOrNull()
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(Res.string.home_next_game),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onViewSchedule) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(Res.string.home_view_schedule))
+                    }
+                }
+            }
             if (next == null) {
                 item {
                     Column(
@@ -163,12 +193,6 @@ fun HomeScreen(
                     }
                 }
             } else {
-                item {
-                    Text(
-                        stringResource(Res.string.home_next_game),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                }
                 item {
                     FixtureCard(
                         fixture = next,

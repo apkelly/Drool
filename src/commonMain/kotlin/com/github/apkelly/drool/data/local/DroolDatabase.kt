@@ -39,7 +39,7 @@ import com.github.apkelly.drool.data.local.entity.MatchWeatherCacheEntity
         TeamHubCacheEntity::class,
         MatchWeatherCacheEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @ConstructedBy(DroolDatabaseConstructor::class)

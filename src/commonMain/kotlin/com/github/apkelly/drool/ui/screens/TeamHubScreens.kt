@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import com.github.apkelly.drool.data.weather.platformWeatherTemperatureUnit
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FixtureStatus
 import com.github.apkelly.drool.domain.model.LadderEntry
@@ -103,6 +104,7 @@ import com.github.apkelly.drool.ui.format.formatFixtureDateTime
 import com.github.apkelly.drool.ui.format.formatFixtureDate
 import com.github.apkelly.drool.ui.format.formatFixtureDay
 import com.github.apkelly.drool.ui.format.formatFixtureTime
+import com.github.apkelly.drool.ui.format.displayTeamNames
 import com.github.apkelly.drool.ui.model.MatchDetailsUiState
 import com.github.apkelly.drool.ui.model.TeamHubUiState
 import com.github.apkelly.drool.ui.platform.GoogleMapPreview
@@ -323,6 +325,7 @@ private fun FixtureList(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items(fixtures, key = { it.id }) { fixture ->
+            val teamNames = fixture.displayTeamNames()
             Card(
                 modifier = Modifier.fillMaxWidth().clickable { onSelected(fixture) },
             ) {
@@ -335,7 +338,7 @@ private fun FixtureList(
                         style = MaterialTheme.typography.labelLarge,
                     )
                     Text(
-                        "${fixture.homeTeamName} vs ${fixture.awayTeamName}",
+                        "${teamNames.home} vs ${teamNames.away}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -368,6 +371,7 @@ private fun MatchDetails(
     onTeamSelected: (String, String, String?) -> Unit,
 ) {
     val locationLauncher = rememberLocationActionLauncher()
+    val teamNames = fixture.displayTeamNames()
     val location = fixture.venueAddress ?: fixture.venueName.orEmpty()
     val round = fixture.roundLabel?.let {
         if (it.startsWith("round", ignoreCase = true)) it
@@ -385,6 +389,7 @@ private fun MatchDetails(
                 MatchTeam(
                     fixture.homeTeamId,
                     fixture.homeTeamName,
+                    teamNames.home,
                     fixture.homeTeamLogoUrl,
                     onTeamSelected,
                     modifier = Modifier.weight(1f),
@@ -406,6 +411,7 @@ private fun MatchDetails(
                 MatchTeam(
                     fixture.awayTeamId,
                     fixture.awayTeamName,
+                    teamNames.away,
                     fixture.awayTeamLogoUrl,
                     onTeamSelected,
                     modifier = Modifier.weight(1f),
@@ -496,14 +502,22 @@ private fun MatchWeatherSection(
                 }
             }
             weather != null -> {
+                val temperatureUnit = platformWeatherTemperatureUnit()
                 weather.condition?.let {
                     Text(it, style = MaterialTheme.typography.titleMedium)
                 }
                 Text(
                     stringResource(
                         Res.string.match_weather_temperature,
-                        weather.minimumTemperatureCelsius.roundToInt().toString(),
-                        weather.maximumTemperatureCelsius.roundToInt().toString(),
+                        temperatureUnit
+                            .fromCelsius(weather.minimumTemperatureCelsius)
+                            .roundToInt()
+                            .toString(),
+                        temperatureUnit
+                            .fromCelsius(weather.maximumTemperatureCelsius)
+                            .roundToInt()
+                            .toString(),
+                        temperatureUnit.symbol,
                     )
                 )
                 Text(
@@ -580,6 +594,7 @@ private fun fixtureStatusLabel(status: FixtureStatus): String =
 private fun MatchTeam(
     teamId: String?,
     name: String,
+    displayName: String,
     logoUrl: String?,
     onSelected: (String, String, String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -601,7 +616,7 @@ private fun MatchTeam(
             modifier = Modifier.size(64.dp),
         )
         Text(
-            name,
+            displayName,
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.titleSmall,
             textAlign = TextAlign.Center,

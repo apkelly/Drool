@@ -67,10 +67,12 @@ class TeamNameMapperTest {
             venueName = null,
             userTeamId = null,
             status = "Scheduled",
+            leagueName = "Under 13 Mixed White Mixed",
         ).toDomain()
 
         assertEquals("Sheffield Wednesday", team.name)
         assertEquals("Sheffield Wednesday", fixture.homeTeamName)
         assertEquals("Cobh RAMBLERS", fixture.awayTeamName)
+        assertEquals("Under 13 Mixed White Mixed", fixture.leagueName)
     }
 }

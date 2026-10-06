@@ -74,6 +74,7 @@ fun Fixture.toEntity(accountId: String) =
         status = status.name,
         role = role.name,
         refereeRole = refereeRole,
+        leagueName = leagueName,
     )
 
 fun FixtureEntity.toDomain() =
@@ -112,6 +113,7 @@ fun FixtureEntity.toDomain() =
         awayTeamLogoUrl = null,
         role = runCatching { FixtureRole.valueOf(role) }.getOrDefault(FixtureRole.Player),
         refereeRole = refereeRole,
+        leagueName = leagueName,
     )
 
 fun Profile.toEntity() =

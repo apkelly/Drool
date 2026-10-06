@@ -22,4 +22,5 @@ data class FixtureEntity(
     val status: String,
     val role: String = "Player",
     val refereeRole: String? = null,
+    val leagueName: String? = null,
 )

@@ -3534,6 +3534,34 @@ components:
         away_team_score: { type: integer, nullable: true }
         home_team_logo: { type: string }
         away_team_logo: { type: string }
+        roles:
+          type: array
+          description: "Roles that associate the requested user with this match. A Referee/clubreferee role identifies a referee appointment."
+          items:
+            $ref: "#/components/schemas/UniversalMatchRoleResource"
+    UniversalMatchRoleResource:
+      type: object
+      required: [attributes]
+      properties:
+        type:
+          type: string
+          example: roles
+        id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        attributes:
+          $ref: "#/components/schemas/UniversalMatchRoleAttributes"
+    UniversalMatchRoleAttributes:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+          example: Referee
+        slug:
+          type: string
+          example: clubreferee
     ErrorResponse:
       type: object
       additionalProperties: true

@@ -15,6 +15,14 @@ import com.github.apkelly.drool.data.remote.networkJson
 
 class GoogleWeatherApiTest {
     @Test
+    fun temperatureUnitsConvertCelsiusForDisplay() {
+        assertEquals(20.0, WeatherTemperatureUnit.Celsius.fromCelsius(20.0))
+        assertEquals(68.0, WeatherTemperatureUnit.Fahrenheit.fromCelsius(20.0))
+        assertEquals("°C", WeatherTemperatureUnit.Celsius.symbol)
+        assertEquals("°F", WeatherTemperatureUnit.Fahrenheit.symbol)
+    }
+
+    @Test
     fun dailyForecastMapsMatchPeriodAndWholeDayRainfall() = runTest {
         val client = weatherClient { request ->
             assertEquals("api-key", request.url.parameters["key"])

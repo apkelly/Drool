@@ -242,6 +242,9 @@ private fun MainNavigation(
                                 )
                             }
                         },
+                        onViewSchedule = {
+                            selected = TopLevelDestination.Schedule
+                        },
                         onTeamSelected = { familyTeam ->
                             val team = familyTeam.team
                             currentStack.add(

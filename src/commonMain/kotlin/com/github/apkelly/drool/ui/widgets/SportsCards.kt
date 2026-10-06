@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Sports
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -55,7 +56,7 @@ import com.github.apkelly.drool.resources.team_age_group
 import com.github.apkelly.drool.resources.content_team_logo
 import com.github.apkelly.drool.resources.team_your_team
 import com.github.apkelly.drool.ui.format.formatFixtureDateTime
-import com.github.apkelly.drool.ui.icons.WhistleIcon
+import com.github.apkelly.drool.ui.format.displayTeamNames
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -159,6 +160,7 @@ fun FixtureCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
+    val teamNames = fixture.displayTeamNames()
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -182,7 +184,7 @@ fun FixtureCard(
             ) {
                 Icon(
                     imageVector = if (fixture.role == FixtureRole.Referee) {
-                        WhistleIcon
+                        Icons.Default.Sports
                     } else {
                         Icons.Default.SportsSoccer
                     },
@@ -226,8 +228,8 @@ fun FixtureCard(
             Text(
                 text = stringResource(
                     Res.string.fixture_versus,
-                    fixture.homeTeamName,
-                    fixture.awayTeamName,
+                    teamNames.home,
+                    teamNames.away,
                 ),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,

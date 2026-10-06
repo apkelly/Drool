@@ -31,6 +31,7 @@ import com.github.apkelly.drool.data.remote.dto.LadderEntryDto
 import com.github.apkelly.drool.data.remote.dto.LadderListResponse
 import com.github.apkelly.drool.data.remote.dto.MatchAttributesDto
 import com.github.apkelly.drool.data.remote.dto.MatchListResponse
+import com.github.apkelly.drool.data.remote.dto.MatchRoleAttributesDto
 import com.github.apkelly.drool.data.remote.dto.MatchResourceDto
 import com.github.apkelly.drool.data.remote.dto.MatchResponse
 import com.github.apkelly.drool.data.remote.dto.MemberCardsResponse
@@ -653,6 +654,7 @@ private fun FixtureDto.toDto(
         awayScore = awayScore,
         homeTeamLogoUrl = homeTeamLogo ?: homeClubImage,
         awayTeamLogoUrl = awayTeamLogo ?: awayClubImage,
+        leagueName = leagueName,
     )
 }
 
@@ -691,8 +693,19 @@ private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture {
         venueAddress = address,
         latitude = latitude?.doubleOrNull,
         longitude = longitude?.doubleOrNull,
+        role = if (roles.any { it.attributes.isReferee }) {
+            FixtureRole.Referee
+        } else {
+            FixtureRole.Player
+        },
+        leagueName = leagueName,
     )
 }
+
+private val MatchRoleAttributesDto.isReferee: Boolean
+    get() = listOfNotNull(name, slug).any {
+        it.contains("referee", ignoreCase = true)
+    }
 
 private fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
     val matchId = attributes.eventId.textValue ?: id.textValue ?: return null
@@ -721,6 +734,7 @@ private fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
         awayTeamLogoUrl = attributes.awayClubImage,
         role = FixtureRole.Referee,
         refereeRole = attributes.refereeRole?.takeIf(String::isNotBlank),
+        leagueName = attributes.leagueName,
     )
 }
 

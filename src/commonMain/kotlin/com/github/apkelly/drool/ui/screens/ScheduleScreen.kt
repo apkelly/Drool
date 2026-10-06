@@ -19,6 +19,7 @@ import com.github.apkelly.drool.domain.model.FamilyProfile
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.schedule_empty
 import com.github.apkelly.drool.resources.schedule_empty_body
+import com.github.apkelly.drool.resources.schedule_description
 import com.github.apkelly.drool.resources.schedule_title
 import com.github.apkelly.drool.ui.model.CollectionUiState
 import com.github.apkelly.drool.ui.widgets.CacheStatus
@@ -56,6 +57,13 @@ fun ScheduleScreen(
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                item {
+                    Text(
+                        stringResource(Res.string.schedule_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 item {
                     FamilyProfileSelector(
                         profiles = familyProfiles,

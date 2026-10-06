@@ -2,6 +2,8 @@ package com.github.apkelly.drool.data.weather
 
 import android.os.Build
 import android.content.pm.PackageManager
+import android.icu.util.LocaleData
+import android.icu.util.ULocale
 import java.security.MessageDigest
 import com.github.apkelly.drool.data.storage.requireAndroidApplicationContext
 
@@ -37,4 +39,19 @@ actual fun platformWeatherRequestHeaders(): Map<String, String> {
         "X-Android-Package" to context.packageName,
         "X-Android-Cert" to fingerprint,
     )
+}
+
+actual fun platformWeatherTemperatureUnit(): WeatherTemperatureUnit {
+    val locale = requireAndroidApplicationContext()
+        .resources
+        .configuration
+        .locales[0]
+    return if (
+        LocaleData.getMeasurementSystem(ULocale.forLocale(locale)) ==
+            LocaleData.MeasurementSystem.US
+    ) {
+        WeatherTemperatureUnit.Fahrenheit
+    } else {
+        WeatherTemperatureUnit.Celsius
+    }
 }

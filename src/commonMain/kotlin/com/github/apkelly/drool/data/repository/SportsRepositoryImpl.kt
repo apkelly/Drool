@@ -205,11 +205,11 @@ class SportsRepositoryImpl(
                             api.createProfileSession(rootToken, profile.id)
                         }
                         if (refreshSports) {
+                            val teams = api.fetchProfileTeams(token)
                             val fixtures = (
                                 api.fetchFixtures(token, profile.id) +
                                     api.fetchRefereeFixtures(token, profile.id)
                                 ).distinctBy { it.id to it.role }
-                            val teams = api.fetchProfileTeams(token)
                             val clubs = api.fetchProfileClubs(token)
                             database.inTransaction {
                                 database.fixtureDao().deleteForAccount(profile.id)
@@ -234,6 +234,7 @@ class SportsRepositoryImpl(
                                 markUpdated(FIXTURES_KEY, profile.id)
                             }
                         }
+
                         if (hydrateProfile) {
                             hydratePersonalInformation(
                                 rootAccountId = rootAccountId,
@@ -242,6 +243,7 @@ class SportsRepositoryImpl(
                             )
                         }
                     }
+
                     if (!refreshSports && refreshResult == RefreshResult.Updated) {
                         RefreshResult.NotModified
                     } else {

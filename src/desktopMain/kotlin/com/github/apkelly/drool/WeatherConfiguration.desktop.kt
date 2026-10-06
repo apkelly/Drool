@@ -1,5 +1,7 @@
 package com.github.apkelly.drool.data.weather
 
+import java.util.Locale
+
 actual fun platformWeatherApiKey(): String? =
     sequenceOf(
         System.getProperty("GOOGLE_WEATHER_API_KEY"),
@@ -9,3 +11,10 @@ actual fun platformWeatherApiKey(): String? =
     ).firstOrNull { !it.isNullOrBlank() }
 
 actual fun platformWeatherRequestHeaders(): Map<String, String> = emptyMap()
+
+actual fun platformWeatherTemperatureUnit(): WeatherTemperatureUnit =
+    if (Locale.getDefault().country.equals("US", ignoreCase = true)) {
+        WeatherTemperatureUnit.Fahrenheit
+    } else {
+        WeatherTemperatureUnit.Celsius
+    }

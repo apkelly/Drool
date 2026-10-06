@@ -234,6 +234,18 @@ internal data class MatchAttributesDto(
     @SerialName("away_team_score") val awayTeamScore: Int? = null,
     @SerialName("home_team_logo") val homeTeamLogo: String? = null,
     @SerialName("away_team_logo") val awayTeamLogo: String? = null,
+    @SerialName("roles") val roles: List<MatchRoleResourceDto> = emptyList(),
+)
+
+@Serializable
+internal data class MatchRoleResourceDto(
+    @SerialName("attributes") val attributes: MatchRoleAttributesDto,
+)
+
+@Serializable
+internal data class MatchRoleAttributesDto(
+    @SerialName("name") val name: String? = null,
+    @SerialName("slug") val slug: String? = null,
 )
 
 @Serializable

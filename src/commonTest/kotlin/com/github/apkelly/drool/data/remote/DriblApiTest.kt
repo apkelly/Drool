@@ -205,6 +205,55 @@ class DriblApiTest {
     }
 
     @Test
+    fun fixturesUseExplicitMatchRolesForRefereeAppointments() = runTest {
+        val api = DriblSportsApi(
+            client = jsonClient(
+                """
+                {
+                  "data": [
+                    {
+                      "id": "referee-match",
+                      "attributes": {
+                        "date": "2026-10-06T07:00:00Z",
+                        "home_team_id": "home",
+                        "home_team_name": "Home",
+                        "away_team_id": "away",
+                        "away_team_name": "Away",
+                        "roles": [{
+                          "type": "roles",
+                          "id": 19,
+                          "attributes": {
+                            "name": "Referee",
+                            "slug": "clubreferee"
+                          }
+                        }]
+                      }
+                    },
+                    {
+                      "id": "player-match",
+                      "attributes": {
+                        "date": "2026-10-06T08:00:00Z",
+                        "home_team_id": "playing-team",
+                        "home_team_name": "Player Team",
+                        "away_team_id": "opponent",
+                        "away_team_name": "Opponent",
+                        "roles": []
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+                expectedMethod = HttpMethod.Get,
+            )
+        )
+
+        val fixtures = api.fetchFixtures("token").associateBy { it.id }
+
+        assertEquals(FixtureRole.Referee, fixtures.getValue("referee-match").role)
+        assertEquals(FixtureRole.Player, fixtures.getValue("player-match").role)
+    }
+
+    @Test
     fun profileParsesNestedAccountAndPlayingTeams() = runTest {
         val api = DriblSportsApi(
             client = jsonClient(

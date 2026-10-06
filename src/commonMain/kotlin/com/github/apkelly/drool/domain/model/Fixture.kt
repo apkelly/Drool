@@ -25,6 +25,7 @@ data class Fixture(
     val longitude: Double? = null,
     val role: FixtureRole = FixtureRole.Player,
     val refereeRole: String? = null,
+    val leagueName: String? = null,
 )
 
 @Serializable
