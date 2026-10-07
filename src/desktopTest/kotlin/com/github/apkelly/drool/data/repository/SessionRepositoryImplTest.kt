@@ -52,7 +52,6 @@ class SessionRepositoryImplTest {
                 accountId = "account",
                 displayName = "Taylor",
                 email = null,
-                playingTeamIds = setOf("team-a"),
             )
             sports.accounts = listOf(
                 Account("login", "andrew@example.com", "email", null)
@@ -76,8 +75,8 @@ class SessionRepositoryImplTest {
             assertEquals("account", store.getActiveAccountId())
             assertEquals("Andrew", repository.observeProfile().first()?.displayName)
             assertEquals(
-                TeamRelationship.PlaysFor.name,
-                database.teamDao().observeRelationships("account").first().single().relationship,
+                emptyList(),
+                database.teamDao().observeRelationships("account").first(),
             )
         }
     }
@@ -242,7 +241,7 @@ class SessionRepositoryImplTest {
     }
 
     @Test
-    fun signInPersistsProfileTokenAndPlayingTeams() = runTest {
+    fun signInPersistsProfileTokenAndAssociations() = runTest {
         fixture { repository, auth, sports, store, database ->
             auth.result = com.github.apkelly.drool.domain.model.AuthenticationResult(
                 bearerToken = "token",
@@ -277,7 +276,6 @@ class SessionRepositoryImplTest {
                 accountId = "account",
                 displayName = "Taylor",
                 email = "taylor@example.com",
-                playingTeamIds = setOf("team-a"),
             )
             val credentials = AuthCredentials("base", "/signin", "user", "password")
             val session = repository.signIn(credentials)
@@ -291,8 +289,8 @@ class SessionRepositoryImplTest {
             assertEquals("token", store.getBearerToken())
             assertEquals("account", store.getActiveAccountId())
             assertEquals(
-                TeamRelationship.PlaysFor.name,
-                database.teamDao().observeRelationships("account").first().single().relationship,
+                emptyList(),
+                database.teamDao().observeRelationships("account").first(),
             )
             val observed = repository.observeProfile().first()
             assertEquals("sam@example.com", observed?.relatedUsers?.single()?.email)
@@ -341,7 +339,6 @@ class SessionRepositoryImplTest {
                 accountId = "account",
                 displayName = "Taylor",
                 email = "resolved@example.com",
-                playingTeamIds = emptySet(),
                 avatarUrl = "https://example.test/profile.png",
             )
 
@@ -429,7 +426,6 @@ class SessionRepositoryImplTest {
                 accountId = "account",
                 displayName = "Taylor",
                 email = null,
-                playingTeamIds = emptySet(),
             )
             sports.associationFailure = IOException("offline")
 

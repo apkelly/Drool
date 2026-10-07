@@ -17,13 +17,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LargeTopAppBar
@@ -110,6 +106,8 @@ import com.github.apkelly.drool.ui.model.TeamHubUiState
 import com.github.apkelly.drool.ui.platform.GoogleMapPreview
 import com.github.apkelly.drool.ui.platform.rememberLocationActionLauncher
 import com.github.apkelly.drool.ui.widgets.RemoteImage
+import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.CacheStatus
 import org.jetbrains.compose.resources.stringResource
 
@@ -154,7 +152,7 @@ fun TeamHubScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        MaterialBackIcon(contentDescription = null)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -238,7 +236,7 @@ private fun TeamToolbarTitle(
             RemoteImage(
                 url = logoUrl,
                 contentDescription = stringResource(Res.string.content_team_logo, teamName),
-                fallbackIcon = Icons.Default.Groups,
+                fallbackIcon = MaterialSymbol.Groups,
                 modifier = Modifier.size(64.dp),
             )
         }
@@ -277,7 +275,7 @@ fun MatchDetailsScreen(
                 title = { Text(stringResource(Res.string.match_details_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        MaterialBackIcon(contentDescription = null)
                     }
                 },
             )
@@ -612,7 +610,7 @@ private fun MatchTeam(
         RemoteImage(
             url = logoUrl,
             contentDescription = stringResource(Res.string.content_team_logo, name),
-            fallbackIcon = Icons.Default.Groups,
+            fallbackIcon = MaterialSymbol.Groups,
             modifier = Modifier.size(64.dp),
         )
         Text(
@@ -694,7 +692,7 @@ private fun LadderRow(entry: LadderEntry, highlighted: Boolean) {
         RemoteImage(
             url = entry.logoUrl,
             contentDescription = entry.teamName,
-            fallbackIcon = Icons.Default.Groups,
+            fallbackIcon = MaterialSymbol.Groups,
             modifier = Modifier.size(28.dp),
         )
         Spacer(Modifier.width(12.dp))

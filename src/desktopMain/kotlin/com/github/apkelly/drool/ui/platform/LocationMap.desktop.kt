@@ -6,9 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +20,8 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.match_google_maps
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -79,7 +78,7 @@ actual fun GoogleMapPreview(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Icon(Icons.Default.LocationOn, contentDescription = null)
+            MaterialSymbolIcon(MaterialSymbol.LocationOn, contentDescription = null)
             Text(stringResource(Res.string.match_google_maps))
         }
         mapUrl?.let {

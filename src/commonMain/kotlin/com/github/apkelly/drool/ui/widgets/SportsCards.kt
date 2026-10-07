@@ -4,24 +4,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Sports
-import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +33,6 @@ import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FixtureRole
 import com.github.apkelly.drool.domain.model.FamilyProfile
 import com.github.apkelly.drool.domain.model.FamilyTeam
-import com.github.apkelly.drool.domain.model.FamilyClub
 import com.github.apkelly.drool.domain.model.Team
 import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.resources.Res
@@ -50,11 +45,15 @@ import com.github.apkelly.drool.resources.fixture_versus
 import com.github.apkelly.drool.resources.fixture_role_player
 import com.github.apkelly.drool.resources.fixture_role_referee
 import com.github.apkelly.drool.resources.fixture_role_referee_named
+import com.github.apkelly.drool.resources.fixture_role_coach
 import com.github.apkelly.drool.resources.family_all_profiles
 import com.github.apkelly.drool.resources.family_profile_item
 import com.github.apkelly.drool.resources.team_age_group
 import com.github.apkelly.drool.resources.content_team_logo
 import com.github.apkelly.drool.resources.team_your_team
+import com.github.apkelly.drool.resources.team_relationship_coach
+import com.github.apkelly.drool.resources.team_relationship_following
+import com.github.apkelly.drool.resources.team_relationship_player
 import com.github.apkelly.drool.ui.format.formatFixtureDateTime
 import com.github.apkelly.drool.ui.format.displayTeamNames
 import org.jetbrains.compose.resources.stringResource
@@ -81,7 +80,7 @@ fun ClubCard(
             RemoteImage(
                 url = club.logoUrl,
                 contentDescription = stringResource(Res.string.content_club_logo, club.name),
-                fallbackIcon = Icons.Default.Groups,
+                fallbackIcon = MaterialSymbol.Groups,
                 modifier = Modifier.size(52.dp),
             )
             Spacer(Modifier.width(14.dp))
@@ -120,7 +119,7 @@ fun TeamCard(
             RemoteImage(
                 url = team.logoUrl,
                 contentDescription = stringResource(Res.string.content_team_logo, team.name),
-                fallbackIcon = Icons.Default.Groups,
+                fallbackIcon = MaterialSymbol.Groups,
                 modifier = Modifier.size(44.dp),
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -131,15 +130,36 @@ fun TeamCard(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                if (relationship == TeamRelationship.PlaysFor) {
+                if (
+                    relationship == TeamRelationship.Player ||
+                    relationship == TeamRelationship.Coaching
+                ) {
                     AssistChip(
                         onClick = {},
-                        label = { Text(stringResource(Res.string.team_your_team)) },
-                        leadingIcon = { Icon(Icons.Default.Check, contentDescription = null) },
+                        label = {
+                            Text(
+                                stringResource(
+                                    if (relationship == TeamRelationship.Coaching) {
+                                        Res.string.team_relationship_coach
+                                    } else {
+                                        Res.string.team_your_team
+                                    }
+                                )
+                            )
+                        },
+                        leadingIcon = {
+                            MaterialSymbolIcon(
+                                MaterialSymbol.Check,
+                                contentDescription = null,
+                            )
+                        },
                     )
                 }
             }
-            if (relationship != TeamRelationship.PlaysFor) {
+            if (
+                relationship == TeamRelationship.None ||
+                relationship == TeamRelationship.Following
+            ) {
                 val following = relationship == TeamRelationship.Following
                 Button(onClick = { onFollowingChanged(!following) }) {
                     Text(
@@ -182,32 +202,32 @@ fun FixtureCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = if (fixture.role == FixtureRole.Referee) {
-                        Icons.Default.Sports
-                    } else {
-                        Icons.Default.SportsSoccer
+                MaterialSymbolIcon(
+                    symbol = when (fixture.role) {
+                        FixtureRole.Referee -> MaterialSymbol.Sports
+                        FixtureRole.Player -> MaterialSymbol.SportsSoccer
+                        FixtureRole.Coach -> MaterialSymbol.Assignment
                     },
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = if (fixture.role == FixtureRole.Referee) {
-                        MaterialTheme.colorScheme.tertiary
-                    } else {
-                        MaterialTheme.colorScheme.primary
+                    size = 20.dp,
+                    tint = when (fixture.role) {
+                        FixtureRole.Referee -> MaterialTheme.colorScheme.tertiary
+                        FixtureRole.Player -> MaterialTheme.colorScheme.primary
+                        FixtureRole.Coach -> MaterialTheme.colorScheme.secondary
                     },
                 )
                 Text(
-                    text = when {
-                        fixture.role == FixtureRole.Referee &&
-                            fixture.refereeRole != null -> {
+                    text = when (fixture.role) {
+                        FixtureRole.Referee -> if (fixture.refereeRole != null) {
                             stringResource(
                                 Res.string.fixture_role_referee_named,
                                 fixture.refereeRole,
                             )
-                        }
-                        fixture.role == FixtureRole.Referee ->
+                        } else {
                             stringResource(Res.string.fixture_role_referee)
-                        else -> stringResource(Res.string.fixture_role_player)
+                        }
+                        FixtureRole.Player -> stringResource(Res.string.fixture_role_player)
+                        FixtureRole.Coach -> stringResource(Res.string.fixture_role_coach)
                     },
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
@@ -272,7 +292,7 @@ fun FamilyProfileSelector(
                             RemoteImage(
                                 url = profile.avatarUrl,
                                 contentDescription = profile.displayName,
-                                fallbackIcon = Icons.Default.Groups,
+                                fallbackIcon = MaterialSymbol.Groups,
                                 modifier = Modifier.size(24.dp),
                             )
                         },
@@ -283,70 +303,57 @@ fun FamilyProfileSelector(
 
 @Composable
 fun FamilyTeamCard(
-            familyTeam: FamilyTeam,
-            profileName: String,
-            modifier: Modifier = Modifier,
-            onClick: (() -> Unit)? = null,
-        ) {
-            Card(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    RemoteImage(
-                        url = familyTeam.team.logoUrl,
-                        contentDescription = stringResource(
-                            Res.string.content_team_logo,
-                            familyTeam.team.name,
-                        ),
-                        fallbackIcon = Icons.Default.Groups,
-                        modifier = Modifier.size(44.dp),
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(familyTeam.team.name, style = MaterialTheme.typography.titleMedium)
-                        Text(profileName, style = MaterialTheme.typography.bodySmall)
-                    }
-
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(familyTeam.relationship.name) },
-                    )
-                }
-        }
-    }
-
-@Composable
-fun FamilyClubCard(
-    familyClub: FamilyClub,
+    familyTeam: FamilyTeam,
     profileName: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            RemoteImage(
-                url = familyClub.club.logoUrl,
-                contentDescription = stringResource(
-                    Res.string.content_club_logo,
-                    familyClub.club.name,
-                ),
-                fallbackIcon = Icons.Default.Groups,
-                modifier = Modifier.size(44.dp),
-            )
-            Column {
-                Text(familyClub.club.name, style = MaterialTheme.typography.titleMedium)
-                Text(profileName, style = MaterialTheme.typography.bodySmall)
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
+    ) {
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RemoteImage(
+                    url = familyTeam.team.logoUrl,
+                    contentDescription = stringResource(
+                        Res.string.content_team_logo,
+                        familyTeam.team.name,
+                    ),
+                    fallbackIcon = MaterialSymbol.Groups,
+                    modifier = Modifier.size(44.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = familyTeam.team.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(profileName, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            familyTeam.relationship.labelResource()?.let { label ->
+                AssistChip(
+                    onClick = {},
+                    label = { Text(stringResource(label)) },
+                    modifier = Modifier.align(Alignment.BottomEnd),
+                )
             }
         }
     }
+}
+
+private fun TeamRelationship.labelResource() = when (this) {
+    TeamRelationship.None -> null
+    TeamRelationship.Following -> Res.string.team_relationship_following
+    TeamRelationship.Player -> Res.string.team_relationship_player
+    TeamRelationship.Coaching -> Res.string.team_relationship_coach
 }
 
 internal fun String?.toColorOrNull(): Color? {

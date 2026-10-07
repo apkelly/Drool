@@ -32,6 +32,7 @@ data class Fixture(
 enum class FixtureRole {
     Player,
     Referee,
+    Coach,
 }
 
 @Serializable

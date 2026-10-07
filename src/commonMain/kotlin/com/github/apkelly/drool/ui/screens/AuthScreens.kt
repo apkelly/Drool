@@ -11,12 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SportsSoccer
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -59,6 +54,8 @@ import com.github.apkelly.drool.resources.auth_unknown
 import com.github.apkelly.drool.resources.welcome_body
 import com.github.apkelly.drool.resources.welcome_title
 import com.github.apkelly.drool.ui.model.AuthFailure
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -67,10 +64,10 @@ fun WelcomeScreen(
     onCreateAccount: () -> Unit,
 ) {
     CenteredAuthColumn {
-        Icon(
-            imageVector = Icons.Default.SportsSoccer,
+        MaterialSymbolIcon(
+            symbol = MaterialSymbol.SportsSoccer,
             contentDescription = null,
-            modifier = Modifier.height(92.dp),
+            size = 92.dp,
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
@@ -133,11 +130,11 @@ fun SignInScreen(
             },
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) {
-                            Icons.Default.VisibilityOff
+                    MaterialSymbolIcon(
+                        symbol = if (passwordVisible) {
+                            MaterialSymbol.VisibilityOff
                         } else {
-                            Icons.Default.Visibility
+                            MaterialSymbol.Visibility
                         },
                         contentDescription = stringResource(
                             if (passwordVisible) {

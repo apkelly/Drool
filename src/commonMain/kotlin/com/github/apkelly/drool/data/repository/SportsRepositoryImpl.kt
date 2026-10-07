@@ -29,6 +29,7 @@ import com.github.apkelly.drool.data.time.TimeProvider
 import com.github.apkelly.drool.domain.model.CachedData
 import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.FixtureStatus
 import com.github.apkelly.drool.domain.model.FamilyProfile
 import com.github.apkelly.drool.domain.model.FamilyClub
 import com.github.apkelly.drool.domain.model.FamilyTeam
@@ -88,7 +89,10 @@ class SportsRepositoryImpl(
     override fun observeFamilyFixtures(profileIds: Set<String>): Flow<List<Fixture>> =
         database.fixtureDao()
             .observeForAccounts(profileIds.toList())
-            .map { fixtures -> fixtures.map { it.toDomain() } }
+            .map { fixtures ->
+                fixtures.map { it.toDomain() }
+                    .upcomingAt(timeProvider.nowEpochMillis())
+            }
 
     override fun observeFamilyTeams(profileIds: Set<String>): Flow<List<FamilyTeam>> =
         combine(
@@ -411,12 +415,14 @@ class SportsRepositoryImpl(
                     database.cacheMetadataDao().observe(FIXTURES_KEY, accountId),
                 ) { fixtures, metadata ->
                     CachedData(
-                        fixtures.map { it.toDomain() },
+                        fixtures.map { it.toDomain() }
+                            .upcomingAt(timeProvider.nowEpochMillis()),
                         metadata?.updatedAtEpochMillis,
                         metadata.isStale(FIXTURES_TTL),
                     )
                 }
             }
+
         }
 
     private fun Flow<String?>.flatMapRelationships(): Flow<Map<String, TeamRelationship>> =
@@ -444,3 +450,22 @@ class SportsRepositoryImpl(
         const val TEAM_HUB_TTL = 24L * 60L * 60L * 1_000L
     }
 }
+
+internal fun List<Fixture>.upcomingAt(nowEpochMillis: Long): List<Fixture> =
+    filter { fixture ->
+        when {
+            fixture.kickoffEpochMillis >= nowEpochMillis -> true
+            fixture.status == FixtureStatus.Live -> true
+            fixture.status in finishedFixtureStatuses -> false
+            else ->
+                fixture.kickoffEpochMillis + MaximumFixtureVisibilityMillis >
+                    nowEpochMillis
+        }
+    }
+
+private val finishedFixtureStatuses = setOf(
+    FixtureStatus.Completed,
+    FixtureStatus.Cancelled,
+    FixtureStatus.Washout,
+)
+private const val MaximumFixtureVisibilityMillis = 3L * 60L * 60L * 1_000L

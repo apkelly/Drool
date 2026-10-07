@@ -17,6 +17,7 @@ import com.github.apkelly.drool.data.remote.DriblResponseException
 import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.FixtureStatus
 import com.github.apkelly.drool.domain.model.TeamAssociation
 import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.domain.model.Team
@@ -198,7 +199,7 @@ class SportsRepositoryImplTest {
                 )
             )
             database.teamDao().upsertRelationship(
-                TeamRelationshipEntity("account", "profile-same", TeamRelationship.PlaysFor.name)
+                TeamRelationshipEntity("account", "profile-same", TeamRelationship.Player.name)
             )
             remote.teams = listOf(
                 Team("a", "club-a", "Alpha", null, null, null, null, true),
@@ -267,6 +268,55 @@ class SportsRepositoryImplTest {
             )
             assertTrue(failed.hasCachedData)
         }
+    }
+
+    @Test
+    fun upcomingScheduleRetainsCurrentFixturesAndExcludesFinishedOnes() {
+        val nowEpochMillis = 20_000_000L
+        val finished = fixture(
+            id = "finished",
+            kickoffEpochMillis = nowEpochMillis - 1,
+            homeTeamId = "home",
+            homeTeamName = "Home",
+            awayTeamId = "away",
+            awayTeamName = "Away",
+            competitionName = null,
+            venueName = null,
+            userTeamId = null,
+            status = "complete",
+        )
+        val live = finished.copy(
+            id = "live",
+            kickoffEpochMillis = 0,
+            status = FixtureStatus.Live,
+        )
+        val current = finished.copy(
+            id = "current",
+            kickoffEpochMillis = nowEpochMillis - 2L * 60L * 60L * 1_000L,
+            status = FixtureStatus.Pending,
+        )
+        val expired = finished.copy(
+            id = "expired",
+            kickoffEpochMillis = nowEpochMillis - 3L * 60L * 60L * 1_000L,
+            status = FixtureStatus.Pending,
+        )
+        val now = finished.copy(
+            id = "now",
+            kickoffEpochMillis = nowEpochMillis,
+            status = FixtureStatus.Scheduled,
+        )
+        val future = finished.copy(
+            id = "future",
+            kickoffEpochMillis = nowEpochMillis + 1,
+            status = FixtureStatus.Scheduled,
+        )
+
+        assertEquals(
+            listOf("live", "current", "now", "future"),
+            listOf(finished, live, current, expired, now, future)
+                .upcomingAt(nowEpochMillis)
+                .map(Fixture::id),
+        )
     }
 
     @Test
@@ -375,7 +425,7 @@ class SportsRepositoryImplTest {
                 )
 
                 database.teamDao().upsertRelationship(
-                    TeamRelationshipEntity("child", "team", "unexpected")
+                    TeamRelationshipEntity("child", "team", "PlaysFor")
                 )
                 assertEquals(
                     TeamRelationship.None,

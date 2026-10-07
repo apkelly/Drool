@@ -36,7 +36,6 @@ internal fun profileFromBearerToken(token: String): Profile? {
         accountId = accountId,
         displayName = displayName,
         email = email,
-        playingTeamIds = emptySet(),
         avatarUrl = claims.claim(
             "avatar",
             "avatar_url",

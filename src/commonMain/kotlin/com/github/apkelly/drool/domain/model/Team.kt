@@ -27,5 +27,6 @@ data class TeamAssociation(
 enum class TeamRelationship {
     None,
     Following,
-    PlaysFor,
+    Player,
+    Coaching,
 }

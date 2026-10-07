@@ -7,7 +7,6 @@ data class Profile(
     val avatarUrl: String? = null,
     val relatedUsers: List<RelatedUser> = emptyList(),
     val accounts: List<Account> = emptyList(),
-    val playingTeamIds: Set<String> = emptySet(),
 ) {
     val familyProfiles: List<FamilyProfile>
         get() = buildList {

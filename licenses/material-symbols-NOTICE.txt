@@ -1,0 +1,11 @@
+Material Symbols
+Copyright Google LLC
+
+Source:
+https://github.com/google/material-design-icons/tree/737e3324305806514d7909874fa1818ae1808232
+
+Licensed under the Apache License, Version 2.0. See material-symbols-LICENSE.txt.
+
+The bundled Material Symbols Outlined font is modified from the source font:
+its variable axes are fixed at FILL=0, GRAD=0, opsz=24, and wght=400, and it is
+subset to the glyphs used by Drool.

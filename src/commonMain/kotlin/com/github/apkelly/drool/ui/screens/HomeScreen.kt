@@ -1,6 +1,8 @@
 package com.github.apkelly.drool.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,13 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FamilyProfile
 import com.github.apkelly.drool.domain.model.FamilyTeam
-import com.github.apkelly.drool.domain.model.FamilyClub
 import com.github.apkelly.drool.domain.model.Profile
 import com.github.apkelly.drool.domain.model.RefreshResult
 import com.github.apkelly.drool.domain.model.RefreshFailure
@@ -40,7 +40,6 @@ import com.github.apkelly.drool.resources.home_no_games_body
 import com.github.apkelly.drool.resources.home_overview
 import com.github.apkelly.drool.resources.home_view_schedule
 import com.github.apkelly.drool.resources.family_teams
-import com.github.apkelly.drool.resources.family_clubs
 import com.github.apkelly.drool.resources.family_profile_refresh_failed
 import com.github.apkelly.drool.resources.family_profile_session_expired
 import com.github.apkelly.drool.resources.action_sign_in
@@ -49,7 +48,8 @@ import com.github.apkelly.drool.ui.widgets.CacheStatus
 import com.github.apkelly.drool.ui.widgets.FixtureCard
 import com.github.apkelly.drool.ui.widgets.FamilyProfileSelector
 import com.github.apkelly.drool.ui.widgets.FamilyTeamCard
-import com.github.apkelly.drool.ui.widgets.FamilyClubCard
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +59,6 @@ fun HomeScreen(
     familyProfiles: List<FamilyProfile>,
     selectedProfileId: String?,
     familyTeams: List<FamilyTeam>,
-    familyClubs: List<FamilyClub>,
     familyRefreshResults: Map<String, RefreshResult>,
     onProfileSelected: (String?) -> Unit,
     fixtures: CollectionUiState<Fixture>,
@@ -87,26 +86,35 @@ fun HomeScreen(
         onRefresh = onRefresh,
         modifier = Modifier.fillMaxSize(),
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            item {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val availableWidth = maxWidth - HOME_GRID_PADDING * 2
+            val columnCount = (
+                (availableWidth + HOME_GRID_SPACING) /
+                    (HOME_TEAM_CARD_MIN_WIDTH + HOME_GRID_SPACING)
+                ).toInt().coerceAtLeast(HOME_TEAM_MIN_COLUMNS)
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columnCount),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(HOME_GRID_PADDING),
+                horizontalArrangement = Arrangement.spacedBy(HOME_GRID_SPACING),
+                verticalArrangement = Arrangement.spacedBy(HOME_GRID_SPACING),
+            ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     stringResource(Res.string.home_greeting, profile.displayName),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                 )
             }
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     stringResource(Res.string.home_overview),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 FamilyProfileSelector(
                     profiles = familyProfiles,
                     selectedProfileId = selectedProfileId,
@@ -114,7 +122,10 @@ fun HomeScreen(
                 )
             }
             if (expiredProfileNames.isNotEmpty()) {
-                item(key = "expired-family-session") {
+                item(
+                    key = "expired-family-session",
+                    span = { GridItemSpan(maxLineSpan) },
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = stringResource(
@@ -136,7 +147,10 @@ fun HomeScreen(
                     result.reason != RefreshFailure.Unauthorized &&
                     result.reason != RefreshFailure.Forbidden
                 ) {
-                    item(key = "refresh-failure-$profileId") {
+                    item(
+                        key = "refresh-failure-$profileId",
+                        span = { GridItemSpan(maxLineSpan) },
+                    ) {
                         Text(
                             text = stringResource(
                                 Res.string.family_profile_refresh_failed,
@@ -150,7 +164,7 @@ fun HomeScreen(
                     }
                 }
             }
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 CacheStatus(
                     isStale = fixtures.isStale,
                     failure = fixtures.refreshFailure,
@@ -159,7 +173,7 @@ fun HomeScreen(
                 )
             }
             val next = fixtures.items.firstOrNull()
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -170,8 +184,8 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(onClick = onViewSchedule) {
-                        Icon(
-                            Icons.Default.CalendarMonth,
+                        MaterialSymbolIcon(
+                            MaterialSymbol.CalendarMonth,
                             contentDescription = null,
                         )
                         Spacer(Modifier.width(6.dp))
@@ -180,7 +194,7 @@ fun HomeScreen(
                 }
             }
             if (next == null) {
-                item {
+                item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -193,7 +207,7 @@ fun HomeScreen(
                     }
                 }
             } else {
-                item {
+                item(span = { GridItemSpan(maxLineSpan) }) {
                     FixtureCard(
                         fixture = next,
                         profileName = familyProfiles.profileNameFor(
@@ -205,15 +219,15 @@ fun HomeScreen(
                 }
             }
             if (familyTeams.isNotEmpty()) {
-                item {
+                item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         stringResource(Res.string.family_teams),
                         style = MaterialTheme.typography.titleLarge,
                     )
                 }
                 items(
-                    familyTeams.take(HOME_AFFILIATION_LIMIT),
                     key = { "${it.profileId}:${it.team.id}" },
+                    items = familyTeams,
                 ) { familyTeam ->
                     FamilyTeamCard(
                         familyTeam = familyTeam,
@@ -221,36 +235,20 @@ fun HomeScreen(
                             .firstOrNull { it.id == familyTeam.profileId }
                             ?.displayName
                             ?: familyTeam.profileId,
+                        modifier = Modifier.aspectRatio(1f),
                         onClick = { onTeamSelected(familyTeam) },
                     )
                 }
             }
-            if (familyClubs.isNotEmpty()) {
-                item {
-                    Text(
-                        stringResource(Res.string.family_clubs),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                }
-                items(
-                    familyClubs.take(HOME_AFFILIATION_LIMIT),
-                    key = { "${it.profileId}:${it.club.id}" },
-                ) { familyClub ->
-                    FamilyClubCard(
-                        familyClub = familyClub,
-                        profileName = familyProfiles
-                            .firstOrNull { it.id == familyClub.profileId }
-                            ?.displayName
-                            ?: familyClub.profileId,
-                    )
-                }
             }
         }
-
     }
 }
 
-private const val HOME_AFFILIATION_LIMIT = 3
+private val HOME_TEAM_CARD_MIN_WIDTH = 240.dp
+private const val HOME_TEAM_MIN_COLUMNS = 2
+private val HOME_GRID_PADDING = 20.dp
+private val HOME_GRID_SPACING = 14.dp
 
 private fun List<FamilyProfile>.profileNameFor(
     profileId: String?,

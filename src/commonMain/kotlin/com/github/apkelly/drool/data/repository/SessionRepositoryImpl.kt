@@ -9,7 +9,6 @@ import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
 import com.github.apkelly.drool.data.local.DroolDatabase
 import com.github.apkelly.drool.data.local.inTransaction
-import com.github.apkelly.drool.data.local.entity.TeamRelationshipEntity
 import com.github.apkelly.drool.data.mapper.toDomain
 import com.github.apkelly.drool.data.mapper.toCurrentProfile
 import com.github.apkelly.drool.data.mapper.toEntity
@@ -37,7 +36,6 @@ import com.github.apkelly.drool.domain.model.LinkMemberException
 import com.github.apkelly.drool.domain.model.LinkMemberFailure
 import com.github.apkelly.drool.domain.model.linkMemberFailureForHttpStatus
 import com.github.apkelly.drool.domain.model.RelatedUser
-import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.domain.repository.SessionRepository
 import com.github.apkelly.drool.logging.DroolLog
 
@@ -372,17 +370,9 @@ class SessionRepositoryImpl(
         accounts: List<Account> = emptyList(),
         replaceAssociations: Boolean = false,
     ) {
-        val playingRelationships = profileDto.playingTeamIds.map { teamId ->
-            TeamRelationshipEntity(
-                accountId = profileDto.accountId,
-                teamId = teamId,
-                relationship = TeamRelationship.PlaysFor.name,
-            )
-        }
         database.inTransaction {
             database.profileDao().deactivateAll()
             database.profileDao().upsert(profileDto.toEntity())
-            playingRelationships.forEach { database.teamDao().upsertRelationship(it) }
             if (replaceAssociations) {
                 database.profileDao().deleteRelatedUsers(profileDto.accountId)
                 database.profileDao().deleteAccounts(profileDto.accountId)

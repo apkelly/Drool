@@ -5,14 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,8 +35,8 @@ fun RefreshAction(
         CircularProgressIndicator(modifier = Modifier.padding(12.dp))
     } else {
         IconButton(onClick = onRefresh) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
+            MaterialSymbolIcon(
+                symbol = MaterialSymbol.Refresh,
                 contentDescription = stringResource(Res.string.action_refresh),
             )
         }
@@ -68,7 +64,7 @@ fun CacheStatus(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (offline) {
-                Icon(Icons.Default.CloudOff, contentDescription = null)
+                MaterialSymbolIcon(MaterialSymbol.CloudOff, contentDescription = null)
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(

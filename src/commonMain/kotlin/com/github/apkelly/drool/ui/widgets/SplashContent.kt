@@ -31,7 +31,7 @@ import org.jetbrains.compose.resources.stringResource
 fun SplashContent(onAnimationFinished: () -> Unit) {
     val compositionResult = rememberLottieComposition {
         LottieCompositionSpec.Resource(
-            path = "files/splash_pitch.json",
+            path = "files/splash_trophy.lottie",
             reader = Res::readBytes,
         )
     }
@@ -61,7 +61,7 @@ fun SplashContent(onAnimationFinished: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
                     .widthIn(max = 420.dp)
-                    .aspectRatio(1f),
+                    .aspectRatio(1080f / 808f),
             )
         }
         Text(

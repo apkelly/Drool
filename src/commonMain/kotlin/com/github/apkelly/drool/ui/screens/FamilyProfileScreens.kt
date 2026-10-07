@@ -10,17 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -66,6 +60,9 @@ import com.github.apkelly.drool.resources.profile_link_verify
 import com.github.apkelly.drool.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.ui.platform.rememberContactActionLauncher
 import com.github.apkelly.drool.ui.widgets.RemoteImage
+import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -81,7 +78,7 @@ fun PersonalInformationScreen(
                 title = { Text(stringResource(Res.string.personal_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        MaterialBackIcon(contentDescription = null)
                     }
                 },
             )
@@ -99,7 +96,7 @@ fun PersonalInformationScreen(
                             Res.string.content_profile_image,
                             user.displayName,
                         ),
-                        fallbackIcon = Icons.Default.Person,
+                        fallbackIcon = MaterialSymbol.Person,
                         modifier = Modifier.size(72.dp),
                         contentScale = ContentScale.Crop,
                     )
@@ -141,8 +138,8 @@ private fun EmergencyContactsField(contacts: List<EmergencyContact>) {
                         IconButton(
                             onClick = { actionLauncher.call(phoneNumber) }
                         ) {
-                            Icon(
-                                Icons.Default.Phone,
+                            MaterialSymbolIcon(
+                                MaterialSymbol.Phone,
                                 contentDescription = stringResource(
                                     Res.string.personal_contact_call,
                                     contact.name,
@@ -152,8 +149,8 @@ private fun EmergencyContactsField(contacts: List<EmergencyContact>) {
                     }
                     contact.email?.takeIf(String::isNotBlank)?.let { email ->
                         IconButton(onClick = { actionLauncher.email(email) }) {
-                            Icon(
-                                Icons.Default.Email,
+                            MaterialSymbolIcon(
+                                MaterialSymbol.Email,
                                 contentDescription = stringResource(
                                     Res.string.personal_contact_email,
                                     contact.name,
@@ -203,7 +200,7 @@ fun LinkMemberScreen(
                 title = { Text(stringResource(Res.string.profile_link_member)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        MaterialBackIcon(contentDescription = null)
                     }
                 },
             )
@@ -252,7 +249,7 @@ fun LinkMemberScreen(
                                         RemoteImage(
                                             url = candidate.avatarUrl,
                                             contentDescription = candidate.displayName,
-                                            fallbackIcon = Icons.Default.Person,
+                                            fallbackIcon = MaterialSymbol.Person,
                                             modifier = Modifier.size(44.dp),
                                         )
                                         Column {

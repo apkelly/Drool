@@ -122,8 +122,6 @@ internal data class ProfilePayload(
     @SerialName("account") val account: PersonDto? = null,
     @SerialName("profile") val profile: PersonDto? = null,
     @SerialName("user") val user: PersonDto? = null,
-    @SerialName("activeTeams") val activeTeams: List<TeamReferenceDto> = emptyList(),
-    @SerialName("active_teams") val activeTeamsSnake: List<TeamReferenceDto> = emptyList(),
 )
 
 @Serializable
@@ -369,6 +367,7 @@ internal data class TeamResourceDto(
 @Serializable
 internal data class RoleDto(
     @SerialName("slug") val slug: String? = null,
+    @SerialName("name") val name: String? = null,
 )
 
 @Serializable

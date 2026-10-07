@@ -10,11 +10,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items as lazyItems
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +39,9 @@ import com.github.apkelly.drool.ui.widgets.CacheStatus
 import com.github.apkelly.drool.ui.widgets.ClubCard
 import com.github.apkelly.drool.ui.widgets.RefreshAction
 import com.github.apkelly.drool.ui.widgets.TeamCard
+import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,7 +80,12 @@ fun DiscoverScreen(
                         value = query,
                         onValueChange = { query = it },
                         label = { Text(stringResource(Res.string.discover_search)) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        leadingIcon = {
+                            MaterialSymbolIcon(
+                                MaterialSymbol.Search,
+                                contentDescription = null,
+                            )
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -128,8 +132,7 @@ fun ClubScreen(
                 title = { Text(club.name) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                        MaterialBackIcon(
                             contentDescription = stringResource(Res.string.action_back),
                         )
                     }

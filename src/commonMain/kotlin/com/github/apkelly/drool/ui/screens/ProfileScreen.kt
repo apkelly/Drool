@@ -12,16 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -61,6 +56,8 @@ import com.github.apkelly.drool.resources.theme_dark
 import com.github.apkelly.drool.resources.theme_light
 import com.github.apkelly.drool.resources.theme_system
 import com.github.apkelly.drool.ui.widgets.RemoteImage
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -83,7 +80,10 @@ fun ProfileScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             FloatingActionButton(onClick = onAddMember) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.profile_link_member))
+                MaterialSymbolIcon(
+                    MaterialSymbol.Add,
+                    contentDescription = stringResource(Res.string.profile_link_member),
+                )
             }
         },
     ) {
@@ -111,7 +111,7 @@ fun ProfileScreen(
                         Res.string.content_profile_image,
                         profile.displayName,
                     ),
-                    fallbackIcon = Icons.Default.Person,
+                    fallbackIcon = MaterialSymbol.Person,
                     modifier = Modifier.size(72.dp),
                     contentScale = ContentScale.Crop,
                 )
@@ -139,7 +139,7 @@ fun ProfileScreen(
                         Res.string.content_profile_image,
                         user.displayName,
                     ),
-                    fallbackIcon = Icons.Default.Person,
+                    fallbackIcon = MaterialSymbol.Person,
                     onClick = { onRelatedUserSelected(user) },
                 )
             }
@@ -162,7 +162,7 @@ fun ProfileScreen(
                         Res.string.content_account_logo,
                         account.name,
                     ),
-                    fallbackIcon = Icons.Default.AccountBalance,
+                    fallbackIcon = MaterialSymbol.AccountBalance,
                     onClick = null,
                 )
             }
@@ -264,7 +264,7 @@ private fun ProfileAssociationCard(
     subtitle: String?,
     imageUrl: String?,
     contentDescription: String,
-    fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    fallbackIcon: MaterialSymbol,
     onClick: (() -> Unit)?,
 ) {
     Card(

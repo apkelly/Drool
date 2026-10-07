@@ -205,7 +205,7 @@ class DriblApiTest {
     }
 
     @Test
-    fun fixturesUseExplicitMatchRolesForRefereeAppointments() = runTest {
+    fun fixturesUseExplicitMatchRolesForRefereeAndCoachAppointments() = runTest {
         val api = DriblSportsApi(
             client = jsonClient(
                 """
@@ -225,6 +225,24 @@ class DriblApiTest {
                           "attributes": {
                             "name": "Referee",
                             "slug": "clubreferee"
+                          }
+                        }]
+                      }
+                    },
+                    {
+                      "id": "coach-match",
+                      "attributes": {
+                        "date": "2026-10-06T07:30:00Z",
+                        "home_team_id": "coached-team",
+                        "home_team_name": "Coached Team",
+                        "away_team_id": "opponent",
+                        "away_team_name": "Opponent",
+                        "roles": [{
+                          "type": "roles",
+                          "id": 20,
+                          "attributes": {
+                            "name": "Coach",
+                            "slug": "teamcoach"
                           }
                         }]
                       }
@@ -250,11 +268,12 @@ class DriblApiTest {
         val fixtures = api.fetchFixtures("token").associateBy { it.id }
 
         assertEquals(FixtureRole.Referee, fixtures.getValue("referee-match").role)
+        assertEquals(FixtureRole.Coach, fixtures.getValue("coach-match").role)
         assertEquals(FixtureRole.Player, fixtures.getValue("player-match").role)
     }
 
     @Test
-    fun profileParsesNestedAccountAndPlayingTeams() = runTest {
+    fun profileParsesNestedAccountWithoutInferringTeamRoles() = runTest {
         val api = DriblSportsApi(
             client = jsonClient(
                 """
@@ -283,7 +302,6 @@ class DriblApiTest {
         assertEquals("account", profile.accountId)
         assertEquals("Taylor", profile.displayName)
         assertEquals("https://example.test/taylor.png", profile.avatarUrl)
-        assertEquals(setOf("team-a", "team-b"), profile.playingTeamIds)
     }
 
     @Test
@@ -512,6 +530,24 @@ class DriblApiTest {
                                       "attributes": {"slug":"player"}
                                     }]
                                   }
+                                },
+                                {
+                                  "id": "coaching",
+                                  "attributes": {
+                                    "name": "Coaches"
+                                  },
+                                  "roles": [{
+                                    "attributes": {"name":"Coach"}
+                                  }]
+                                },
+                                {
+                                  "id": "associated",
+                                  "attributes": {
+                                    "name": "Associated",
+                                    "roles": [{
+                                      "attributes": {"slug":"teamofficial"}
+                                    }]
+                                  }
                                 }
                               ]
                             }
@@ -548,7 +584,11 @@ class DriblApiTest {
         assertEquals("followed", teams[0].team.id)
         assertEquals(com.github.apkelly.drool.domain.model.TeamRelationship.Following, teams[0].relationship)
         assertEquals("playing", teams[1].team.id)
-        assertEquals(com.github.apkelly.drool.domain.model.TeamRelationship.PlaysFor, teams[1].relationship)
+        assertEquals(com.github.apkelly.drool.domain.model.TeamRelationship.Player, teams[1].relationship)
+        assertEquals("coaching", teams[2].team.id)
+        assertEquals(com.github.apkelly.drool.domain.model.TeamRelationship.Coaching, teams[2].relationship)
+        assertEquals("associated", teams[3].team.id)
+        assertEquals(com.github.apkelly.drool.domain.model.TeamRelationship.None, teams[3].relationship)
         assertEquals("club", clubs.single().id)
         assertEquals("United", clubs.single().name)
         assertEquals("POST /api/auth/impersonate/29167?", requests[0])

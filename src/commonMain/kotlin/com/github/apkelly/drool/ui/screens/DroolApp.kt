@@ -5,12 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
@@ -26,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -48,6 +41,8 @@ import com.github.apkelly.drool.ui.navigation.AppRoute
 import com.github.apkelly.drool.ui.navigation.TopLevelDestination
 import com.github.apkelly.drool.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.ui.viewmodel.SportsViewModel
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.ui.widgets.SplashContent
 import com.github.apkelly.drool.observability.AppScreen
 import org.jetbrains.compose.resources.StringResource
@@ -69,7 +64,15 @@ fun DroolApp(
 ) {
     val sessionState by appViewModel.sessionState.collectAsState()
     var initialSplashFinished by rememberSaveable { mutableStateOf(false) }
-    if (!initialSplashFinished || sessionState == SessionUiState.Bootstrapping) {
+    val authenticatedProfile =
+        (sessionState as? SessionUiState.Authenticated)?.profile
+    authenticatedProfile?.let { profile ->
+        LaunchedEffect(profile.accountId, profile.familyProfiles) {
+            sportsViewModel.configureFamily(profile)
+            sportsViewModel.refreshAll(force = false)
+        }
+    }
+    if (shouldShowInitialSplash(initialSplashFinished, sessionState)) {
         SplashContent(onAnimationFinished = { initialSplashFinished = true })
         return
     }
@@ -85,9 +88,6 @@ fun DroolApp(
             onScreenViewed = appViewModel::trackScreen,
         )
         is SessionUiState.Authenticated -> {
-            LaunchedEffect(state.profile.accountId) {
-                sportsViewModel.refreshAll(force = false)
-            }
             MainNavigation(
                 profile = state.profile,
                 appViewModel = appViewModel,
@@ -96,6 +96,11 @@ fun DroolApp(
         }
     }
 }
+
+internal fun shouldShowInitialSplash(
+    animationFinished: Boolean,
+    sessionState: SessionUiState,
+): Boolean = !animationFinished || sessionState == SessionUiState.Bootstrapping
 
 @Composable
 private fun AuthNavigation(
@@ -161,7 +166,6 @@ private fun MainNavigation(
     val familyProfiles by sportsViewModel.familyProfiles.collectAsState()
     val selectedProfileId by sportsViewModel.selectedProfileId.collectAsState()
     val familyTeams by sportsViewModel.familyTeams.collectAsState()
-    val familyClubs by sportsViewModel.familyClubs.collectAsState()
     val familyRefreshResults by sportsViewModel.familyRefreshResults.collectAsState()
     val linkMemberState by appViewModel.linkMemberState.collectAsState()
     val relationships by sportsViewModel.relationships.collectAsState()
@@ -169,12 +173,6 @@ private fun MainNavigation(
     val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
     val teamHubState by sportsViewModel.teamHubState.collectAsState()
     val matchDetailsState by sportsViewModel.matchDetailsState.collectAsState()
-
-    val configuredFamily = profile.familyProfiles
-    LaunchedEffect(profile.accountId, configuredFamily) {
-        sportsViewModel.configureFamily(profile)
-        sportsViewModel.refreshFixtures(force = false)
-    }
 
     val homeStack = rememberNavBackStack(navigationStateConfiguration, AppRoute.Home as NavKey)
     val scheduleStack = rememberNavBackStack(
@@ -226,7 +224,6 @@ private fun MainNavigation(
                         familyProfiles = familyProfiles,
                         selectedProfileId = selectedProfileId,
                         familyTeams = familyTeams,
-                        familyClubs = familyClubs,
                         familyRefreshResults = familyRefreshResults,
                         onProfileSelected = sportsViewModel::selectFamilyProfile,
                         fixtures = fixtures,
@@ -442,7 +439,12 @@ private fun MainNavigation(
                             NavigationBarItem(
                                 selected = selected == item.destination,
                                 onClick = { selected = item.destination },
-                                icon = { Icon(item.icon, contentDescription = null) },
+                                icon = {
+                                    MaterialSymbolIcon(
+                                        item.symbol,
+                                        contentDescription = null,
+                                    )
+                                },
                                 label = { Text(stringResource(item.label)) },
                             )
                         }
@@ -465,7 +467,12 @@ private fun MainNavigation(
                         NavigationRailItem(
                             selected = selected == item.destination,
                             onClick = { selected = item.destination },
-                            icon = { Icon(item.icon, contentDescription = null) },
+                            icon = {
+                                MaterialSymbolIcon(
+                                    item.symbol,
+                                    contentDescription = null,
+                                )
+                            },
                             label = { Text(stringResource(item.label)) },
                         )
                     }
@@ -483,12 +490,16 @@ private fun MainNavigation(
 private data class TopLevelItem(
     val destination: TopLevelDestination,
     val label: StringResource,
-    val icon: ImageVector,
+    val symbol: MaterialSymbol,
 )
 
 private fun topLevelItems() = listOf(
-    TopLevelItem(TopLevelDestination.Home, Res.string.nav_home, Icons.Default.Home),
-    TopLevelItem(TopLevelDestination.Schedule, Res.string.nav_schedule, Icons.Default.CalendarMonth),
-    TopLevelItem(TopLevelDestination.Discover, Res.string.nav_discover, Icons.Default.Search),
-    TopLevelItem(TopLevelDestination.Profile, Res.string.nav_profile, Icons.Default.Person),
+    TopLevelItem(TopLevelDestination.Home, Res.string.nav_home, MaterialSymbol.Home),
+    TopLevelItem(
+        TopLevelDestination.Schedule,
+        Res.string.nav_schedule,
+        MaterialSymbol.CalendarMonth,
+    ),
+    TopLevelItem(TopLevelDestination.Discover, Res.string.nav_discover, MaterialSymbol.Search),
+    TopLevelItem(TopLevelDestination.Profile, Res.string.nav_profile, MaterialSymbol.Person),
 )

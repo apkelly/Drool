@@ -46,14 +46,17 @@
     <string name="family_profile_session_expired">Sign in again to refresh %1$s’s schedule and teams.</string>
     <string name="schedule_title">Full schedule</string>
     <string name="schedule_description">All playing and refereeing fixtures</string>
-    <string name="schedule_empty">No fixtures are cached yet.</string>
-    <string name="schedule_empty_body">Refresh when you have coverage to load your schedule.</string>
+    <string name="schedule_empty">No upcoming fixtures.</string>
+    <string name="schedule_empty_body">Past matches remain available from their team pages.</string>
     <string name="discover_title">Clubs</string>
     <string name="discover_search">Search clubs</string>
     <string name="discover_empty">No clubs found</string>
     <string name="club_teams">Teams</string>
     <string name="club_no_teams">No teams are available for this club.</string>
     <string name="team_your_team">Your team</string>
+    <string name="team_relationship_player">Player</string>
+    <string name="team_relationship_coach">Coach</string>
+    <string name="team_relationship_following">Following</string>
     <string name="team_age_group">Age group: %1$s</string>
     <string name="team_matches">Matches</string>
     <string name="team_results">Results</string>
@@ -98,9 +101,10 @@
     <string name="fixture_versus">%1$s vs %2$s</string>
     <string name="fixture_venue">At %1$s</string>
     <string name="fixture_competition">%1$s</string>
-    <string name="fixture_role_player">Playing</string>
-    <string name="fixture_role_referee">Refereeing</string>
-    <string name="fixture_role_referee_named">Refereeing · %1$s</string>
+    <string name="fixture_role_player">Player</string>
+    <string name="fixture_role_referee">Referee</string>
+    <string name="fixture_role_referee_named">Referee · %1$s</string>
+    <string name="fixture_role_coach">Coach</string>
     <string name="profile_title">Profile</string>
     <string name="profile_link_member">Link family member</string>
     <string name="profile_link_candidates_empty">No additional accounts are available to link.</string>
@@ -151,5 +155,5 @@
     <string name="content_team_logo">%1$s team logo</string>
     <string name="content_profile_image">%1$s profile image</string>
     <string name="content_account_logo">%1$s account logo</string>
-    <string name="content_splash_animation">Animated soccer ball bouncing on the center spot of a green pitch</string>
+    <string name="content_splash_animation">Animated soccer trophy with a ball and boots</string>
 </resources>

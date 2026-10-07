@@ -32,6 +32,7 @@ import com.github.apkelly.drool.data.remote.dto.LadderListResponse
 import com.github.apkelly.drool.data.remote.dto.MatchAttributesDto
 import com.github.apkelly.drool.data.remote.dto.MatchListResponse
 import com.github.apkelly.drool.data.remote.dto.MatchRoleAttributesDto
+import com.github.apkelly.drool.data.remote.dto.MatchRoleResourceDto
 import com.github.apkelly.drool.data.remote.dto.MatchResourceDto
 import com.github.apkelly.drool.data.remote.dto.MatchResponse
 import com.github.apkelly.drool.data.remote.dto.MemberCardsResponse
@@ -242,14 +243,10 @@ class DriblSportsApi(
             ?: profile.name
             ?: profile.email
             ?: accountId
-        val teams = payload?.activeTeams.orEmpty() + payload?.activeTeamsSnake.orEmpty()
         return Profile(
             accountId = accountId,
             displayName = displayName,
             email = profile.email ?: profile.emailAddress,
-            playingTeamIds = teams.mapNotNull {
-                (it.teamId ?: it.teamIdCamel ?: it.id).textValue
-            }.toSet(),
             avatarUrl = profile.avatarUrl
                 ?: profile.profileImage
                 ?: profile.image
@@ -374,19 +371,25 @@ class DriblSportsApi(
             val attributes = resource.attributes
             val team = attributes.copy(id = resource.id).toDto(index)
                 ?: return@mapIndexedNotNull null
+            val roleSlugs = (attributes.roles + resource.roles)
+                .flatMap {
+                    listOfNotNull(
+                        it.attributes.slug?.lowercase(),
+                        it.attributes.name?.lowercase(),
+                    )
+                }
             TeamAssociation(
                 team = team,
-                relationship = if (
-                        attributes.roles.any {
-                            it.attributes.slug.equals("teamsupporter", ignoreCase = true)
-                        }
-                    ) {
-                        TeamRelationship.Following
-                    } else {
-                        TeamRelationship.PlaysFor
-                    },
+                relationship = roleSlugs.toTeamRelationship(),
             )
         }
+    }
+
+    private fun List<String>.toTeamRelationship(): TeamRelationship = when {
+        any { "coach" in it } -> TeamRelationship.Coaching
+        any { "player" in it } -> TeamRelationship.Player
+        any { "supporter" in it } -> TeamRelationship.Following
+        else -> TeamRelationship.None
     }
 
     override suspend fun fetchProfileClubs(
@@ -693,11 +696,7 @@ private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture {
         venueAddress = address,
         latitude = latitude?.doubleOrNull,
         longitude = longitude?.doubleOrNull,
-        role = if (roles.any { it.attributes.isReferee }) {
-            FixtureRole.Referee
-        } else {
-            FixtureRole.Player
-        },
+        role = roles.fixtureRole(),
         leagueName = leagueName,
     )
 }
@@ -706,6 +705,17 @@ private val MatchRoleAttributesDto.isReferee: Boolean
     get() = listOfNotNull(name, slug).any {
         it.contains("referee", ignoreCase = true)
     }
+
+private val MatchRoleAttributesDto.isCoach: Boolean
+    get() = listOfNotNull(name, slug).any {
+        it.contains("coach", ignoreCase = true)
+    }
+
+private fun List<MatchRoleResourceDto>.fixtureRole(): FixtureRole = when {
+    any { it.attributes.isReferee } -> FixtureRole.Referee
+    any { it.attributes.isCoach } -> FixtureRole.Coach
+    else -> FixtureRole.Player
+}
 
 private fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
     val matchId = attributes.eventId.textValue ?: id.textValue ?: return null
