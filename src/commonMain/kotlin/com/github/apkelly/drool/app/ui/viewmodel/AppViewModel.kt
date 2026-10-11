@@ -10,7 +10,7 @@ import com.github.apkelly.drool.common.domain.model.AuthCredentials
 import com.github.apkelly.drool.common.domain.model.AuthenticationException
 import com.github.apkelly.drool.common.domain.model.AuthenticationFailure
 import com.github.apkelly.drool.common.domain.model.LinkMemberException
-import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.common.logging.DroolLog
 import com.github.apkelly.drool.common.observability.AnalyticsEvent
@@ -23,11 +23,13 @@ import com.github.apkelly.drool.common.observability.ThemeSelection
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
+import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,9 +47,10 @@ class AppViewModel(
     private val restoreSession: RestoreSessionUseCase,
     private val signInUser: SignInUserUseCase,
     private val signOutUser: SignOutUserUseCase,
-    private val refreshProfileEndpoint: RefreshProfileEndpointUseCase,
     private val getLinkCandidates: GetLinkCandidatesUseCase,
+    private val requestLinkedUserUseCase: RequestLinkedUserUseCase,
     private val verifyLinkedUserUseCase: VerifyLinkedUserUseCase,
+    private val unlinkLinkedUserUseCase: UnlinkLinkedUserUseCase,
     observeThemeMode: ObserveThemeModeUseCase,
     private val setThemeMode: SetThemeModeUseCase,
     observeObservabilityEnabled: ObserveObservabilityEnabledUseCase,
@@ -61,6 +64,9 @@ class AppViewModel(
     private val mutableLinkMemberState =
         MutableStateFlow<LinkMemberUiState>(LinkMemberUiState.Idle)
     val linkMemberState: StateFlow<LinkMemberUiState> = mutableLinkMemberState
+    private val mutableUnlinkMemberState =
+        MutableStateFlow<UnlinkMemberUiState>(UnlinkMemberUiState.Idle)
+    val unlinkMemberState: StateFlow<UnlinkMemberUiState> = mutableUnlinkMemberState
     private var profileObservationJob: Job? = null
 
     val themeMode: StateFlow<ThemeMode> =
@@ -176,26 +182,6 @@ class AppViewModel(
         }
     }
 
-    fun refreshRelatedUsers(
-        email: String,
-    ) {
-        scope.launch {
-            refreshProfileEndpoint(ProfileApiEndpoint.RelatedUsers, email.trim())
-        }
-    }
-
-    fun refreshAccessAccounts() {
-        scope.launch {
-            refreshProfileEndpoint(ProfileApiEndpoint.AccessAccounts, "")
-        }
-    }
-
-    fun refreshLinkedUsers() {
-        scope.launch {
-            refreshProfileEndpoint(ProfileApiEndpoint.LinkedUsers, "")
-        }
-    }
-
     fun loadLinkCandidates() {
         mutableLinkMemberState.value = LinkMemberUiState.Loading
         scope.launch {
@@ -209,22 +195,87 @@ class AppViewModel(
         }
     }
 
-    fun verifyLinkedUser(
-        candidateId: String,
-        token: String,
+    fun requestLinkedUser(
+        candidate: RelatedUser,
+        isGuardian: Boolean,
     ) {
         val current = mutableLinkMemberState.value as? LinkMemberUiState.Ready ?: return
-        if (token.length != LINK_TOKEN_LENGTH || !token.all(Char::isDigit)) return
-        mutableLinkMemberState.value = current.copy(verifyingCandidateId = candidateId)
+        if (current.requestingCandidateId != null) return
+        mutableLinkMemberState.value = current.copy(requestingCandidateId = candidate.id)
         scope.launch {
             mutableLinkMemberState.value = try {
-                verifyLinkedUserUseCase(candidateId, token)
+                val result = requestLinkedUserUseCase(candidate.id, isGuardian)
+                if (result.isApproved) {
+                    LinkMemberUiState.Linked
+                } else {
+                    LinkMemberUiState.AwaitingVerification(
+                        candidates = current.candidates,
+                        candidate = candidate,
+                        linkId = result.relationshipId,
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: LinkMemberException) {
+                LinkMemberUiState.Failed(error.reason)
+            }
+        }
+    }
+
+    fun verifyLinkedUser(
+        token: String,
+    ) {
+        val current =
+            mutableLinkMemberState.value as? LinkMemberUiState.AwaitingVerification ?: return
+        if (token.length != LINK_TOKEN_LENGTH || !token.all(Char::isDigit)) return
+        if (current.verifying) return
+        mutableLinkMemberState.value = current.copy(verifying = true)
+        scope.launch {
+            mutableLinkMemberState.value = try {
+                verifyLinkedUserUseCase(current.linkId, token)
                 LinkMemberUiState.Linked
             } catch (error: CancellationException) {
                 throw error
             } catch (error: LinkMemberException) {
                 LinkMemberUiState.Failed(error.reason)
             }
+        }
+    }
+
+    fun cancelLinkVerification() {
+        val current =
+            mutableLinkMemberState.value as? LinkMemberUiState.AwaitingVerification ?: return
+        if (current.verifying) return
+        mutableLinkMemberState.value = LinkMemberUiState.Ready(
+            candidates = current.candidates,
+        )
+    }
+
+    fun completeLinkMemberFlow() {
+        if (mutableLinkMemberState.value != LinkMemberUiState.Linked) return
+        mutableLinkMemberState.value = LinkMemberUiState.Idle
+    }
+
+    fun unlinkLinkedUser(
+        linkId: String,
+    ) {
+        if (mutableUnlinkMemberState.value is UnlinkMemberUiState.Unlinking) return
+        mutableUnlinkMemberState.value = UnlinkMemberUiState.Unlinking(linkId)
+        scope.launch {
+            mutableUnlinkMemberState.value = try {
+                unlinkLinkedUserUseCase(linkId)
+                UnlinkMemberUiState.Idle
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: LinkMemberException) {
+                UnlinkMemberUiState.Failed(error.reason)
+            }
+        }
+    }
+
+    fun clearUnlinkMemberFailure() {
+        if (mutableUnlinkMemberState.value is UnlinkMemberUiState.Failed) {
+            mutableUnlinkMemberState.value = UnlinkMemberUiState.Idle
         }
     }
 

@@ -24,6 +24,7 @@ internal object TopLevelScreenPreviewData {
         email = "ethan@example.com",
         avatarUrl = null,
         subjectUserId = "ethan",
+        linkId = "linked-ethan",
         isLinked = true,
     )
 

@@ -1,21 +1,20 @@
 package com.github.apkelly.drool.profile.domain.usecase
 
-import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
-
-class RefreshProfileEndpointUseCase(
-    private val repository: ProfileRepository,
-) {
-    suspend operator fun invoke(
-        endpoint: ProfileApiEndpoint,
-        email: String,
-    ) = repository.refreshProfileEndpoint(endpoint, email)
-}
 
 class GetLinkCandidatesUseCase(
     private val repository: ProfileRepository,
 ) {
     suspend operator fun invoke() = repository.getLinkCandidates()
+}
+
+class RequestLinkedUserUseCase(
+    private val repository: ProfileRepository,
+) {
+    suspend operator fun invoke(
+        candidateId: String,
+        isGuardian: Boolean,
+    ) = repository.requestLinkedUser(candidateId, isGuardian)
 }
 
 class VerifyLinkedUserUseCase(
@@ -25,4 +24,12 @@ class VerifyLinkedUserUseCase(
         candidateId: String,
         token: String,
     ) = repository.verifyLinkedUser(candidateId, token)
+}
+
+class UnlinkLinkedUserUseCase(
+    private val repository: ProfileRepository,
+) {
+    suspend operator fun invoke(
+        linkId: String,
+    ) = repository.unlinkLinkedUser(linkId)
 }

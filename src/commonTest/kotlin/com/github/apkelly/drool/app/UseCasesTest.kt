@@ -17,6 +17,7 @@ import com.github.apkelly.drool.common.domain.model.FamilyProfile
 import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
+import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.MatchWeather
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
@@ -45,9 +46,10 @@ import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
@@ -85,20 +87,22 @@ class UseCasesTest {
         assertEquals(credentials, dataSource.lastCredentials)
         SignOutUserUseCase(authRepository)()
         assertEquals(1, dataSource.signOutCount)
-        RefreshProfileEndpointUseCase(profileRepository)(
-            ProfileApiEndpoint.RelatedUsers,
-            "alex@example.com",
-        )
-        assertEquals(
-            ProfileApiEndpoint.RelatedUsers to "alex@example.com",
-            dataSource.lastProfileRefresh,
-        )
         dataSource.linkCandidates = listOf(
             RelatedUser("candidate", "Ethan", null, null),
         )
         assertEquals(dataSource.linkCandidates, GetLinkCandidatesUseCase(profileRepository)())
+        assertEquals(
+            LinkMemberRequestResult(
+                relationshipId = "linked-candidate",
+                isApproved = false,
+            ),
+            RequestLinkedUserUseCase(profileRepository)("candidate", true),
+        )
+        assertEquals("candidate" to true, dataSource.lastLinkRequest)
         VerifyLinkedUserUseCase(profileRepository)("candidate", "123456")
         assertEquals("candidate" to "123456", dataSource.lastLinkVerification)
+        UnlinkLinkedUserUseCase(profileRepository)("linked-candidate")
+        assertEquals("linked-candidate", dataSource.lastUnlinkedUser)
     }
 
     @Test
@@ -278,6 +282,8 @@ private class FakeSessionDataSource : SessionDataSource {
     var lastProfileRefresh: Pair<ProfileApiEndpoint, String>? = null
     var linkCandidates: List<RelatedUser> = emptyList()
     var lastLinkVerification: Pair<String, String>? = null
+    var lastLinkRequest: Pair<String, Boolean>? = null
+    var lastUnlinkedUser: String? = null
 
     override fun observeProfile(): Flow<Profile?> = profile
     override suspend fun restoreSession() = restoreResult
@@ -301,11 +307,28 @@ private class FakeSessionDataSource : SessionDataSource {
 
     override suspend fun getLinkCandidates(): List<RelatedUser> = linkCandidates
 
+    override suspend fun requestLinkedUser(
+        candidateId: String,
+        isGuardian: Boolean,
+    ): LinkMemberRequestResult {
+        lastLinkRequest = candidateId to isGuardian
+        return LinkMemberRequestResult(
+            relationshipId = "linked-$candidateId",
+            isApproved = false,
+        )
+    }
+
     override suspend fun verifyLinkedUser(
         candidateId: String,
         token: String,
     ) {
         lastLinkVerification = candidateId to token
+    }
+
+    override suspend fun unlinkLinkedUser(
+        linkId: String,
+    ) {
+        lastUnlinkedUser = linkId
     }
 }
 

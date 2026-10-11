@@ -12,6 +12,8 @@ import com.github.apkelly.dribl.dto.LadderDetailResponse
 import com.github.apkelly.dribl.dto.LadderEntryDto
 import com.github.apkelly.dribl.dto.LadderEntryResourceDto
 import com.github.apkelly.dribl.dto.LadderListResponse
+import com.github.apkelly.dribl.dto.LinkUserRequest
+import com.github.apkelly.dribl.dto.LinkUserSelection
 import com.github.apkelly.dribl.dto.MatchAttributesDto
 import com.github.apkelly.dribl.dto.MatchListResponse
 import com.github.apkelly.dribl.dto.MatchResourceDto
@@ -19,7 +21,6 @@ import com.github.apkelly.dribl.dto.MatchResponse
 import com.github.apkelly.dribl.dto.MatchRoleAttributesDto
 import com.github.apkelly.dribl.dto.MatchRoleResourceDto
 import com.github.apkelly.dribl.dto.MemberCardsResponse
-import com.github.apkelly.dribl.dto.NestedResourceResponse
 import com.github.apkelly.dribl.dto.PersonDto
 import com.github.apkelly.dribl.dto.PersonResourceDto
 import com.github.apkelly.dribl.dto.ProfileResponse
@@ -43,6 +44,7 @@ import com.github.apkelly.dribl.model.Fixture
 import com.github.apkelly.dribl.model.FixtureRole
 import com.github.apkelly.dribl.model.FixtureStatus
 import com.github.apkelly.dribl.model.LadderEntry
+import com.github.apkelly.dribl.model.LinkUserResult
 import com.github.apkelly.dribl.model.Profile
 import com.github.apkelly.dribl.model.RefereeAvailability
 import com.github.apkelly.dribl.model.RefereeClub
@@ -376,12 +378,41 @@ class DriblSportsApi(
     override suspend fun fetchLinkCandidates(
         bearerToken: String,
     ): List<RelatedUser> {
-        val response = getBody<NestedResourceResponse<PersonResourceDto>>(
+        val response = getBody<ResourceList<PersonDto>>(
             "/linked-users-lookup",
             bearerToken,
         )
-        return response.data?.items.orEmpty()
-            .mapIndexedNotNull(::relatedUserFromResource)
+        return response.items.mapIndexed { index, person ->
+            relatedUserFromPerson(index, person)
+        }
+    }
+
+    override suspend fun requestLinkedUser(
+        bearerToken: String,
+        candidateId: String,
+        isGuardian: Boolean,
+    ): LinkUserResult {
+        val url = url("/linked-users")
+        val response = client.post(url) {
+            accept(ContentType.Application.Json)
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
+            bearerAuth(bearerToken)
+            setBody(
+                LinkUserRequest(
+                    relatedUser = LinkUserSelection(candidateId, isGuardian),
+                    approve = true,
+                ),
+            )
+        }.requireBody<UserResponse>(url)
+        val linkedUser = response.data
+            ?: throw DriblResponseException("Link user response did not contain relationship data")
+        val relationshipId = linkedUser.id.textValue
+            ?: throw DriblResponseException("Link user response did not contain a relationship ID")
+        return LinkUserResult(
+            relationshipId = relationshipId,
+            isApproved = linkedUser.attributes.status.equals("approved", ignoreCase = true),
+        )
     }
 
     override suspend fun verifyLinkedUser(
@@ -396,6 +427,18 @@ class DriblSportsApi(
             header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
             bearerAuth(bearerToken)
             setBody(TokenVerificationRequest(token))
+        }.requireSuccess(url)
+    }
+
+    override suspend fun unlinkLinkedUser(
+        bearerToken: String,
+        linkId: String,
+    ) {
+        val url = url("/linked-users/$linkId")
+        client.delete(url) {
+            accept(ContentType.Application.Json)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
+            bearerAuth(bearerToken)
         }.requireSuccess(url)
     }
 
@@ -575,6 +618,7 @@ private fun relatedUserFromResource(
     index = index,
     person = resource.attributes,
     relationshipId = resource.id.textValue,
+    linkId = resource.id.textValue.takeIf { isLinked },
     isLinked = isLinked,
 )
 
@@ -616,6 +660,7 @@ private fun relatedUserFromPerson(
     index: Int,
     person: PersonDto,
     relationshipId: String? = null,
+    linkId: String? = null,
     isLinked: Boolean = false,
 ): RelatedUser {
     val email = person.email()
@@ -627,6 +672,7 @@ private fun relatedUserFromPerson(
         email = email,
         avatarUrl = person.avatar(),
         subjectUserId = userId ?: id,
+        linkId = linkId,
         isLinked = isLinked,
         dateOfBirth = person.dateOfBirth ?: person.alternateDateOfBirth,
         gender = person.gender,

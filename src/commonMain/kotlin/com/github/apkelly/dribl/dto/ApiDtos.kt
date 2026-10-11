@@ -15,6 +15,18 @@ internal data class NestedResourceResponse<T>(
 )
 
 @Serializable
+internal data class LinkUserRequest(
+    @SerialName("related_user") val relatedUser: LinkUserSelection,
+    @SerialName("approve") val approve: Boolean,
+)
+
+@Serializable
+internal data class LinkUserSelection(
+    @SerialName("id") val id: String,
+    @SerialName("is_guardian") val isGuardian: Boolean,
+)
+
+@Serializable
 internal data class SignInResponse(
     @SerialName("status") val status: Int,
     @SerialName("token") val token: String,

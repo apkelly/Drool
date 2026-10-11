@@ -10,6 +10,7 @@ data class RelatedUserEntity(
     val displayName: String,
     val email: String?,
     val avatarUrl: String?,
+    val linkId: String? = null,
     @ColumnInfo(defaultValue = "0")
     val isLinked: Boolean = false,
     val gender: String? = null,

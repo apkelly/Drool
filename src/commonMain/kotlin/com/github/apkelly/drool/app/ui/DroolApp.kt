@@ -51,7 +51,6 @@ import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.home.ui.HomeScreen
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import com.github.apkelly.drool.match.ui.MatchDetailsScreen
-import com.github.apkelly.drool.profile.ui.ApiDiagnosticsScreen
 import com.github.apkelly.drool.profile.ui.LinkMemberScreen
 import com.github.apkelly.drool.profile.ui.PersonalInformationScreen
 import com.github.apkelly.drool.profile.ui.ProfileScreen
@@ -200,6 +199,7 @@ private fun MainNavigation(
     val familyTeams by sportsViewModel.familyTeams.collectAsState()
     val familyRefreshResults by sportsViewModel.familyRefreshResults.collectAsState()
     val linkMemberState by appViewModel.linkMemberState.collectAsState()
+    val unlinkMemberState by appViewModel.unlinkMemberState.collectAsState()
     val relationships by sportsViewModel.relationships.collectAsState()
     val themeMode by appViewModel.themeMode.collectAsState()
     val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
@@ -241,7 +241,6 @@ private fun MainNavigation(
             is AppRoute.PersonalInformation -> AppScreen.PersonalInformation
             is AppRoute.Availability -> AppScreen.Availability
             AppRoute.LinkMember -> AppScreen.LinkMember
-            AppRoute.ApiDiagnostics -> AppScreen.ApiDiagnostics
             else -> null
         }
         screen?.let(appViewModel::trackScreen)
@@ -417,18 +416,18 @@ private fun MainNavigation(
                             profile = profile,
                             themeMode = themeMode,
                             observabilityEnabled = observabilityEnabled,
+                            unlinkMemberState = unlinkMemberState,
                         ),
                         onThemeChange = appViewModel::updateTheme,
                         onObservabilityChange = appViewModel::updateObservability,
-                        onOpenApiDiagnostics = {
-                            currentStack.add(AppRoute.ApiDiagnostics)
-                        },
                         onAddMember = {
                             currentStack.add(AppRoute.LinkMember)
                         },
                         onRelatedUserSelect = { user ->
                             currentStack.add(AppRoute.PersonalInformation(user.subjectUserId))
                         },
+                        onUnlinkUser = appViewModel::unlinkLinkedUser,
+                        onClearUnlinkFailure = appViewModel::clearUnlinkMemberFailure,
                         onSignOut = appViewModel::signOut,
                     )
                 }
@@ -500,21 +499,15 @@ private fun MainNavigation(
                             }
                         },
                         onLoad = appViewModel::loadLinkCandidates,
+                        onRequest = appViewModel::requestLinkedUser,
                         onVerify = appViewModel::verifyLinkedUser,
-                        onLink = appViewModel::restore,
-                    )
-                }
-                entry<AppRoute.ApiDiagnostics> {
-                    ApiDiagnosticsScreen(
-                        onBack = {
+                        onCancelVerification = appViewModel::cancelLinkVerification,
+                        onLink = {
+                            appViewModel.completeLinkMemberFlow()
                             if (currentStack.size > 1) {
                                 currentStack.removeAt(currentStack.lastIndex)
                             }
                         },
-                        onLinkedUsers = appViewModel::refreshLinkedUsers,
-                        onClubs = { sportsViewModel.refreshClubs() },
-                        onTeams = { sportsViewModel.refreshTeams() },
-                        onSchedule = { sportsViewModel.refreshFixtures() },
                     )
                 }
             },

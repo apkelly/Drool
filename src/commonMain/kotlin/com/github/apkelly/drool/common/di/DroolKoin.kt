@@ -56,9 +56,10 @@ import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.schedule.data.AvailabilityRepositoryImpl
 import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
@@ -160,9 +161,10 @@ private val domainModule = module {
     factory { RestoreSessionUseCase(repository = get()) }
     factory { SignInUserUseCase(repository = get()) }
     factory { SignOutUserUseCase(repository = get()) }
-    factory { RefreshProfileEndpointUseCase(repository = get()) }
     factory { GetLinkCandidatesUseCase(repository = get()) }
+    factory { RequestLinkedUserUseCase(repository = get()) }
     factory { VerifyLinkedUserUseCase(repository = get()) }
+    factory { UnlinkLinkedUserUseCase(repository = get()) }
     factory { ObserveThemeModeUseCase(repository = get()) }
     factory { SetThemeModeUseCase(repository = get()) }
     factory { ObserveObservabilityEnabledUseCase(repository = get()) }
@@ -194,9 +196,10 @@ private val uiModule = module {
             restoreSession = get(),
             signInUser = get(),
             signOutUser = get(),
-            refreshProfileEndpoint = get(),
             getLinkCandidates = get(),
+            requestLinkedUserUseCase = get(),
             verifyLinkedUserUseCase = get(),
+            unlinkLinkedUserUseCase = get(),
             observeThemeMode = get(),
             setThemeMode = get(),
             observeObservabilityEnabled = get(),

@@ -57,6 +57,10 @@ import com.github.apkelly.drool.common.resources.profile_link_candidates_empty
 import com.github.apkelly.drool.common.resources.profile_link_code
 import com.github.apkelly.drool.common.resources.profile_link_code_body
 import com.github.apkelly.drool.common.resources.profile_link_failed
+import com.github.apkelly.drool.common.resources.profile_link_guardian_body
+import com.github.apkelly.drool.common.resources.profile_link_guardian_no
+import com.github.apkelly.drool.common.resources.profile_link_guardian_title
+import com.github.apkelly.drool.common.resources.profile_link_guardian_yes
 import com.github.apkelly.drool.common.resources.profile_link_member
 import com.github.apkelly.drool.common.resources.profile_link_session_expired
 import com.github.apkelly.drool.common.resources.profile_link_verify
@@ -205,14 +209,16 @@ fun LinkMemberScreen(
     state: LinkMemberUiState,
     onBack: () -> Unit,
     onLoad: () -> Unit,
-    onVerify: (String, String) -> Unit,
+    onRequest: (RelatedUser, Boolean) -> Unit,
+    onVerify: (String) -> Unit,
+    onCancelVerification: () -> Unit,
     modifier: Modifier = Modifier,
     onLink: () -> Unit,
 ) {
     val currentOnLoad by rememberUpdatedState(onLoad)
     val currentOnLink by rememberUpdatedState(onLink)
     var selected by remember { mutableStateOf<RelatedUser?>(null) }
-    var token by remember(selected) { mutableStateOf("") }
+    var token by remember(state) { mutableStateOf("") }
     LaunchedEffect(Unit) {
         if (state == LinkMemberUiState.Idle) currentOnLoad()
     }
@@ -260,15 +266,22 @@ fun LinkMemberScreen(
 
                 LinkMemberUiState.Linked -> CircularProgressIndicator()
 
+                is LinkMemberUiState.AwaitingVerification -> CircularProgressIndicator()
+
                 is LinkMemberUiState.Ready -> {
                     if (state.candidates.isEmpty()) {
                         Text(stringResource(Res.string.profile_link_candidates_empty))
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(state.candidates, key = { it.id }) { candidate ->
+                                val requesting = state.requestingCandidateId == candidate.id
                                 Card(
                                     modifier = Modifier.fillMaxWidth()
-                                        .clickable { selected = candidate },
+                                        .clickable(
+                                            enabled = state.requestingCandidateId == null,
+                                        ) {
+                                            selected = candidate
+                                        },
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -287,6 +300,12 @@ fun LinkMemberScreen(
                                             )
                                             candidate.email?.let { Text(it) }
                                         }
+                                        if (requesting) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -300,7 +319,44 @@ fun LinkMemberScreen(
     selected?.let { candidate ->
         AlertDialog(
             onDismissRequest = { selected = null },
-            title = { Text(candidate.displayName) },
+            title = {
+                Text(
+                    stringResource(
+                        Res.string.profile_link_guardian_title,
+                        candidate.displayName,
+                    ),
+                )
+            },
+            text = {
+                Text(stringResource(Res.string.profile_link_guardian_body))
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        selected = null
+                        onRequest(candidate, true)
+                    },
+                ) {
+                    Text(stringResource(Res.string.profile_link_guardian_yes))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        selected = null
+                        onRequest(candidate, false)
+                    },
+                ) {
+                    Text(stringResource(Res.string.profile_link_guardian_no))
+                }
+            },
+        )
+    }
+
+    (state as? LinkMemberUiState.AwaitingVerification)?.let { awaiting ->
+        AlertDialog(
+            onDismissRequest = onCancelVerification,
+            title = { Text(awaiting.candidate.displayName) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(Res.string.profile_link_code_body))
@@ -311,20 +367,23 @@ fun LinkMemberScreen(
                         },
                         label = { Text(stringResource(Res.string.profile_link_code)) },
                         singleLine = true,
+                        enabled = !awaiting.verifying,
                     )
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = { onVerify(candidate.id, token) },
-                    enabled = token.length == MEMBER_TOKEN_LENGTH &&
-                        (state as? LinkMemberUiState.Ready)?.verifyingCandidateId == null,
+                    onClick = { onVerify(token) },
+                    enabled = token.length == MEMBER_TOKEN_LENGTH && !awaiting.verifying,
                 ) {
                     Text(stringResource(Res.string.profile_link_verify))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selected = null }) {
+                TextButton(
+                    onClick = onCancelVerification,
+                    enabled = !awaiting.verifying,
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },

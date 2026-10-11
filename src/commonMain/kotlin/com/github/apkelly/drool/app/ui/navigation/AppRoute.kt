@@ -59,9 +59,6 @@ sealed interface AppRoute : NavKey {
 
     @Serializable
     data object LinkMember : AppRoute
-
-    @Serializable
-    data object ApiDiagnostics : AppRoute
 }
 
 enum class TopLevelDestination {

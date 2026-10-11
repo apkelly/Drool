@@ -8,6 +8,7 @@ data class RelatedUser(
     val email: String?,
     val avatarUrl: String?,
     val subjectUserId: String = id,
+    val linkId: String? = null,
     val isLinked: Boolean = false,
     val gender: String? = null,
     val dateOfBirth: String? = null,
@@ -30,4 +31,9 @@ data class Account(
     val name: String,
     val subtitle: String?,
     val logoUrl: String?,
+)
+
+data class LinkUserResult(
+    val relationshipId: String,
+    val isApproved: Boolean,
 )

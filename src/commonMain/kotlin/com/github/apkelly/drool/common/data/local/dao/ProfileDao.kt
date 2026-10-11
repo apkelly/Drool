@@ -56,6 +56,15 @@ interface ProfileDao {
         users: List<RelatedUserEntity>,
     )
 
+    @Query(
+        "UPDATE RelatedUserEntity SET isLinked = 0, linkId = NULL " +
+            "WHERE ownerAccountId = :accountId AND linkId = :linkId",
+    )
+    suspend fun markRelatedUserUnlinked(
+        accountId: String,
+        linkId: String,
+    )
+
     @Query("DELETE FROM RelatedUserEntity WHERE ownerAccountId = :accountId")
     suspend fun deleteRelatedUsers(
         accountId: String,

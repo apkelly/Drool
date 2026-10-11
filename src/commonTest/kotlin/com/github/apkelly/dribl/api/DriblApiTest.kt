@@ -499,6 +499,7 @@ class DriblApiTest {
         )
         assertEquals("29167", linkedUsers.single().id)
         assertEquals("29167", linkedUsers.single().subjectUserId)
+        assertEquals("313262", linkedUsers.single().linkId)
         assertEquals(true, linkedUsers.single().isLinked)
         assertEquals("0400 000 000", accounts.single().name)
         assertEquals("mobile number", accounts.single().subtitle)
@@ -890,39 +891,55 @@ class DriblApiTest {
     @Test
     fun linkMemberContractsAndPersonalFieldsMatchOriginalClient() = runTest {
         val requests = mutableListOf<Pair<HttpMethod, String>>()
+        var linkRequestBody: String? = null
         val client = HttpClient(MockEngine) {
             install(ContentNegotiation) { json(driblJson) }
             engine {
                 addHandler { request ->
                     requests += request.method to request.url.encodedPath
-                    val response = if (request.method == HttpMethod.Get) {
-                        """
+                    if (request.method == HttpMethod.Post) {
+                        linkRequestBody = (
+                            request.body as OutgoingContent.ByteArrayContent
+                            ).bytes().decodeToString()
+                    }
+                    val response = when (request.method) {
+                        HttpMethod.Get ->
+                            """
                         {
-                          "data": {
-                            "data": [{
-                              "id": "candidate",
-                              "attributes": {
-                                "first_name": "Ethan",
-                                "last_name": "Kelly",
-                                "gender": "Male",
-                                "dob": "2012-03-04",
-                                "phone_number": "0400 000 000",
-                                "address": {
-                                  "line_1": "1 Example Street",
-                                  "suburb": "Sydney",
-                                  "postcode": "2000"
-                                },
-                                "emergency_contacts": [{
-                                  "name": "Andrew Kelly",
-                                  "phone": "0400 111 111"
-                                }]
-                              }
-                            }]
-                          }
+                          "data": [
+                            {
+                              "first_name": "Ethan",
+                              "last_name": "Kelly",
+                              "source": "https://ocean.dribl.com/ethan",
+                              "dob": "2012-03-04",
+                              "id": 29167,
+                              "gender": "Male",
+                              "phone_number": "0400 000 000",
+                              "address": {
+                                "line_1": "1 Example Street",
+                                "suburb": "Sydney",
+                                "postcode": "2000"
+                              },
+                              "emergency_contacts": [{
+                                "name": "Andrew Kelly",
+                                "phone": "0400 111 111"
+                              }]
+                            },
+                            {
+                              "first_name": "Andrew",
+                              "last_name": "Kelly",
+                              "source": "https://ocean.dribl.com/andrew",
+                              "dob": "1974-12-14",
+                              "id": 6403118
+                            }
+                          ]
                         }
-                        """.trimIndent()
-                    } else {
-                        """{"data":{"status":"approved"}}"""
+                            """.trimIndent()
+
+                        HttpMethod.Post ->
+                            """{"data":{"id":"linked-candidate","attributes":{"status":"pending"}}}"""
+
+                        else -> """{"data":{"status":"approved"}}"""
                     }
                     respond(
                         content = response,
@@ -933,10 +950,16 @@ class DriblApiTest {
         }
         val api = DriblSportsApi(client, "https://example.test/api")
 
-        val candidate = api.fetchLinkCandidates("token").single()
-        api.verifyLinkedUser("token", "candidate", "123456")
+        val candidates = api.fetchLinkCandidates("token")
+        val candidate = candidates.first()
+        val linkResult = api.requestLinkedUser("token", candidate.id, true)
+        api.verifyLinkedUser("token", linkResult.relationshipId, "123456")
+        api.unlinkLinkedUser("token", "linked-candidate")
 
         assertEquals("Male", candidate.gender)
+        assertEquals("29167", candidate.id)
+        assertEquals("https://ocean.dribl.com/ethan", candidate.avatarUrl)
+        assertEquals("6403118", candidates.last().id)
         assertEquals("2012-03-04", candidate.dateOfBirth)
         assertEquals("0400 000 000", candidate.phoneNumber)
         assertEquals("1 Example Street, Sydney, 2000", candidate.address)
@@ -944,13 +967,59 @@ class DriblApiTest {
             listOf(EmergencyContact("Andrew Kelly", "0400 111 111")),
             candidate.emergencyContacts,
         )
+        assertEquals("linked-candidate", linkResult.relationshipId)
+        assertEquals(false, linkResult.isApproved)
+        assertEquals(
+            driblJson.parseToJsonElement(
+                """{"related_user":{"id":"29167","is_guardian":true},"approve":true}""",
+            ),
+            driblJson.parseToJsonElement(checkNotNull(linkRequestBody)),
+        )
         assertEquals(
             listOf(
                 HttpMethod.Get to "/api/linked-users-lookup",
-                HttpMethod.Patch to "/api/linked-users/candidate",
+                HttpMethod.Post to "/api/linked-users",
+                HttpMethod.Patch to "/api/linked-users/linked-candidate",
+                HttpMethod.Delete to "/api/linked-users/linked-candidate",
             ),
             requests,
         )
+    }
+
+    @Test
+    fun approvedLinkMemberResponseDoesNotRequireVerification() = runTest {
+        val client = HttpClient(MockEngine) {
+            install(ContentNegotiation) { json(driblJson) }
+            engine {
+                addHandler {
+                    respond(
+                        content = """
+                            {
+                              "data": {
+                                "id": 717620,
+                                "type": "linked_users",
+                                "attributes": {
+                                  "status": "approved",
+                                  "self_id": 6403118,
+                                  "user_id": 29167,
+                                  "first_name": "Ethan",
+                                  "last_name": "Kelly",
+                                  "is_guardian": 1
+                                }
+                              }
+                            }
+                        """.trimIndent(),
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            }
+        }
+
+        val result = DriblSportsApi(client, "https://example.test/api")
+            .requestLinkedUser("token", "29167", true)
+
+        assertEquals("717620", result.relationshipId)
+        assertEquals(true, result.isApproved)
     }
 
     @Test

@@ -8,8 +8,16 @@ sealed interface LinkMemberUiState {
     data object Loading : LinkMemberUiState
     data class Ready(
         val candidates: List<RelatedUser>,
-        val verifyingCandidateId: String? = null,
+        val requestingCandidateId: String? = null,
     ) : LinkMemberUiState
+
+    data class AwaitingVerification(
+        val candidates: List<RelatedUser>,
+        val candidate: RelatedUser,
+        val linkId: String,
+        val verifying: Boolean = false,
+    ) : LinkMemberUiState
+
     data class Failed(
         val reason: LinkMemberFailure,
     ) : LinkMemberUiState

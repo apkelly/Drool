@@ -13,8 +13,8 @@ import com.github.apkelly.drool.common.domain.model.AuthenticationException
 import com.github.apkelly.drool.common.domain.model.AuthenticationFailure
 import com.github.apkelly.drool.common.domain.model.LinkMemberException
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.Profile
-import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
@@ -22,11 +22,13 @@ import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
+import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
@@ -129,19 +131,6 @@ class AppViewModelTest {
         advanceUntilIdle()
         assertEquals(true, preferences.observabilityEnabled.value)
 
-        viewModel.refreshRelatedUsers(" alex@example.com ")
-        viewModel.refreshAccessAccounts()
-        viewModel.refreshLinkedUsers()
-        advanceUntilIdle()
-        assertEquals(
-            listOf(
-                ProfileApiEndpoint.RelatedUsers to "alex@example.com",
-                ProfileApiEndpoint.AccessAccounts to "",
-                ProfileApiEndpoint.LinkedUsers to "",
-            ),
-            sessionRepository.profileRefreshes,
-        )
-
         viewModel.signOut()
         advanceUntilIdle()
         assertEquals(1, sessionRepository.signOutCount)
@@ -163,12 +152,43 @@ class AppViewModelTest {
             viewModel.linkMemberState.value,
         )
 
-        viewModel.verifyLinkedUser("candidate", "123")
-        assertEquals(null, sessions.verifiedLink)
-        viewModel.verifyLinkedUser("candidate", "123456")
+        val candidate = sessions.linkCandidates.single()
+        viewModel.requestLinkedUser(candidate, true)
+        viewModel.requestLinkedUser(candidate, false)
         advanceUntilIdle()
-        assertEquals("candidate" to "123456", sessions.verifiedLink)
+        assertEquals("candidate" to true, sessions.requestedLink)
+        assertIs<LinkMemberUiState.AwaitingVerification>(viewModel.linkMemberState.value)
+
+        viewModel.cancelLinkVerification()
+        assertIs<LinkMemberUiState.Ready>(viewModel.linkMemberState.value)
+        viewModel.cancelLinkVerification()
+        viewModel.requestLinkedUser(candidate, false)
+        advanceUntilIdle()
+        assertEquals("candidate" to false, sessions.requestedLink)
+
+        viewModel.verifyLinkedUser("123")
+        assertEquals(null, sessions.verifiedLink)
+        viewModel.verifyLinkedUser("123456")
+        viewModel.verifyLinkedUser("654321")
+        advanceUntilIdle()
+        assertEquals("linked-candidate" to "123456", sessions.verifiedLink)
         assertEquals(LinkMemberUiState.Linked, viewModel.linkMemberState.value)
+
+        viewModel.loadLinkCandidates()
+        advanceUntilIdle()
+        sessions.linkRequestApproved = true
+        viewModel.requestLinkedUser(candidate, true)
+        advanceUntilIdle()
+        assertEquals(LinkMemberUiState.Linked, viewModel.linkMemberState.value)
+        viewModel.completeLinkMemberFlow()
+        assertEquals(LinkMemberUiState.Idle, viewModel.linkMemberState.value)
+        viewModel.completeLinkMemberFlow()
+
+        viewModel.unlinkLinkedUser("linked-candidate")
+        viewModel.unlinkLinkedUser("ignored-while-busy")
+        advanceUntilIdle()
+        assertEquals("linked-candidate", sessions.unlinkedUser)
+        assertEquals(UnlinkMemberUiState.Idle, viewModel.unlinkMemberState.value)
 
         sessions.linkFailure = LinkMemberException(LinkMemberFailure.SessionExpired)
         viewModel.loadLinkCandidates()
@@ -177,6 +197,16 @@ class AppViewModelTest {
             LinkMemberUiState.Failed(LinkMemberFailure.SessionExpired),
             viewModel.linkMemberState.value,
         )
+        viewModel.unlinkLinkedUser("linked-candidate")
+        advanceUntilIdle()
+        assertEquals(
+            UnlinkMemberUiState.Failed(LinkMemberFailure.SessionExpired),
+            viewModel.unlinkMemberState.value,
+        )
+        viewModel.clearUnlinkMemberFailure()
+        assertEquals(UnlinkMemberUiState.Idle, viewModel.unlinkMemberState.value)
+        viewModel.clearUnlinkMemberFailure()
+        assertEquals(UnlinkMemberUiState.Idle, viewModel.unlinkMemberState.value)
     }
 
     private fun kotlinx.coroutines.test.TestScope.viewModel(
@@ -187,9 +217,10 @@ class AppViewModelTest {
         restoreSession = RestoreSessionUseCase(sessions),
         signInUser = SignInUserUseCase(sessions),
         signOutUser = SignOutUserUseCase(sessions),
-        refreshProfileEndpoint = RefreshProfileEndpointUseCase(sessions),
         getLinkCandidates = GetLinkCandidatesUseCase(sessions),
+        requestLinkedUserUseCase = RequestLinkedUserUseCase(sessions),
         verifyLinkedUserUseCase = VerifyLinkedUserUseCase(sessions),
+        unlinkLinkedUserUseCase = UnlinkLinkedUserUseCase(sessions),
         observeThemeMode = ObserveThemeModeUseCase(preferences),
         setThemeMode = SetThemeModeUseCase(preferences),
         observeObservabilityEnabled = ObserveObservabilityEnabledUseCase(preferences),
@@ -207,9 +238,11 @@ private class FakeViewModelSessionRepository :
     var signInFailure: Throwable? = null
     var credentials: AuthCredentials? = null
     var signOutCount = 0
-    val profileRefreshes = mutableListOf<Pair<ProfileApiEndpoint, String>>()
     var linkCandidates: List<RelatedUser> = emptyList()
+    var requestedLink: Pair<String, Boolean>? = null
+    var linkRequestApproved = false
     var verifiedLink: Pair<String, String>? = null
+    var unlinkedUser: String? = null
     var linkFailure: Throwable? = null
 
     override fun observeProfile(): Flow<Profile?> = observedProfile
@@ -227,16 +260,21 @@ private class FakeViewModelSessionRepository :
         signOutCount += 1
     }
 
-    override suspend fun refreshProfileEndpoint(
-        endpoint: ProfileApiEndpoint,
-        email: String,
-    ) {
-        profileRefreshes += endpoint to email
-    }
-
     override suspend fun getLinkCandidates(): List<RelatedUser> {
         linkFailure?.let { throw it }
         return linkCandidates
+    }
+
+    override suspend fun requestLinkedUser(
+        candidateId: String,
+        isGuardian: Boolean,
+    ): LinkMemberRequestResult {
+        linkFailure?.let { throw it }
+        requestedLink = candidateId to isGuardian
+        return LinkMemberRequestResult(
+            relationshipId = "linked-$candidateId",
+            isApproved = linkRequestApproved,
+        )
     }
 
     override suspend fun verifyLinkedUser(
@@ -245,6 +283,13 @@ private class FakeViewModelSessionRepository :
     ) {
         linkFailure?.let { throw it }
         verifiedLink = candidateId to token
+    }
+
+    override suspend fun unlinkLinkedUser(
+        linkId: String,
+    ) {
+        linkFailure?.let { throw it }
+        unlinkedUser = linkId
     }
 }
 

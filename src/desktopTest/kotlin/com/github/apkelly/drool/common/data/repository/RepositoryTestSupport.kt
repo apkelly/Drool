@@ -6,6 +6,7 @@ import com.github.apkelly.dribl.api.AuthRemoteDataSource
 import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.model.AuthApiRequest
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.dribl.model.LinkUserResult
 import com.github.apkelly.drool.common.data.local.DroolDatabase
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.storage.createBearerTokenStore
@@ -106,7 +107,10 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     var createAvailabilityRequest: CreateRefereeAvailabilityRequest? = null
     var deletedAvailabilityId: String? = null
     var linkCandidates: List<RelatedUser> = emptyList()
+    var requestedLink: Pair<String, Boolean>? = null
+    var linkRequestApproved = false
     var verifiedLink: Pair<String, String>? = null
+    var unlinkedUserId: String? = null
     val profileSessionUsers = mutableListOf<String>()
     val profileSessionFailureUsers = mutableSetOf<String>()
     val fixtureUserIds = mutableListOf<String?>()
@@ -196,6 +200,19 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         return linkCandidates.map { it.toDribl() }
     }
 
+    override suspend fun requestLinkedUser(
+        bearerToken: String,
+        candidateId: String,
+        isGuardian: Boolean,
+    ): LinkUserResult {
+        failure?.let { throw it }
+        requestedLink = candidateId to isGuardian
+        return LinkUserResult(
+            relationshipId = "linked-$candidateId",
+            isApproved = linkRequestApproved,
+        )
+    }
+
     override suspend fun verifyLinkedUser(
         bearerToken: String,
         candidateId: String,
@@ -203,6 +220,15 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     ) {
         failure?.let { throw it }
         verifiedLink = candidateId to token
+    }
+
+    override suspend fun unlinkLinkedUser(
+        bearerToken: String,
+        linkId: String,
+    ) {
+        failure?.let { throw it }
+        unlinkedUserId = linkId
+        linkedUsers = linkedUsers.orEmpty().filterNot { it.linkId == linkId }
     }
 
     override suspend fun createProfileSession(
@@ -337,6 +363,7 @@ private fun RelatedUser.toDribl() = DriblRelatedUser(
     email = email,
     avatarUrl = avatarUrl,
     subjectUserId = subjectUserId,
+    linkId = linkId,
     isLinked = isLinked,
     gender = gender,
     dateOfBirth = dateOfBirth,

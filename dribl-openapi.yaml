@@ -992,6 +992,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: post_linked_user
+      tags: ["Linked Users"]
+      summary: "Request or immediately approve a related-user link"
+      x-method-confirmation: "confirmed from Hermes call site: axios.post('/linked-users', { related_user: { id, is_guardian }, approve: true })"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenericRequest"
+      responses:
+        "200":
+          description: Relationship created; approved links require no token verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericResponse"
+              example:
+                data:
+                  id: 717620
+                  type: linked_users
+                  attributes:
+                    status: approved
+                    self_id: 6403118
+                    user_id: 29167
+                    first_name: Ethan
+                    last_name: Kelly
+                    is_guardian: 1
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/linked-users-bulk":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
     post:
@@ -1103,6 +1142,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response; schema not recovered from APK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: delete_linked_user
+      tags: ["Linked Users"]
+      summary: "Remove a linked family member from the authenticated profile"
+      x-method-confirmation: "confirmed from Hermes call site: axios.delete('linked-users/' + id)"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: id
+          in: path
+          required: true
+          description: "Linked-user relationship resource ID"
+          schema: { type: string }
+      responses:
+        "200":
+          description: Linked user removed successfully
+        "204":
+          description: Linked user removed successfully with no response body
         "401":
           description: Unauthorized or expired authentication
         default:

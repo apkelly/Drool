@@ -26,6 +26,7 @@ import com.github.apkelly.drool.common.domain.model.AuthenticationException
 import com.github.apkelly.drool.common.domain.model.AuthenticationFailure
 import com.github.apkelly.drool.common.domain.model.LinkMemberException
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.common.domain.model.RelatedUser
@@ -229,10 +230,28 @@ class SessionDataSourceImpl(
         }
     }
 
-    override suspend fun getLinkCandidates(): List<RelatedUser> = linkMemberRequest {
-        val token = store.getBearerToken()
-            ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
-        sportsApi.fetchLinkCandidates(token).map { it.toDomain() }
+    override suspend fun getLinkCandidates(): List<RelatedUser> {
+        val token = requireBearerToken()
+        val accountId = requireActiveAccountId()
+        return linkMemberRequest {
+            sportsApi.fetchLinkCandidates(token).map { it.toDomain() }
+        }.filter { it.subjectUserId != accountId }
+    }
+
+    override suspend fun requestLinkedUser(
+        candidateId: String,
+        isGuardian: Boolean,
+    ): LinkMemberRequestResult = linkMemberRequest {
+        val token = requireBearerToken()
+        val accountId = requireActiveAccountId()
+        val result = sportsApi.requestLinkedUser(token, candidateId, isGuardian)
+        if (result.isApproved) {
+            refreshLinkedUsers(token, accountId)
+        }
+        LinkMemberRequestResult(
+            relationshipId = result.relationshipId,
+            isApproved = result.isApproved,
+        )
     }
 
     override suspend fun verifyLinkedUser(
@@ -240,14 +259,30 @@ class SessionDataSourceImpl(
         token: String,
     ) {
         linkMemberRequest(invalidTokenOnClientError = true) {
-            val bearerToken = store.getBearerToken()
-                ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
+            val bearerToken = requireBearerToken()
             sportsApi.verifyLinkedUser(bearerToken, candidateId, token)
-            val accountId = store.getActiveAccountId()
-                ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
+            val accountId = requireActiveAccountId()
             refreshLinkedUsers(bearerToken, accountId)
         }
     }
+
+    override suspend fun unlinkLinkedUser(
+        linkId: String,
+    ) {
+        linkMemberRequest {
+            val bearerToken = requireBearerToken()
+            val accountId = requireActiveAccountId()
+            sportsApi.unlinkLinkedUser(bearerToken, linkId)
+            database.profileDao().markRelatedUserUnlinked(accountId, linkId)
+            refreshLinkedUsers(bearerToken, accountId)
+        }
+    }
+
+    private suspend fun requireBearerToken(): String = store.getBearerToken()
+        ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
+
+    private suspend fun requireActiveAccountId(): String = store.getActiveAccountId()
+        ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
 
     private suspend fun refreshRelatedUsers(
         token: String,

@@ -37,6 +37,7 @@ enum class MaterialSymbol(
     Email("\uE159"),
     Groups("\uF233"),
     Home("\uE9B2"),
+    LinkOff("\uE16F"),
     LocationOn("\uF1DB"),
     Person("\uF0D3"),
     Phone("\uF0D4"),

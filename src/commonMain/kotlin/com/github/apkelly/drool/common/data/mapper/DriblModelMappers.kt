@@ -41,6 +41,7 @@ internal fun com.github.apkelly.dribl.model.RelatedUser.toDomain() =
         email = email,
         avatarUrl = avatarUrl,
         subjectUserId = subjectUserId,
+        linkId = linkId,
         isLinked = isLinked,
         gender = gender,
         dateOfBirth = dateOfBirth,

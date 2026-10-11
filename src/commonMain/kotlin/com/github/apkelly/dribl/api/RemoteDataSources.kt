@@ -7,6 +7,7 @@ import com.github.apkelly.dribl.model.Club
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
 import com.github.apkelly.dribl.model.EmergencyContact
 import com.github.apkelly.dribl.model.Fixture
+import com.github.apkelly.dribl.model.LinkUserResult
 import com.github.apkelly.dribl.model.Profile
 import com.github.apkelly.dribl.model.RefereeAvailability
 import com.github.apkelly.dribl.model.RefereeClub
@@ -69,10 +70,19 @@ interface SportsRemoteDataSource {
     suspend fun fetchLinkCandidates(
         bearerToken: String,
     ): List<RelatedUser>
+    suspend fun requestLinkedUser(
+        bearerToken: String,
+        candidateId: String,
+        isGuardian: Boolean,
+    ): LinkUserResult
     suspend fun verifyLinkedUser(
         bearerToken: String,
         candidateId: String,
         token: String,
+    )
+    suspend fun unlinkLinkedUser(
+        bearerToken: String,
+        linkId: String,
     )
     suspend fun createProfileSession(
         bearerToken: String,

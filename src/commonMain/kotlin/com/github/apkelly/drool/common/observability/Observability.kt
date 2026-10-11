@@ -16,7 +16,6 @@ enum class AppScreen(
     PersonalInformation("personal_information"),
     Availability("availability"),
     LinkMember("link_member"),
-    ApiDiagnostics("api_diagnostics"),
 }
 
 enum class SignInOutcome(
