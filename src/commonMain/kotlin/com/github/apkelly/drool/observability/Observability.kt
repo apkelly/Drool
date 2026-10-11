@@ -12,6 +12,7 @@ enum class AppScreen(internal val eventValue: String) {
     Team("team"),
     MatchDetails("match_details"),
     PersonalInformation("personal_information"),
+    Availability("availability"),
     LinkMember("link_member"),
     ApiDiagnostics("api_diagnostics"),
 }

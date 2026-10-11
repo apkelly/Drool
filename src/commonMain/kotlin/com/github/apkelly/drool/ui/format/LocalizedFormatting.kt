@@ -14,3 +14,6 @@ expect fun formatFixtureDate(epochMillis: Long): String
 
 @Composable
 expect fun formatFixtureTime(epochMillis: Long): String
+
+@Composable
+expect fun platformUses24HourClock(): Boolean

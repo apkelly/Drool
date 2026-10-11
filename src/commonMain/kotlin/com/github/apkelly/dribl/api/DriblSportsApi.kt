@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -22,6 +23,7 @@ import kotlin.time.Instant
 import com.github.apkelly.dribl.dto.AccountDto
 import com.github.apkelly.dribl.dto.ClubListResponse
 import com.github.apkelly.dribl.dto.ClubDto
+import com.github.apkelly.dribl.dto.ClubResourceDto
 import com.github.apkelly.dribl.dto.EmergencyContactDto
 import com.github.apkelly.dribl.dto.EmergencyContactResourceDto
 import com.github.apkelly.dribl.dto.FixtureDto
@@ -45,6 +47,9 @@ import com.github.apkelly.dribl.dto.ResourceList
 import com.github.apkelly.dribl.dto.ShortcutResponse
 import com.github.apkelly.dribl.dto.ScheduleAllocationResourceDto
 import com.github.apkelly.dribl.dto.ScheduleResponse
+import com.github.apkelly.dribl.dto.RefereeAvailabilityListResponse
+import com.github.apkelly.dribl.dto.RefereeAvailabilityResourceDto
+import com.github.apkelly.dribl.dto.RefereeAvailabilityResponse
 import com.github.apkelly.dribl.dto.TeamListResponse
 import com.github.apkelly.dribl.dto.TeamDto
 import com.github.apkelly.dribl.dto.TokenVerificationRequest
@@ -63,6 +68,10 @@ import com.github.apkelly.dribl.model.TeamAssociation
 import com.github.apkelly.dribl.model.TeamHub
 import com.github.apkelly.dribl.model.normalizedTeamName
 import com.github.apkelly.dribl.model.TeamRelationship
+import com.github.apkelly.dribl.model.AvailabilityPeriod
+import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.dribl.model.RefereeAvailability
+import com.github.apkelly.dribl.model.RefereeClub
 
 private const val DISCOVER_PAGE_SIZE = 1_000
 
@@ -148,6 +157,73 @@ class DriblSportsApi(
             parameter("require_payrun", false)
         }
         return response.allocations.mapNotNull(ScheduleAllocationResourceDto::toDomain)
+    }
+
+    override suspend fun fetchActiveRefereeClubs(
+        bearerToken: String,
+    ): List<RefereeClub> {
+        val response = getBody<ResourceList<ClubResourceDto>>(
+            "/universal/active-referee-clubs",
+            bearerToken,
+        )
+        return response.items.mapNotNull { resource ->
+            val club = resource.attributes
+            val id = (club.id ?: club.clubId ?: resource.id).textValue
+                ?: return@mapNotNull null
+            val name = club.name ?: club.clubName ?: club.code
+                ?: return@mapNotNull null
+            RefereeClub(
+                id = id,
+                name = name,
+                logoUrl = club.logoUrl ?: club.image,
+                timeZone = club.settings?.timeZone ?: "Australia/Sydney",
+            )
+        }.distinctBy(RefereeClub::id)
+    }
+
+    override suspend fun fetchRefereeAvailabilities(
+        bearerToken: String,
+        userId: String,
+        startDate: String,
+    ): List<RefereeAvailability> =
+        getBody<RefereeAvailabilityListResponse>(
+            "/universal/availabilities",
+            bearerToken,
+        ) {
+            parameter("start_date", startDate)
+            parameter("direction", "asc")
+            parameter("user_id", userId)
+        }.data.mapNotNull(RefereeAvailabilityResourceDto::toDomain)
+
+    override suspend fun createRefereeAvailability(
+        bearerToken: String,
+        request: CreateRefereeAvailabilityRequest,
+    ): RefereeAvailability {
+        val endpoint = "/universal/availabilities"
+        val url = url(endpoint)
+        val response = client.post(url) {
+            accept(ContentType.Application.Json)
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            bearerAuth(bearerToken)
+            setBody(request)
+        }.requireBody<RefereeAvailabilityResponse>(url)
+        return response.data.toDomain()
+            ?: throw DriblResponseException(
+                "Availability response did not contain valid dates"
+            )
+    }
+
+    override suspend fun deleteRefereeAvailability(
+        bearerToken: String,
+        availabilityId: String,
+    ) {
+        val url = url("/universal/availabilities/$availabilityId")
+        client.delete(url) {
+            accept(ContentType.Application.Json)
+            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            bearerAuth(bearerToken)
+        }.requireSuccess(url)
     }
 
     override suspend fun fetchTeamHub(
@@ -748,6 +824,23 @@ private fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
         role = FixtureRole.Referee,
         refereeRole = attributes.refereeRole?.takeIf(String::isNotBlank),
         leagueName = attributes.leagueName,
+    )
+}
+
+private fun RefereeAvailabilityResourceDto.toDomain(): RefereeAvailability? {
+    val startEpochMillis = attributes.start.epochMillis ?: return null
+    val endEpochMillis = attributes.end.epochMillis ?: return null
+    val club = attributes.clubs.firstOrNull()
+    return RefereeAvailability(
+        id = id.textValue ?: return null,
+        startEpochMillis = startEpochMillis,
+        endEpochMillis = endEpochMillis,
+        clubId = attributes.clubId.textValue ?: club?.id.textValue,
+        clubName = club?.name ?: club?.clubName,
+        period = AvailabilityPeriod.entries.firstOrNull {
+            it.name.equals(attributes.templatePeriod, ignoreCase = true)
+        } ?: AvailabilityPeriod.SingleDay,
+        templateEndEpochMillis = attributes.templateEnd.epochMillis,
     )
 }
 

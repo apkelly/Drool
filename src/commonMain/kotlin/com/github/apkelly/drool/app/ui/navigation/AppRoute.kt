@@ -49,6 +49,9 @@ sealed interface AppRoute : NavKey {
     data class PersonalInformation(val userId: String) : AppRoute
 
     @Serializable
+    data class Availability(val profileId: String) : AppRoute
+
+    @Serializable
     data object LinkMember : AppRoute
 
     @Serializable

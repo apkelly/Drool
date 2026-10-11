@@ -9,6 +9,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import io.ktor.http.content.OutgoingContent
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import com.github.apkelly.dribl.model.AuthApiRequest
@@ -17,6 +18,8 @@ import com.github.apkelly.dribl.api.driblJson
 import com.github.apkelly.dribl.model.EmergencyContact
 import com.github.apkelly.dribl.model.FixtureStatus
 import com.github.apkelly.dribl.model.FixtureRole
+import com.github.apkelly.dribl.model.AvailabilityPeriod
+import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -931,6 +934,130 @@ class DriblApiTest {
             ),
             requests,
         )
+    }
+
+    @Test
+    fun refereeAvailabilityEndpointsDecodeAndSendTheRecoveredContract() = runTest {
+        val requests = mutableListOf<Pair<HttpMethod, String>>()
+        var postBody: String? = null
+        val availabilityJson = """
+            {
+              "data": {
+                "type": "availabilities",
+                "id": 21484775,
+                "attributes": {
+                  "start": "2026-10-13T07:00:00.000000Z",
+                  "end": "2026-10-13T08:00:00.000000Z",
+                  "club_id": 5129,
+                  "referee_availability_template_period": "Weekly",
+                  "referee_availability_template_end": "2026-12-29 08:00:00",
+                  "clubs": [{"id": 5129, "name": "Marrickville Referees"}]
+                }
+              }
+            }
+        """.trimIndent()
+        val client = HttpClient(MockEngine) {
+            install(ContentNegotiation) { json(driblJson) }
+            engine {
+                addHandler { request ->
+                    requests += request.method to request.url.encodedPath
+                    if (request.method == HttpMethod.Get) {
+                        assertEquals(
+                            "2026-10-11T00:00:00Z",
+                            request.url.parameters["start_date"],
+                        )
+                        assertEquals("asc", request.url.parameters["direction"])
+                        assertEquals("9702906", request.url.parameters["user_id"])
+                    }
+                    if (request.method == HttpMethod.Post) {
+                        postBody = (
+                            request.body as OutgoingContent.ByteArrayContent
+                            ).bytes().decodeToString()
+                    }
+                    respond(
+                        content = if (request.method == HttpMethod.Get) {
+                            availabilityJson.replace("\"data\": {", "\"data\": [{")
+                                .replace("\n  }\n}", "\n  }]\n}")
+                        } else {
+                            availabilityJson
+                        },
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            }
+        }
+        val api = DriblSportsApi(client, "https://example.test/api")
+
+        val loaded = api.fetchRefereeAvailabilities(
+            bearerToken = "token",
+            userId = "9702906",
+            startDate = "2026-10-11T00:00:00Z",
+        ).single()
+        val created = api.createRefereeAvailability(
+            bearerToken = "token",
+            request = CreateRefereeAvailabilityRequest(
+                userId = "9702906",
+                start = "2026-10-13T07:00:00Z",
+                end = "2026-12-29T08:00:00Z",
+                startTime = "18:00",
+                endTime = "19:00",
+                allClubs = false,
+                clubId = "5129",
+                period = "Weekly",
+                day = 2,
+                timeZone = "Australia/Sydney",
+                note = null,
+            ),
+        )
+        api.deleteRefereeAvailability("token", "21484775")
+
+        assertEquals(AvailabilityPeriod.Weekly, loaded.period)
+        assertEquals("Marrickville Referees", loaded.clubName)
+        assertEquals(21484775.toString(), created.id)
+        assertEquals(
+            listOf(
+                HttpMethod.Get to "/api/universal/availabilities",
+                HttpMethod.Post to "/api/universal/availabilities",
+                HttpMethod.Delete to "/api/universal/availabilities/21484775",
+            ),
+            requests,
+        )
+        val body = driblJson.parseToJsonElement(checkNotNull(postBody)).toString()
+        assertEquals(
+            """{"user_id":"9702906","start":"2026-10-13T07:00:00Z","end":""" +
+                """"2026-12-29T08:00:00Z","start_time":"18:00","end_time":"19:00",""" +
+                """"all_clubs":false,"club_id":"5129","period":"Weekly","day":2,""" +
+                """"use_timezone":"Australia/Sydney"}""",
+            body,
+        )
+    }
+
+    @Test
+    fun activeRefereeClubsDecodeTimezone() = runTest {
+        val client = jsonClient(
+            """
+            {
+              "data": [{
+                "type": "clubs",
+                "id": 5129,
+                "attributes": {
+                  "name": "Marrickville Referees",
+                  "logo_url": "https://example.test/logo.png",
+                  "settings": {"timezone": "Australia/Sydney"}
+                }
+              }]
+            }
+            """.trimIndent(),
+        )
+
+        val club = DriblSportsApi(client, "https://example.test/api")
+            .fetchActiveRefereeClubs("token")
+            .single()
+
+        assertEquals("5129", club.id)
+        assertEquals("Marrickville Referees", club.name)
+        assertEquals("Australia/Sydney", club.timeZone)
     }
 
     private fun jsonClient(

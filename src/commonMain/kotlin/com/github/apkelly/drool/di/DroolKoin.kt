@@ -34,6 +34,8 @@ import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
+import com.github.apkelly.drool.schedule.data.AvailabilityRepositoryImpl
+import com.github.apkelly.drool.schedule.domain.repository.AvailabilityRepository
 import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 import com.github.apkelly.drool.team.data.TeamRepositoryImpl
 import com.github.apkelly.drool.team.domain.repository.TeamRepository
@@ -52,6 +54,10 @@ import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.CreateRefereeAvailabilityUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.DeleteRefereeAvailabilityUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeAvailabilityUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
@@ -67,6 +73,7 @@ import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
+import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
 import com.github.apkelly.drool.observability.Observability
 import com.github.apkelly.drool.observability.createPlatformObservability
 import org.koin.core.Koin
@@ -127,6 +134,7 @@ private val dataModule = module {
     single<ProfileRepository> { ProfileRepositoryImpl(sessionDataSource = get()) }
     single<HomeRepository> { HomeRepositoryImpl(sportsDataSource = get()) }
     single<ScheduleRepository> { ScheduleRepositoryImpl(sportsDataSource = get()) }
+    single<AvailabilityRepository> { AvailabilityRepositoryImpl(get(), get(), get()) }
     single<DiscoverRepository> { DiscoverRepositoryImpl(sportsDataSource = get()) }
     single<TeamRepository> { TeamRepositoryImpl(sportsDataSource = get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(store = get()) }
@@ -169,6 +177,10 @@ private val domainModule = module {
     factory { RefreshTeamsUseCase(repository = get()) }
     factory { RefreshFixturesUseCase(repository = get()) }
     factory { RefreshFamilyProfilesUseCase(repository = get()) }
+    factory { GetRefereeClubsUseCase(get()) }
+    factory { GetRefereeAvailabilityUseCase(get()) }
+    factory { CreateRefereeAvailabilityUseCase(get()) }
+    factory { DeleteRefereeAvailabilityUseCase(get()) }
     factory { SetTeamFollowingUseCase(repository = get()) }
     factory { LoadTeamHubUseCase(repository = get()) }
     factory { LoadMatchDetailsUseCase(repository = get()) }
@@ -209,6 +221,14 @@ private val uiModule = module {
             loadMatchDetails = get(),
             loadMatchWeather = get(),
             observability = get(),
+        )
+    }
+    single {
+        AvailabilityViewModel(
+            getRefereeClubs = get(),
+            getAvailability = get(),
+            createAvailability = get(),
+            deleteAvailability = get(),
         )
     }
 }

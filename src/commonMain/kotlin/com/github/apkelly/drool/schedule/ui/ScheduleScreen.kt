@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.ThemeMode
 import com.github.apkelly.drool.resources.Res
+import com.github.apkelly.drool.resources.availability_action
 import com.github.apkelly.drool.resources.schedule_empty
 import com.github.apkelly.drool.resources.schedule_empty_body
 import com.github.apkelly.drool.resources.schedule_description
@@ -27,6 +29,8 @@ import com.github.apkelly.drool.ui.theme.DroolTheme
 import com.github.apkelly.drool.ui.widgets.CacheStatus
 import com.github.apkelly.drool.ui.widgets.FixtureCard
 import com.github.apkelly.drool.ui.widgets.FamilyProfileSelector
+import com.github.apkelly.drool.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.ui.widgets.RefreshAction
 import com.github.apkelly.drool.ui.format.formatFixtureDateHeading
 import org.jetbrains.compose.resources.stringResource
@@ -39,6 +43,7 @@ fun ScheduleScreen(
     onProfileSelected: (String?) -> Unit,
     onRefresh: () -> Unit,
     onFixtureSelected: (Fixture) -> Unit,
+    onOpenAvailability: () -> Unit,
 ) {
     val state = model.fixtures
     val familyProfiles = model.familyProfiles
@@ -74,6 +79,18 @@ fun ScheduleScreen(
                         selectedProfileId = selectedProfileId,
                         onSelected = onProfileSelected,
                     )
+                }
+                if (model.canManageRefereeAvailability) {
+                    item {
+                        OutlinedButton(onClick = onOpenAvailability) {
+                            MaterialSymbolIcon(
+                                symbol = MaterialSymbol.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.padding(end = 8.dp),
+                            )
+                            Text(stringResource(Res.string.availability_action))
+                        }
+                    }
                 }
                 item {
                     CacheStatus(
@@ -140,6 +157,7 @@ private fun ScheduleScreenPreview() {
             onProfileSelected = {},
             onRefresh = {},
             onFixtureSelected = {},
+            onOpenAvailability = {},
         )
     }
 }

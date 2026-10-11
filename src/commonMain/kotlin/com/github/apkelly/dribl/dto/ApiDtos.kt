@@ -146,6 +146,12 @@ internal data class ClubDto(
     @SerialName("secondary_color") val secondaryColor: String? = null,
     @SerialName("color") val color: String? = null,
     @SerialName("accent") val accent: String? = null,
+    @SerialName("settings") val settings: ClubSettingsDto? = null,
+)
+
+@Serializable
+internal data class ClubSettingsDto(
+    @SerialName("timezone") val timeZone: String? = null,
 )
 
 @Serializable
@@ -249,6 +255,36 @@ internal data class MatchRoleAttributesDto(
 @Serializable
 internal data class ScheduleResponse(
     @SerialName("allocations") val allocations: List<ScheduleAllocationResourceDto> = emptyList(),
+    @SerialName("availabilities")
+    val availabilities: List<RefereeAvailabilityResourceDto> = emptyList(),
+)
+
+@Serializable
+internal data class RefereeAvailabilityListResponse(
+    @SerialName("data") val data: List<RefereeAvailabilityResourceDto> = emptyList(),
+)
+
+@Serializable
+internal data class RefereeAvailabilityResponse(
+    @SerialName("data") val data: RefereeAvailabilityResourceDto,
+)
+
+@Serializable
+internal data class RefereeAvailabilityResourceDto(
+    @SerialName("id") val id: JsonPrimitive,
+    @SerialName("attributes") val attributes: RefereeAvailabilityAttributesDto,
+)
+
+@Serializable
+internal data class RefereeAvailabilityAttributesDto(
+    @SerialName("start") val start: JsonPrimitive,
+    @SerialName("end") val end: JsonPrimitive,
+    @SerialName("club_id") val clubId: JsonPrimitive? = null,
+    @SerialName("referee_availability_template_period")
+    val templatePeriod: String? = null,
+    @SerialName("referee_availability_template_end")
+    val templateEnd: JsonPrimitive? = null,
+    @SerialName("clubs") val clubs: List<ClubDto> = emptyList(),
 )
 
 @Serializable

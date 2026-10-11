@@ -37,6 +37,9 @@ actual fun formatFixtureDate(epochMillis: Long): String =
 actual fun formatFixtureTime(epochMillis: Long): String =
     formatDesktopTime(epochMillis)
 
+@Composable
+actual fun platformUses24HourClock(): Boolean = desktopUses24HourClock
+
 private val desktopUses24HourClock by lazy {
     readMacOs24HourPreference()
         ?: localeUses24HourClock(Locale.getDefault())

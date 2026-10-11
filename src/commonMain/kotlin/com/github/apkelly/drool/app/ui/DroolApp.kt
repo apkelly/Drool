@@ -51,12 +51,15 @@ import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
 import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
+import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
+import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
 import com.github.apkelly.drool.app.ui.navigation.AppRoute
 import com.github.apkelly.drool.app.ui.navigation.TopLevelDestination
 import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.schedule.ui.ScheduleScreen
+import com.github.apkelly.drool.schedule.ui.AvailabilityScreen
 import com.github.apkelly.drool.match.ui.MatchDetailsScreen
 import com.github.apkelly.drool.team.ui.TeamHubScreen
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
@@ -79,6 +82,7 @@ private val navigationStateConfiguration = SavedStateConfiguration {
 fun DroolApp(
     appViewModel: AppViewModel,
     sportsViewModel: SportsViewModel,
+    availabilityViewModel: AvailabilityViewModel,
 ) {
     val sessionState by appViewModel.sessionState.collectAsState()
     var initialSplashFinished by rememberSaveable { mutableStateOf(false) }
@@ -87,6 +91,10 @@ fun DroolApp(
     authenticatedProfile?.let { profile ->
         LaunchedEffect(profile.accountId, profile.familyProfiles) {
             sportsViewModel.configureFamily(profile)
+            availabilityViewModel.configureFamily(
+                accountId = profile.accountId,
+                profileIds = profile.familyProfiles.map { it.id },
+            )
             sportsViewModel.refreshAll(force = false)
         }
     }
@@ -110,6 +118,7 @@ fun DroolApp(
                 profile = state.profile,
                 appViewModel = appViewModel,
                 sportsViewModel = sportsViewModel,
+                availabilityViewModel = availabilityViewModel,
             )
         }
     }
@@ -177,6 +186,7 @@ private fun MainNavigation(
     profile: com.github.apkelly.drool.domain.model.Profile,
     appViewModel: AppViewModel,
     sportsViewModel: SportsViewModel,
+    availabilityViewModel: AvailabilityViewModel,
 ) {
     val clubs by sportsViewModel.clubs.collectAsState()
     val teams by sportsViewModel.teams.collectAsState()
@@ -191,6 +201,9 @@ private fun MainNavigation(
     val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
     val teamHubState by sportsViewModel.teamHubState.collectAsState()
     val matchDetailsState by sportsViewModel.matchDetailsState.collectAsState()
+    val availabilityState by availabilityViewModel.state.collectAsState()
+    val availabilityProfileId by availabilityViewModel.activeProfileId.collectAsState()
+    val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
 
     val homeStack = rememberNavBackStack(navigationStateConfiguration, AppRoute.Home as NavKey)
     val scheduleStack = rememberNavBackStack(
@@ -222,6 +235,7 @@ private fun MainNavigation(
             is AppRoute.Team -> AppScreen.Team
             is AppRoute.MatchDetails -> AppScreen.MatchDetails
             is AppRoute.PersonalInformation -> AppScreen.PersonalInformation
+            is AppRoute.Availability -> AppScreen.Availability
             AppRoute.LinkMember -> AppScreen.LinkMember
             AppRoute.ApiDiagnostics -> AppScreen.ApiDiagnostics
             else -> null
@@ -283,6 +297,8 @@ private fun MainNavigation(
                             fixtures = fixtures,
                             familyProfiles = familyProfiles,
                             selectedProfileId = selectedProfileId,
+                            canManageRefereeAvailability =
+                                selectedProfileId in refereeProfileIds,
                         ),
                         onProfileSelected = sportsViewModel::selectFamilyProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
@@ -294,6 +310,11 @@ private fun MainNavigation(
                                         matchId = fixture.id,
                                     )
                                 )
+                            }
+                        },
+                        onOpenAvailability = {
+                            selectedProfileId?.let { profileId ->
+                                currentStack.add(AppRoute.Availability(profileId))
                             }
                         },
                     )
@@ -420,8 +441,51 @@ private fun MainNavigation(
                                         currentStack.removeAt(currentStack.lastIndex)
                                     }
                                 },
+                                onOpenAvailability = if (
+                                    route.userId in refereeProfileIds
+                                ) {
+                                    {
+                                        currentStack.add(
+                                            AppRoute.Availability(route.userId)
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
                             )
                         }
+                }
+                entry<AppRoute.Availability> { route ->
+                    AvailabilityScreen(
+                        model = AvailabilityUiModel(
+                            profileId = route.profileId,
+                            profileName = familyProfiles
+                                .firstOrNull { it.id == route.profileId }
+                                ?.displayName
+                                .orEmpty(),
+                            state = if (availabilityProfileId == route.profileId) {
+                                availabilityState
+                            } else {
+                                com.github.apkelly.drool.schedule.ui.model.AvailabilityUiState.Idle
+                            },
+                        ),
+                        onBack = {
+                            if (currentStack.size > 1) {
+                                currentStack.removeAt(currentStack.lastIndex)
+                            }
+                        },
+                        onLoad = { availabilityViewModel.load(route.profileId) },
+                        onRefresh = {
+                            availabilityViewModel.load(route.profileId, force = true)
+                        },
+                        onCreate = { draft ->
+                            availabilityViewModel.create(route.profileId, draft)
+                        },
+                        onDelete = { availabilityId ->
+                            availabilityViewModel.delete(route.profileId, availabilityId)
+                        },
+                        onClearFailure = availabilityViewModel::clearFailure,
+                    )
                 }
                 entry<AppRoute.LinkMember> {
                     LinkMemberScreen(

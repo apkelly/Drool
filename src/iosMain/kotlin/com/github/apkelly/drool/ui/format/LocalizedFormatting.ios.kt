@@ -45,5 +45,12 @@ actual fun formatFixtureTime(epochMillis: Long): String =
         timeStyle = NSDateFormatterShortStyle
     }.stringFromDate(epochMillis.toDate())
 
+@Composable
+actual fun platformUses24HourClock(): Boolean =
+    NSDateFormatter().apply {
+        dateStyle = NSDateFormatterNoStyle
+        timeStyle = NSDateFormatterShortStyle
+    }.dateFormat.any { it == 'H' || it == 'k' }
+
 private fun Long.toDate(): NSDate =
     NSDate(timeIntervalSinceReferenceDate = this / 1_000.0 - 978_307_200.0)

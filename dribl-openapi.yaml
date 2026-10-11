@@ -2365,21 +2365,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
   "/universal/active-referee-clubs":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-discovered-source: "Hermes bytecode plus authenticated live response"
     get:
       operationId: get_universal_active_referee_clubs
       tags: ["Universal"]
-      summary: "Discovered read endpoint for universal active referee clubs"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      summary: "List active referee clubs for the current profile"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
       responses:
         "200":
-          description: Successful response; schema not recovered from APK
+          description: Active referee clubs
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenericResponse"
+                $ref: "#/components/schemas/ActiveRefereeClubListResponse"
         "401":
           description: Unauthorized or expired authentication
         default:
@@ -2468,21 +2467,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
   "/universal/availabilities":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
+    x-discovered-source: "Hermes bytecode plus authenticated live response"
     get:
       operationId: get_universal_availabilities
       tags: ["Universal"]
-      summary: "Discovered read endpoint for universal availabilities"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      summary: "List referee availability for the current profile"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: start_date
+          in: query
+          required: true
+          description: "Bounds the query to upcoming availability. An unbounded request can exhaust server memory."
+          schema: { type: string, format: date-time }
+        - name: direction
+          in: query
+          required: true
+          schema: { type: string, enum: [asc, desc] }
+        - name: user_id
+          in: query
+          required: true
+          schema: { type: string }
       responses:
         "200":
-          description: Successful response; schema not recovered from APK
+          description: Expanded referee availability records
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenericResponse"
+                $ref: "#/components/schemas/RefereeAvailabilityListResponse"
         "401":
           description: Unauthorized or expired authentication
         default:
@@ -2491,27 +2502,80 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/universal/availabilities/":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
-    get:
-      operationId: get_universal_availabilities_slash
+    post:
+      operationId: post_universal_availabilities
       tags: ["Universal"]
-      summary: "Discovered read endpoint for universal availabilities"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      summary: "Create referee availability"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRefereeAvailabilityRequest"
       responses:
         "200":
-          description: Successful response; schema not recovered from APK
+          description: Created availability
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenericResponse"
+                $ref: "#/components/schemas/RefereeAvailabilityResponse"
         "401":
           description: Unauthorized or expired authentication
         default:
-          description: Error response; schema not recovered from APK
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/universal/availabilities/{availabilityId}":
+    x-discovered-source: "Decompiled Hermes bytecode"
+    parameters:
+      - $ref: "#/components/parameters/AuthorizationHeader"
+      - name: availabilityId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      operationId: put_universal_availability
+      tags: ["Universal"]
+      summary: "Update one referee availability record"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRefereeAvailabilityRequest"
+      responses:
+        "200":
+          description: Updated availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefereeAvailabilityResponse"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: delete_universal_availability
+      tags: ["Universal"]
+      summary: "Delete one referee availability record"
+      responses:
+        "200":
+          description: Availability deleted
+        "204":
+          description: Availability deleted with no response body
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response
           content:
             application/json:
               schema:
@@ -3329,6 +3393,152 @@ components:
       type: object
       additionalProperties: true
       description: "Placeholder for response bodies not recoverable from bytecode strings."
+    ActiveRefereeClubListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActiveRefereeClubResource"
+    ActiveRefereeClubResource:
+      type: object
+      required: [id, attributes]
+      properties:
+        type:
+          type: string
+          example: clubs
+        id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        attributes:
+          type: object
+          required: [name]
+          additionalProperties: true
+          properties:
+            name: { type: string }
+            logo_url: { type: string, nullable: true, format: uri }
+            image: { type: string, nullable: true, format: uri }
+            settings:
+              type: object
+              properties:
+                timezone:
+                  type: string
+                  example: Australia/Sydney
+    RefereeAvailabilityListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RefereeAvailabilityResource"
+    RefereeAvailabilityResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/RefereeAvailabilityResource"
+    RefereeAvailabilityResource:
+      type: object
+      required: [id, attributes]
+      properties:
+        type:
+          type: string
+          example: availabilities
+        id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        attributes:
+          type: object
+          required: [start, end]
+          additionalProperties: true
+          properties:
+            start:
+              type: string
+              format: date-time
+              example: "2026-10-13T07:00:00.000000Z"
+            end:
+              type: string
+              format: date-time
+              example: "2026-10-13T08:00:00.000000Z"
+            club_id:
+              oneOf:
+                - { type: string }
+                - { type: integer }
+              nullable: true
+            referee_availability_template_period:
+              type: string
+              nullable: true
+              enum: [SingleDay, Daily, Weekly, Fortnightly, Monthly]
+            referee_availability_template_end:
+              type: string
+              nullable: true
+              example: "2026-12-29 08:00:00"
+            clubs:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+    CreateRefereeAvailabilityRequest:
+      type: object
+      required:
+        - user_id
+        - start
+        - end
+        - start_time
+        - end_time
+        - all_clubs
+        - period
+        - use_timezone
+      properties:
+        user_id: { type: string }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        start_time:
+          type: string
+          example: "18:00"
+        end_time:
+          type: string
+          example: "19:00"
+        all_clubs:
+          type: boolean
+        club_id:
+          type: string
+          nullable: true
+        period:
+          type: string
+          enum: [SingleDay, Daily, Weekly, Fortnightly, Monthly]
+        day:
+          type: integer
+          minimum: 0
+          maximum: 6
+          nullable: true
+          description: "JavaScript weekday number, where Sunday is 0."
+        use_timezone:
+          type: string
+          example: Australia/Sydney
+        note:
+          type: string
+          nullable: true
+    UpdateRefereeAvailabilityRequest:
+      type: object
+      required: [user_id, start, end, start_time, end_time]
+      properties:
+        user_id: { type: string }
+        start: { type: string, format: date-time }
+        end: { type: string, format: date-time }
+        start_time:
+          type: string
+          example: "18:00"
+        end_time:
+          type: string
+          example: "19:00"
+        note:
+          type: string
+          nullable: true
     AuthSignInRequest:
       type: object
       required: [username, password]

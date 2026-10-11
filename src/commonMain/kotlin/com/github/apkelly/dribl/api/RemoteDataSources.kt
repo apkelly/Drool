@@ -11,6 +11,9 @@ import com.github.apkelly.dribl.model.RelatedUser
 import com.github.apkelly.dribl.model.Team
 import com.github.apkelly.dribl.model.TeamAssociation
 import com.github.apkelly.dribl.model.TeamHub
+import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.dribl.model.RefereeAvailability
+import com.github.apkelly.dribl.model.RefereeClub
 
 interface AuthRemoteDataSource {
     suspend fun signIn(request: AuthApiRequest): AuthenticationResult
@@ -27,6 +30,20 @@ interface SportsRemoteDataSource {
         bearerToken: String,
         userId: String,
     ): List<Fixture>
+    suspend fun fetchActiveRefereeClubs(bearerToken: String): List<RefereeClub>
+    suspend fun fetchRefereeAvailabilities(
+        bearerToken: String,
+        userId: String,
+        startDate: String,
+    ): List<RefereeAvailability>
+    suspend fun createRefereeAvailability(
+        bearerToken: String,
+        request: CreateRefereeAvailabilityRequest,
+    ): RefereeAvailability
+    suspend fun deleteRefereeAvailability(
+        bearerToken: String,
+        availabilityId: String,
+    )
     suspend fun fetchProfile(bearerToken: String): Profile
     suspend fun fetchRelatedUsers(bearerToken: String, email: String): List<RelatedUser>
     suspend fun fetchAccounts(bearerToken: String): List<Account>

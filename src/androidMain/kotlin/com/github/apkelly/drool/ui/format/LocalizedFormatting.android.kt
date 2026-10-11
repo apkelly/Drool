@@ -36,3 +36,7 @@ actual fun formatFixtureDate(epochMillis: Long): String =
 @Composable
 actual fun formatFixtureTime(epochMillis: Long): String =
     DateFormat.getTimeFormat(LocalContext.current).format(Date(epochMillis))
+
+@Composable
+actual fun platformUses24HourClock(): Boolean =
+    DateFormat.is24HourFormat(LocalContext.current)

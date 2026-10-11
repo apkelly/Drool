@@ -18,6 +18,9 @@ import com.github.apkelly.dribl.model.RelatedUser as DriblRelatedUser
 import com.github.apkelly.dribl.model.Team as DriblTeam
 import com.github.apkelly.dribl.model.TeamAssociation as DriblTeamAssociation
 import com.github.apkelly.dribl.model.TeamHub as DriblTeamHub
+import com.github.apkelly.dribl.model.RefereeClub as DriblRefereeClub
+import com.github.apkelly.dribl.model.RefereeAvailability as DriblRefereeAvailability
+import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
 import com.github.apkelly.drool.data.storage.BearerTokenStore
 import com.github.apkelly.drool.data.storage.createBearerTokenStore
 import com.github.apkelly.drool.domain.model.AuthenticationResult
@@ -95,6 +98,11 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     var teamHubRequest: Pair<String, String>? = null
     var teamHubCalls = 0
     var matchDetailsRequest: Pair<String, String>? = null
+    var refereeClubs: List<DriblRefereeClub> = emptyList()
+    var refereeAvailabilities: List<DriblRefereeAvailability> = emptyList()
+    var refereeAvailabilityQuery: Pair<String, String>? = null
+    var createAvailabilityRequest: CreateRefereeAvailabilityRequest? = null
+    var deletedAvailabilityId: String? = null
     var linkCandidates: List<RelatedUser> = emptyList()
     var verifiedLink: Pair<String, String>? = null
     val profileSessionUsers = mutableListOf<String>()
@@ -249,6 +257,40 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         failure?.let { throw it }
         matchDetailsRequest = bearerToken to matchId
         return matchDetails.toDribl()
+    }
+
+    override suspend fun fetchActiveRefereeClubs(
+        bearerToken: String,
+    ): List<DriblRefereeClub> {
+        failure?.let { throw it }
+        return refereeClubs
+    }
+
+    override suspend fun fetchRefereeAvailabilities(
+        bearerToken: String,
+        userId: String,
+        startDate: String,
+    ): List<DriblRefereeAvailability> {
+        failure?.let { throw it }
+        refereeAvailabilityQuery = userId to startDate
+        return refereeAvailabilities
+    }
+
+    override suspend fun createRefereeAvailability(
+        bearerToken: String,
+        request: CreateRefereeAvailabilityRequest,
+    ): DriblRefereeAvailability {
+        failure?.let { throw it }
+        createAvailabilityRequest = request
+        return refereeAvailabilities.first()
+    }
+
+    override suspend fun deleteRefereeAvailability(
+        bearerToken: String,
+        availabilityId: String,
+    ) {
+        failure?.let { throw it }
+        deletedAvailabilityId = availabilityId
     }
 }
 

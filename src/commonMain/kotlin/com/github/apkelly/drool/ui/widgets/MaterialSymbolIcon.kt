@@ -31,6 +31,7 @@ enum class MaterialSymbol(val glyph: String) {
     CalendarMonth("\uEBCC"),
     Check("\uE668"),
     CloudOff("\uE2C1"),
+    Delete("\uE872"),
     Email("\uE159"),
     Groups("\uF233"),
     Home("\uE9B2"),

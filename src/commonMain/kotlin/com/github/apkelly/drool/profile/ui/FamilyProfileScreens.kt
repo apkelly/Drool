@@ -17,6 +17,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,6 +37,7 @@ import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.LinkMemberFailure
 import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.resources.Res
+import com.github.apkelly.drool.resources.availability_action
 import com.github.apkelly.drool.resources.action_cancel
 import com.github.apkelly.drool.resources.action_retry
 import com.github.apkelly.drool.resources.content_profile_image
@@ -71,6 +73,7 @@ import org.jetbrains.compose.resources.stringResource
 fun PersonalInformationScreen(
     user: RelatedUser,
     onBack: () -> Unit,
+    onOpenAvailability: (() -> Unit)? = null,
 ) {
     Scaffold(
         topBar = {
@@ -101,6 +104,18 @@ fun PersonalInformationScreen(
                         contentScale = ContentScale.Crop,
                     )
                     Text(user.displayName, style = MaterialTheme.typography.headlineSmall)
+                }
+            }
+            onOpenAvailability?.let { openAvailability ->
+                item {
+                    OutlinedButton(onClick = openAvailability) {
+                        MaterialSymbolIcon(
+                            symbol = MaterialSymbol.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                        Text(stringResource(Res.string.availability_action))
+                    }
                 }
             }
             item { PersonalField(Res.string.personal_full_name, user.displayName) }

@@ -8,4 +8,5 @@ data class ScheduleUiModel(
     val fixtures: CollectionUiState<Fixture>,
     val familyProfiles: List<FamilyProfile>,
     val selectedProfileId: String?,
+    val canManageRefereeAvailability: Boolean = false,
 )
