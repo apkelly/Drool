@@ -6,11 +6,11 @@ import com.github.apkelly.drool.home.domain.repository.HomeRepository
 class HomeRepositoryImpl(
     private val sportsDataSource: SportsDataSource,
 ) : HomeRepository {
-    override fun observeFamilyTeams(
+    override fun observeProfileTeams(
         profileIds: Set<String>,
-    ) = sportsDataSource.observeFamilyTeams(profileIds)
+    ) = sportsDataSource.observeProfileTeams(profileIds)
 
-    override fun observeFamilyClubs(
+    override fun observeProfileClubs(
         profileIds: Set<String>,
-    ) = sportsDataSource.observeFamilyClubs(profileIds)
+    ) = sportsDataSource.observeProfileClubs(profileIds)
 }

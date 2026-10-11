@@ -13,7 +13,7 @@ data class Team(
     val secondaryColor: String? = null,
 )
 
-data class FamilyTeam(
+data class ProfileTeam(
     val profileId: String,
     val team: Team,
     val relationship: TeamRelationship,

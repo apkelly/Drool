@@ -12,9 +12,9 @@ import com.github.apkelly.drool.common.data.mapper.toDomain
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.Club
 import com.github.apkelly.drool.common.domain.model.EmergencyContact
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.RelatedUser
@@ -320,7 +320,7 @@ class SportsDataSourceImplTest {
     }
 
     @Test
-    fun familyProfilesRefreshAndObserveAttributedFixturesAndTeams() = runTest {
+    fun linkedProfilesRefreshAndObserveAttributedFixturesAndTeams() = runTest {
         fixture { repository, remote, store, clock, database ->
             store.saveBearerToken("root-token")
             remote.fixtures = listOf(
@@ -356,8 +356,8 @@ class SportsDataSourceImplTest {
                 Club("club", "United", "U", null, "#008000", "#FFFFFF"),
             )
             val profiles = listOf(
-                FamilyProfile("root", "Alex", null, isPrimary = true),
-                FamilyProfile("child", "Jude", null, isPrimary = false),
+                LinkedProfile("root", "Alex", null, isPrimary = true),
+                LinkedProfile("child", "Jude", null, isPrimary = false),
             )
             database.profileDao().upsertRelatedUsers(
                 listOf(
@@ -394,20 +394,21 @@ class SportsDataSourceImplTest {
                     "root" to RefreshResult.Updated,
                     "child" to RefreshResult.Updated,
                 ),
-                repository.refreshFamilyProfiles(profiles, force = false),
+                repository.refreshLinkedProfiles(profiles, force = false),
             )
             assertEquals(listOf("child"), remote.profileSessionUsers)
             assertEquals(listOf<String?>("root", "child"), remote.fixtureUserIds)
             assertEquals(listOf("root", "child"), remote.refereeFixtureUserIds)
 
-            val fixtures = repository.observeFamilyFixtures(setOf("root", "child")).first()
+            val fixtures =
+                repository.observeLinkedProfileFixtures(setOf("root", "child")).first()
             assertEquals(2, fixtures.size)
             assertEquals(setOf("root", "child"), fixtures.mapNotNull { it.profileId }.toSet())
 
-            val teams = repository.observeFamilyTeams(setOf("root", "child")).first()
+            val teams = repository.observeProfileTeams(setOf("root", "child")).first()
             assertEquals(2, teams.size)
             assertTrue(teams.all { it.relationship == TeamRelationship.Following })
-            val clubs = repository.observeFamilyClubs(setOf("root", "child")).first()
+            val clubs = repository.observeProfileClubs(setOf("root", "child")).first()
             assertEquals(2, clubs.size)
             assertEquals(setOf("root", "child"), clubs.map { it.profileId }.toSet())
             val personal = database.profileDao().getRelatedUser("root", "child")
@@ -429,28 +430,28 @@ class SportsDataSourceImplTest {
             )
             assertEquals(
                 TeamRelationship.None,
-                repository.observeFamilyTeams(setOf("child")).first().single().relationship,
+                repository.observeProfileTeams(setOf("child")).first().single().relationship,
             )
             database.teamDao().upsertRelationship(
                 TeamRelationshipEntity("child", "missing", "Following"),
             )
             assertEquals(
                 1,
-                repository.observeFamilyTeams(setOf("child")).first().size,
+                repository.observeProfileTeams(setOf("child")).first().size,
             )
             database.clubDao().upsertRelationships(
                 listOf(ClubRelationshipEntity("child", "missing")),
             )
             assertEquals(
                 1,
-                repository.observeFamilyClubs(setOf("child")).first().size,
+                repository.observeProfileClubs(setOf("child")).first().size,
             )
             assertEquals(
                 mapOf(
                     "root" to RefreshResult.NotModified,
                     "child" to RefreshResult.NotModified,
                 ),
-                repository.refreshFamilyProfiles(profiles, force = false),
+                repository.refreshLinkedProfiles(profiles, force = false),
             )
             remote.personalInformationDto = remote.personalInformationDto?.copy(
                 phoneNumber = "0400 999 999",
@@ -461,7 +462,7 @@ class SportsDataSourceImplTest {
             )
             assertEquals(
                 RefreshResult.NotModified,
-                repository.refreshFamilyProfiles(profiles, force = false)["child"],
+                repository.refreshLinkedProfiles(profiles, force = false)["child"],
             )
             val hydratedFromCachedRefresh =
                 database.profileDao().getRelatedUser("root", "child")
@@ -472,12 +473,12 @@ class SportsDataSourceImplTest {
             )
             clock.now = 7L * 60L * 60L * 1_000L
             assertTrue(
-                repository.refreshFamilyProfiles(profiles, force = false)
+                repository.refreshLinkedProfiles(profiles, force = false)
                     .values
                     .all { it == RefreshResult.Updated },
             )
             assertTrue(
-                repository.refreshFamilyProfiles(profiles, force = true)
+                repository.refreshLinkedProfiles(profiles, force = true)
                     .values
                     .all { it == RefreshResult.Updated },
             )
@@ -496,7 +497,7 @@ class SportsDataSourceImplTest {
                     ?.toDomain()
                     ?.emergencyContacts,
             )
-            repository.refreshFamilyProfiles(profiles, force = true)
+            repository.refreshLinkedProfiles(profiles, force = true)
             val preserved = database.profileDao().getRelatedUser("root", "child")
             assertEquals("Jude Bellingham", preserved?.displayName)
             assertEquals("jude.bellingham@example.com", preserved?.email)
@@ -509,7 +510,7 @@ class SportsDataSourceImplTest {
             database.profileDao().upsertRelatedUsers(
                 listOf(checkNotNull(preserved).copy(emergencyContactsJson = null)),
             )
-            repository.refreshFamilyProfiles(profiles, force = true)
+            repository.refreshLinkedProfiles(profiles, force = true)
             assertEquals(
                 null,
                 database.profileDao()
@@ -518,10 +519,10 @@ class SportsDataSourceImplTest {
             )
             assertEquals(
                 RefreshResult.Updated,
-                repository.refreshFamilyProfiles(
+                repository.refreshLinkedProfiles(
                     listOf(
-                        FamilyProfile("root", "Alex", null, isPrimary = true),
-                        FamilyProfile("orphan", "Orphan", null, isPrimary = false),
+                        LinkedProfile("root", "Alex", null, isPrimary = true),
+                        LinkedProfile("orphan", "Orphan", null, isPrimary = false),
                     ),
                     force = true,
                 )["orphan"],
@@ -530,13 +531,13 @@ class SportsDataSourceImplTest {
     }
 
     @Test
-    fun familyRefreshReportsAuthenticationAndProfileFailuresIndependently() = runTest {
+    fun linkedProfileRefreshReportsAuthenticationAndProfileFailuresIndependently() = runTest {
         fixture { repository, remote, store, _, _ ->
             val profiles = listOf(
-                FamilyProfile("root", "Alex", null, isPrimary = true),
-                FamilyProfile("child", "Jude", null, isPrimary = false),
+                LinkedProfile("root", "Alex", null, isPrimary = true),
+                LinkedProfile("child", "Jude", null, isPrimary = false),
             )
-            val unauthorized = repository.refreshFamilyProfiles(profiles)
+            val unauthorized = repository.refreshLinkedProfiles(profiles)
             assertTrue(
                 unauthorized.values.all {
                     it == RefreshResult.Failed(RefreshFailure.Unauthorized, false)
@@ -546,26 +547,26 @@ class SportsDataSourceImplTest {
             store.saveBearerToken("root-token")
             assertEquals(
                 emptyMap(),
-                repository.refreshFamilyProfiles(emptyList()),
+                repository.refreshLinkedProfiles(emptyList()),
             )
             assertTrue(
-                repository.refreshFamilyProfiles(
+                repository.refreshLinkedProfiles(
                     listOf(
-                        FamilyProfile("child", "Jude", null, isPrimary = false),
-                        FamilyProfile("root", "Alex", null, isPrimary = true),
+                        LinkedProfile("child", "Jude", null, isPrimary = false),
+                        LinkedProfile("root", "Alex", null, isPrimary = true),
                     ),
                     force = true,
                 ).values.all { it == RefreshResult.Updated },
             )
-            val invalidProfiles = repository.refreshFamilyProfiles(
-                listOf(FamilyProfile("child", "Jude", null, isPrimary = false)),
+            val invalidProfiles = repository.refreshLinkedProfiles(
+                listOf(LinkedProfile("child", "Jude", null, isPrimary = false)),
             )
             assertEquals(
                 RefreshResult.Failed(RefreshFailure.InvalidResponse, false),
                 invalidProfiles["child"],
             )
             remote.profileSessionFailureUsers += "child"
-            val results = repository.refreshFamilyProfiles(profiles, force = true)
+            val results = repository.refreshLinkedProfiles(profiles, force = true)
             assertEquals(RefreshResult.Updated, results["root"])
             assertEquals(
                 RefreshResult.Failed(RefreshFailure.Unknown, false),
@@ -573,7 +574,7 @@ class SportsDataSourceImplTest {
             )
             assertEquals(
                 RefreshResult.Failed(RefreshFailure.Unknown, false),
-                repository.refreshFamilyProfiles(profiles, force = false)["child"],
+                repository.refreshLinkedProfiles(profiles, force = false)["child"],
             )
         }
     }

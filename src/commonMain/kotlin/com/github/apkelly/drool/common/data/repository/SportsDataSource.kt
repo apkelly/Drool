@@ -2,10 +2,10 @@ package com.github.apkelly.drool.common.data.repository
 
 import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Club
-import com.github.apkelly.drool.common.domain.model.FamilyClub
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.ProfileClub
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamHub
@@ -18,15 +18,15 @@ interface SportsDataSource {
         clubId: String?,
     ): Flow<CachedData<List<Team>>>
     fun observeFixtures(): Flow<CachedData<List<Fixture>>>
-    fun observeFamilyFixtures(
+    fun observeLinkedProfileFixtures(
         profileIds: Set<String>,
     ): Flow<List<Fixture>>
-    fun observeFamilyTeams(
+    fun observeProfileTeams(
         profileIds: Set<String>,
-    ): Flow<List<FamilyTeam>>
-    fun observeFamilyClubs(
+    ): Flow<List<ProfileTeam>>
+    fun observeProfileClubs(
         profileIds: Set<String>,
-    ): Flow<List<FamilyClub>>
+    ): Flow<List<ProfileClub>>
     fun observeTeamRelationships(): Flow<Map<String, TeamRelationship>>
 
     suspend fun refreshClubs(
@@ -39,8 +39,8 @@ interface SportsDataSource {
     suspend fun refreshFixtures(
         force: Boolean = false,
     ): RefreshResult
-    suspend fun refreshFamilyProfiles(
-        profiles: List<FamilyProfile>,
+    suspend fun refreshLinkedProfiles(
+        profiles: List<LinkedProfile>,
         force: Boolean = false,
     ): Map<String, RefreshResult>
     suspend fun setFollowing(

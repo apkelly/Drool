@@ -37,8 +37,8 @@ import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
 import com.github.apkelly.drool.home.data.HomeRepositoryImpl
 import com.github.apkelly.drool.home.domain.repository.HomeRepository
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
 import com.github.apkelly.drool.match.data.MatchRepositoryImpl
 import com.github.apkelly.drool.match.data.weather.GoogleWeatherApi
 import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
@@ -70,8 +70,8 @@ import com.github.apkelly.drool.schedule.domain.usecase.DeleteRefereeAvailabilit
 import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeAvailabilityUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeClubsUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
-import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
 import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
 import com.github.apkelly.drool.team.data.TeamRepositoryImpl
 import com.github.apkelly.drool.team.domain.repository.TeamRepository
@@ -172,13 +172,13 @@ private val domainModule = module {
     factory { ObserveClubsUseCase(repository = get()) }
     factory { ObserveTeamsUseCase(repository = get()) }
     factory { ObserveFixturesUseCase(repository = get()) }
-    factory { ObserveFamilyTeamsUseCase(repository = get()) }
-    factory { ObserveFamilyClubsUseCase(repository = get()) }
+    factory { ObserveProfileTeamsUseCase(repository = get()) }
+    factory { ObserveProfileClubsUseCase(repository = get()) }
     factory { ObserveTeamRelationshipsUseCase(repository = get()) }
     factory { RefreshClubsUseCase(repository = get()) }
     factory { RefreshTeamsUseCase(repository = get()) }
     factory { RefreshFixturesUseCase(repository = get()) }
-    factory { RefreshFamilyProfilesUseCase(repository = get()) }
+    factory { RefreshLinkedProfilesUseCase(repository = get()) }
     factory { GetRefereeClubsUseCase(get()) }
     factory { GetRefereeAvailabilityUseCase(get()) }
     factory { CreateRefereeAvailabilityUseCase(get()) }
@@ -212,13 +212,13 @@ private val uiModule = module {
             observeClubs = get(),
             observeTeams = get(),
             observeFixtures = get(),
-            observeFamilyTeams = get(),
-            observeFamilyClubs = get(),
+            observeProfileTeams = get(),
+            observeProfileClubs = get(),
             observeRelationships = get(),
             refreshClubsUseCase = get(),
             refreshTeamsUseCase = get(),
             refreshFixturesUseCase = get(),
-            refreshFamilyProfiles = get(),
+            refreshLinkedProfiles = get(),
             setTeamFollowing = get(),
             loadTeamHub = get(),
             loadMatchDetails = get(),

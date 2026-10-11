@@ -29,10 +29,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Club
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamRelationship
 import com.github.apkelly.drool.common.resources.Res
@@ -40,8 +40,6 @@ import com.github.apkelly.drool.common.resources.action_follow
 import com.github.apkelly.drool.common.resources.action_following
 import com.github.apkelly.drool.common.resources.content_club_logo
 import com.github.apkelly.drool.common.resources.content_team_logo
-import com.github.apkelly.drool.common.resources.family_all_profiles
-import com.github.apkelly.drool.common.resources.family_profile_item
 import com.github.apkelly.drool.common.resources.fixture_competition
 import com.github.apkelly.drool.common.resources.fixture_role_coach
 import com.github.apkelly.drool.common.resources.fixture_role_player
@@ -49,6 +47,8 @@ import com.github.apkelly.drool.common.resources.fixture_role_referee
 import com.github.apkelly.drool.common.resources.fixture_role_referee_named
 import com.github.apkelly.drool.common.resources.fixture_venue
 import com.github.apkelly.drool.common.resources.fixture_versus
+import com.github.apkelly.drool.common.resources.linked_profile_item
+import com.github.apkelly.drool.common.resources.linked_profiles_all
 import com.github.apkelly.drool.common.resources.team_age_group
 import com.github.apkelly.drool.common.resources.team_relationship_coach
 import com.github.apkelly.drool.common.resources.team_relationship_following
@@ -238,7 +238,7 @@ fun FixtureCard(
             }
             profileName?.let {
                 Text(
-                    text = stringResource(Res.string.family_profile_item, it),
+                    text = stringResource(Res.string.linked_profile_item, it),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -271,8 +271,8 @@ fun FixtureCard(
 }
 
 @Composable
-fun FamilyProfileSelector(
-    profiles: List<FamilyProfile>,
+fun LinkedProfileSelector(
+    profiles: List<LinkedProfile>,
     selectedProfileId: String?,
     onSelect: (String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -284,7 +284,7 @@ fun FamilyProfileSelector(
         FilterChip(
             selected = selectedProfileId == null,
             onClick = { onSelect(null) },
-            label = { Text(stringResource(Res.string.family_all_profiles)) },
+            label = { Text(stringResource(Res.string.linked_profiles_all)) },
         )
         profiles.forEach { profile ->
             FilterChip(
@@ -305,8 +305,8 @@ fun FamilyProfileSelector(
 }
 
 @Composable
-fun FamilyTeamCard(
-    familyTeam: FamilyTeam,
+fun ProfileTeamCard(
+    profileTeam: ProfileTeam,
     profileName: String,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
@@ -323,17 +323,17 @@ fun FamilyTeamCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 RemoteImage(
-                    url = familyTeam.team.logoUrl,
+                    url = profileTeam.team.logoUrl,
                     contentDescription = stringResource(
                         Res.string.content_team_logo,
-                        familyTeam.team.name,
+                        profileTeam.team.name,
                     ),
                     fallbackIcon = MaterialSymbol.Groups,
                     modifier = Modifier.size(44.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = familyTeam.team.name,
+                        text = profileTeam.team.name,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -341,7 +341,7 @@ fun FamilyTeamCard(
                     Text(profileName, style = MaterialTheme.typography.bodySmall)
                 }
             }
-            familyTeam.relationship.labelResource()?.let { label ->
+            profileTeam.relationship.labelResource()?.let { label ->
                 AssistChip(
                     onClick = {},
                     label = { Text(stringResource(label)) },

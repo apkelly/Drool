@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 
 class ProfileTest {
     @Test
-    fun familyProfilesContainPrimaryAndDistinctLinkedSubjectsOnly() {
+    fun linkedProfilesContainPrimaryAndDistinctLinkedSubjectsOnly() {
         val profile = Profile(
             accountId = "root",
             displayName = "Harry",
@@ -36,7 +36,7 @@ class ProfileTest {
             ),
         )
 
-        assertEquals(listOf("root", "child"), profile.familyProfiles.map { it.id })
-        assertEquals("Jude", profile.familyProfiles[1].displayName)
+        assertEquals(listOf("root", "child"), profile.linkedProfiles.map { it.id })
+        assertEquals("Jude", profile.linkedProfiles[1].displayName)
     }
 }

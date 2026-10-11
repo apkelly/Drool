@@ -2,11 +2,11 @@ package com.github.apkelly.drool.common.ui.preview
 
 import com.github.apkelly.drool.common.domain.model.Account
 import com.github.apkelly.drool.common.domain.model.Club
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamRelationship
@@ -99,19 +99,19 @@ internal object TopLevelScreenPreviewData {
 
     val home = HomeUiModel(
         profile = profile,
-        familyProfiles = profile.familyProfiles,
+        linkedProfiles = profile.linkedProfiles,
         selectedProfileId = null,
-        familyTeams = listOf(
-            FamilyTeam("harry-kane", coachingTeam, TeamRelationship.Coaching),
-            FamilyTeam("jude-bellingham", playerTeam, TeamRelationship.Player),
+        profileTeams = listOf(
+            ProfileTeam("harry-kane", coachingTeam, TeamRelationship.Coaching),
+            ProfileTeam("jude-bellingham", playerTeam, TeamRelationship.Player),
         ),
-        familyRefreshResults = emptyMap(),
+        linkedProfileRefreshResults = emptyMap(),
         fixtures = CollectionUiState(items = fixtures, isStale = false),
     )
 
     val schedule = ScheduleUiModel(
         fixtures = CollectionUiState(items = fixtures, isStale = false),
-        familyProfiles = profile.familyProfiles,
+        linkedProfiles = profile.linkedProfiles,
         selectedProfileId = null,
     )
 

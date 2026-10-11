@@ -12,15 +12,15 @@ import com.github.apkelly.drool.common.domain.model.AuthCredentials
 import com.github.apkelly.drool.common.domain.model.AuthenticatedSession
 import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Club
-import com.github.apkelly.drool.common.domain.model.FamilyClub
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.MatchWeather
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.common.domain.model.ProfileClub
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.Team
@@ -35,8 +35,8 @@ import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
 import com.github.apkelly.drool.home.data.HomeRepositoryImpl
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
 import com.github.apkelly.drool.match.data.MatchRepositoryImpl
 import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
@@ -53,8 +53,8 @@ import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
-import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
 import com.github.apkelly.drool.team.data.TeamRepositoryImpl
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -138,11 +138,11 @@ class UseCasesTest {
         assertEquals(dataSource.teams, ObserveTeamsUseCase(discover)())
         assertEquals(null, dataSource.lastClubId)
         assertEquals(dataSource.fixtures, ObserveFixturesUseCase(schedule)())
-        assertEquals(dataSource.familyFixtures, ObserveFixturesUseCase(schedule)(setOf("1")))
+        assertEquals(dataSource.linkedProfileFixtures, ObserveFixturesUseCase(schedule)(setOf("1")))
         assertEquals(setOf("1"), dataSource.lastProfileIds)
-        assertEquals(dataSource.familyTeams, ObserveFamilyTeamsUseCase(home)(setOf("2")))
+        assertEquals(dataSource.profileTeams, ObserveProfileTeamsUseCase(home)(setOf("2")))
         assertEquals(setOf("2"), dataSource.lastProfileIds)
-        assertEquals(dataSource.familyClubs, ObserveFamilyClubsUseCase(home)(setOf("3")))
+        assertEquals(dataSource.profileClubs, ObserveProfileClubsUseCase(home)(setOf("3")))
         assertEquals(setOf("3"), dataSource.lastProfileIds)
         assertEquals(dataSource.relationships, ObserveTeamRelationshipsUseCase(discover)())
     }
@@ -159,15 +159,15 @@ class UseCasesTest {
         assertEquals(false, dataSource.lastForce)
         assertEquals(RefreshResult.Updated, RefreshClubsUseCase(discover)())
         assertEquals(true, dataSource.lastForce)
-        val profiles = listOf(FamilyProfile("1", "Alex", null, true))
+        val profiles = listOf(LinkedProfile("1", "Alex", null, true))
         assertEquals(
             mapOf("1" to RefreshResult.Updated),
-            RefreshFamilyProfilesUseCase(schedule)(profiles, false),
+            RefreshLinkedProfilesUseCase(schedule)(profiles, false),
         )
-        assertEquals(profiles, dataSource.lastFamilyProfiles)
+        assertEquals(profiles, dataSource.lastLinkedProfiles)
         assertEquals(
             mapOf("1" to RefreshResult.Updated),
-            RefreshFamilyProfilesUseCase(schedule)(profiles),
+            RefreshLinkedProfilesUseCase(schedule)(profiles),
         )
         assertEquals(true, dataSource.lastForce)
         assertEquals(RefreshResult.Updated, RefreshTeamsUseCase(discover)(clubId = "club"))
@@ -220,13 +220,13 @@ class UseCasesTest {
             observeClubs = ObserveClubsUseCase(discover),
             observeTeams = ObserveTeamsUseCase(discover),
             observeFixtures = ObserveFixturesUseCase(schedule),
-            observeFamilyTeams = ObserveFamilyTeamsUseCase(home),
-            observeFamilyClubs = ObserveFamilyClubsUseCase(home),
+            observeProfileTeams = ObserveProfileTeamsUseCase(home),
+            observeProfileClubs = ObserveProfileClubsUseCase(home),
             observeRelationships = ObserveTeamRelationshipsUseCase(discover),
             refreshClubsUseCase = RefreshClubsUseCase(discover),
             refreshTeamsUseCase = RefreshTeamsUseCase(discover),
             refreshFixturesUseCase = RefreshFixturesUseCase(schedule),
-            refreshFamilyProfiles = RefreshFamilyProfilesUseCase(schedule),
+            refreshLinkedProfiles = RefreshLinkedProfilesUseCase(schedule),
             setTeamFollowing = SetTeamFollowingUseCase(discover),
             loadTeamHub = LoadTeamHubUseCase(team),
             loadMatchDetails = LoadMatchDetailsUseCase(match),
@@ -354,15 +354,15 @@ private class FakeSportsDataSource : SportsDataSource {
     val teams = MutableStateFlow(CachedData<List<Team>>(emptyList(), null, true))
     val fixtures = MutableStateFlow(CachedData<List<Fixture>>(emptyList(), null, true))
     val relationships = MutableStateFlow<Map<String, TeamRelationship>>(emptyMap())
-    val familyFixtures = MutableStateFlow<List<Fixture>>(emptyList())
-    val familyTeams = MutableStateFlow<List<FamilyTeam>>(emptyList())
-    val familyClubs = MutableStateFlow<List<FamilyClub>>(emptyList())
+    val linkedProfileFixtures = MutableStateFlow<List<Fixture>>(emptyList())
+    val profileTeams = MutableStateFlow<List<ProfileTeam>>(emptyList())
+    val profileClubs = MutableStateFlow<List<ProfileClub>>(emptyList())
     var lastClubId: String? = null
     var lastRefreshClubId: String? = null
     var lastForce: Boolean? = null
     var lastFollow: Pair<String, Boolean>? = null
     var lastProfileIds: Set<String>? = null
-    var lastFamilyProfiles: List<FamilyProfile>? = null
+    var lastLinkedProfiles: List<LinkedProfile>? = null
     var lastTeamHub: Pair<String, String>? = null
     var lastTeamHubForce: Boolean? = null
     var lastMatchDetails: Pair<String, String>? = null
@@ -392,25 +392,25 @@ private class FakeSportsDataSource : SportsDataSource {
     }
 
     override fun observeFixtures(): Flow<CachedData<List<Fixture>>> = fixtures
-    override fun observeFamilyFixtures(
+    override fun observeLinkedProfileFixtures(
         profileIds: Set<String>,
     ): Flow<List<Fixture>> {
         lastProfileIds = profileIds
-        return familyFixtures
+        return linkedProfileFixtures
     }
 
-    override fun observeFamilyTeams(
+    override fun observeProfileTeams(
         profileIds: Set<String>,
-    ): Flow<List<FamilyTeam>> {
+    ): Flow<List<ProfileTeam>> {
         lastProfileIds = profileIds
-        return familyTeams
+        return profileTeams
     }
 
-    override fun observeFamilyClubs(
+    override fun observeProfileClubs(
         profileIds: Set<String>,
-    ): Flow<List<FamilyClub>> {
+    ): Flow<List<ProfileClub>> {
         lastProfileIds = profileIds
-        return familyClubs
+        return profileClubs
     }
     override fun observeTeamRelationships(): Flow<Map<String, TeamRelationship>> = relationships
     override suspend fun refreshClubs(
@@ -436,11 +436,11 @@ private class FakeSportsDataSource : SportsDataSource {
         return RefreshResult.Updated
     }
 
-    override suspend fun refreshFamilyProfiles(
-        profiles: List<FamilyProfile>,
+    override suspend fun refreshLinkedProfiles(
+        profiles: List<LinkedProfile>,
         force: Boolean,
     ): Map<String, RefreshResult> {
-        lastFamilyProfiles = profiles
+        lastLinkedProfiles = profiles
         lastForce = force
         return profiles.associate { it.id to RefreshResult.Updated }
     }

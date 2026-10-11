@@ -18,11 +18,11 @@ import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Club
-import com.github.apkelly.drool.common.domain.model.FamilyClub
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.ProfileClub
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.Team
@@ -86,7 +86,7 @@ class SportsDataSourceImpl(
         .map { it?.accountId }
         .flatMapAccountFixtures()
 
-    override fun observeFamilyFixtures(
+    override fun observeLinkedProfileFixtures(
         profileIds: Set<String>,
     ): Flow<List<Fixture>> = database.fixtureDao()
         .observeForAccounts(profileIds.toList())
@@ -95,16 +95,16 @@ class SportsDataSourceImpl(
                 .upcomingAt(timeProvider.nowEpochMillis())
         }
 
-    override fun observeFamilyTeams(
+    override fun observeProfileTeams(
         profileIds: Set<String>,
-    ): Flow<List<FamilyTeam>> = combine(
+    ): Flow<List<ProfileTeam>> = combine(
         database.teamDao().observeAll(),
         database.teamDao().observeRelationships(profileIds.toList()),
     ) { teams, relationships ->
         val teamsById = teams.associateBy { it.id }
         relationships.mapNotNull { relationship ->
             teamsById[relationship.teamId]?.let { team ->
-                FamilyTeam(
+                ProfileTeam(
                     profileId = relationship.accountId,
                     team = team.toDomain(),
                     relationship = relationshipFrom(relationship.relationship),
@@ -113,16 +113,16 @@ class SportsDataSourceImpl(
         }
     }
 
-    override fun observeFamilyClubs(
+    override fun observeProfileClubs(
         profileIds: Set<String>,
-    ): Flow<List<FamilyClub>> = combine(
+    ): Flow<List<ProfileClub>> = combine(
         database.clubDao().observeAll(),
         database.clubDao().observeRelationships(profileIds.toList()),
     ) { clubs, relationships ->
         val clubsById = clubs.associateBy { it.id }
         relationships.mapNotNull { relationship ->
             clubsById[relationship.clubId]?.let { club ->
-                FamilyClub(relationship.accountId, club.toDomain())
+                ProfileClub(relationship.accountId, club.toDomain())
             }
         }
     }
@@ -185,8 +185,8 @@ class SportsDataSourceImpl(
         }
     }
 
-    override suspend fun refreshFamilyProfiles(
-        profiles: List<FamilyProfile>,
+    override suspend fun refreshLinkedProfiles(
+        profiles: List<LinkedProfile>,
         force: Boolean,
     ): Map<String, RefreshResult> {
         val rootToken = store.getBearerToken() ?: return profiles.associate {

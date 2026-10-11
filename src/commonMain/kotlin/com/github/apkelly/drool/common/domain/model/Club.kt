@@ -9,7 +9,7 @@ data class Club(
     val secondaryColor: String?,
 )
 
-data class FamilyClub(
+data class ProfileClub(
     val profileId: String,
     val club: Club,
 )

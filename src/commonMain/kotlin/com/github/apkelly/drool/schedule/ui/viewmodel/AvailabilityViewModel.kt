@@ -38,7 +38,7 @@ class AvailabilityViewModel(
     private var configuredAccountId: String? = null
     private var configurationVersion = 0
 
-    fun configureFamily(
+    fun configureLinkedProfiles(
         accountId: String,
         profileIds: List<String>,
     ) {

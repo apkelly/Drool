@@ -28,8 +28,8 @@ import com.github.apkelly.drool.common.ui.format.formatFixtureDateHeading
 import com.github.apkelly.drool.common.ui.preview.TopLevelScreenPreviewData
 import com.github.apkelly.drool.common.ui.theme.DroolTheme
 import com.github.apkelly.drool.common.ui.widgets.CacheStatus
-import com.github.apkelly.drool.common.ui.widgets.FamilyProfileSelector
 import com.github.apkelly.drool.common.ui.widgets.FixtureCard
+import com.github.apkelly.drool.common.ui.widgets.LinkedProfileSelector
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.common.ui.widgets.RefreshAction
@@ -47,7 +47,7 @@ fun ScheduleScreen(
     onOpenAvailability: () -> Unit,
 ) {
     val state = model.fixtures
-    val familyProfiles = model.familyProfiles
+    val linkedProfiles = model.linkedProfiles
     val selectedProfileId = model.selectedProfileId
     androidx.compose.material3.Scaffold(
         modifier = modifier,
@@ -76,8 +76,8 @@ fun ScheduleScreen(
                     )
                 }
                 item {
-                    FamilyProfileSelector(
-                        profiles = familyProfiles,
+                    LinkedProfileSelector(
+                        profiles = linkedProfiles,
                         selectedProfileId = selectedProfileId,
                         onSelect = onProfileSelect,
                     )
@@ -128,7 +128,7 @@ fun ScheduleScreen(
                                 FixtureCard(
                                     fixture = fixture,
                                     profileName = if (selectedProfileId == null) {
-                                        familyProfiles
+                                        linkedProfiles
                                             .firstOrNull { it.id == fixture.profileId }
                                             ?.displayName
                                     } else {

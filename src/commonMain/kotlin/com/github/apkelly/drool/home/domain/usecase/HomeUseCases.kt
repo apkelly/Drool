@@ -2,18 +2,18 @@ package com.github.apkelly.drool.home.domain.usecase
 
 import com.github.apkelly.drool.home.domain.repository.HomeRepository
 
-class ObserveFamilyTeamsUseCase(
+class ObserveProfileTeamsUseCase(
     private val repository: HomeRepository,
 ) {
     operator fun invoke(
         profileIds: Set<String>,
-    ) = repository.observeFamilyTeams(profileIds)
+    ) = repository.observeProfileTeams(profileIds)
 }
 
-class ObserveFamilyClubsUseCase(
+class ObserveProfileClubsUseCase(
     private val repository: HomeRepository,
 ) {
     operator fun invoke(
         profileIds: Set<String>,
-    ) = repository.observeFamilyClubs(profileIds)
+    ) = repository.observeProfileClubs(profileIds)
 }

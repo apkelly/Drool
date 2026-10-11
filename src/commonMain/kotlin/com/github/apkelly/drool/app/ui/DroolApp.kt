@@ -88,11 +88,11 @@ fun DroolApp(
     val authenticatedProfile =
         (sessionState as? SessionUiState.Authenticated)?.profile
     authenticatedProfile?.let { profile ->
-        LaunchedEffect(profile.accountId, profile.familyProfiles) {
-            sportsViewModel.configureFamily(profile)
-            availabilityViewModel.configureFamily(
+        LaunchedEffect(profile.accountId, profile.linkedProfiles) {
+            sportsViewModel.configureLinkedProfiles(profile)
+            availabilityViewModel.configureLinkedProfiles(
                 accountId = profile.accountId,
-                profileIds = profile.familyProfiles.map { it.id },
+                profileIds = profile.linkedProfiles.map { it.id },
             )
             sportsViewModel.refreshAll(force = false)
         }
@@ -194,10 +194,11 @@ private fun MainNavigation(
     val clubs by sportsViewModel.clubs.collectAsState()
     val teams by sportsViewModel.teams.collectAsState()
     val fixtures by sportsViewModel.fixtures.collectAsState()
-    val familyProfiles by sportsViewModel.familyProfiles.collectAsState()
+    val linkedProfiles by sportsViewModel.linkedProfiles.collectAsState()
     val selectedProfileId by sportsViewModel.selectedProfileId.collectAsState()
-    val familyTeams by sportsViewModel.familyTeams.collectAsState()
-    val familyRefreshResults by sportsViewModel.familyRefreshResults.collectAsState()
+    val profileTeams by sportsViewModel.profileTeams.collectAsState()
+    val linkedProfileRefreshResults by
+        sportsViewModel.linkedProfileRefreshResults.collectAsState()
     val linkMemberState by appViewModel.linkMemberState.collectAsState()
     val unlinkMemberState by appViewModel.unlinkMemberState.collectAsState()
     val relationships by sportsViewModel.relationships.collectAsState()
@@ -257,13 +258,13 @@ private fun MainNavigation(
                     HomeScreen(
                         model = HomeUiModel(
                             profile = profile,
-                            familyProfiles = familyProfiles,
+                            linkedProfiles = linkedProfiles,
                             selectedProfileId = selectedProfileId,
-                            familyTeams = familyTeams,
-                            familyRefreshResults = familyRefreshResults,
+                            profileTeams = profileTeams,
+                            linkedProfileRefreshResults = linkedProfileRefreshResults,
                             fixtures = fixtures,
                         ),
-                        onProfileSelect = sportsViewModel::selectFamilyProfile,
+                        onProfileSelect = sportsViewModel::selectLinkedProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
                         onSignInAgain = appViewModel::signOut,
                         onFixtureSelect = { fixture ->
@@ -279,11 +280,11 @@ private fun MainNavigation(
                         onViewSchedule = {
                             selected = TopLevelDestination.Schedule
                         },
-                        onTeamSelect = { familyTeam ->
-                            val team = familyTeam.team
+                        onTeamSelect = { profileTeam ->
+                            val team = profileTeam.team
                             currentStack.add(
                                 AppRoute.Team(
-                                    profileId = familyTeam.profileId,
+                                    profileId = profileTeam.profileId,
                                     teamId = team.id,
                                     teamName = team.name,
                                     logoUrl = team.logoUrl,
@@ -298,12 +299,12 @@ private fun MainNavigation(
                     ScheduleScreen(
                         model = ScheduleUiModel(
                             fixtures = fixtures,
-                            familyProfiles = familyProfiles,
+                            linkedProfiles = linkedProfiles,
                             selectedProfileId = selectedProfileId,
                             canManageRefereeAvailability =
                             selectedProfileId in refereeProfileIds,
                         ),
-                        onProfileSelect = sportsViewModel::selectFamilyProfile,
+                        onProfileSelect = sportsViewModel::selectLinkedProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
                         onFixtureSelect = { fixture ->
                             fixture.profileId?.let { profileId ->
@@ -462,7 +463,7 @@ private fun MainNavigation(
                     AvailabilityScreen(
                         model = AvailabilityUiModel(
                             profileId = route.profileId,
-                            profileName = familyProfiles
+                            profileName = linkedProfiles
                                 .firstOrNull { it.id == route.profileId }
                                 ?.displayName
                                 .orEmpty(),

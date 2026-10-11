@@ -1,11 +1,11 @@
 package com.github.apkelly.drool.app.ui.viewmodel
 
 import com.github.apkelly.drool.common.domain.model.Club
-import com.github.apkelly.drool.common.domain.model.FamilyClub
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.ProfileClub
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.Team
@@ -23,14 +23,14 @@ import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
-import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
 import kotlinx.coroutines.CoroutineScope
@@ -75,13 +75,13 @@ class SportsViewModel(
     observeClubs: ObserveClubsUseCase,
     private val observeTeams: ObserveTeamsUseCase,
     private val observeFixtures: ObserveFixturesUseCase,
-    private val observeFamilyTeams: ObserveFamilyTeamsUseCase,
-    private val observeFamilyClubs: ObserveFamilyClubsUseCase,
+    private val observeProfileTeams: ObserveProfileTeamsUseCase,
+    private val observeProfileClubs: ObserveProfileClubsUseCase,
     observeRelationships: ObserveTeamRelationshipsUseCase,
     private val refreshClubsUseCase: RefreshClubsUseCase,
     private val refreshTeamsUseCase: RefreshTeamsUseCase,
     private val refreshFixturesUseCase: RefreshFixturesUseCase,
-    private val refreshFamilyProfiles: RefreshFamilyProfilesUseCase,
+    private val refreshLinkedProfiles: RefreshLinkedProfilesUseCase,
     private val setTeamFollowing: SetTeamFollowingUseCase,
     private val loadTeamHub: LoadTeamHubUseCase,
     private val loadMatchDetails: LoadMatchDetailsUseCase,
@@ -99,9 +99,9 @@ class SportsViewModel(
     private val teamsFailure = MutableStateFlow<RefreshFailure?>(null)
     private val fixturesFailure = MutableStateFlow<RefreshFailure?>(null)
     private val selectedClubId = MutableStateFlow<String?>(null)
-    private val mutableFamilyProfiles = MutableStateFlow<List<FamilyProfile>>(emptyList())
+    private val mutableLinkedProfiles = MutableStateFlow<List<LinkedProfile>>(emptyList())
     private val mutableSelectedProfileId = MutableStateFlow<String?>(null)
-    private val mutableFamilyRefreshResults =
+    private val mutableLinkedProfileRefreshResults =
         MutableStateFlow<Map<String, RefreshResult>>(emptyMap())
     private val mutableTeamHubState = MutableStateFlow<TeamHubUiState>(TeamHubUiState.Idle)
     private val mutableMatchDetailsState =
@@ -110,10 +110,10 @@ class SportsViewModel(
     private val resolvedMatchDetails = MutableStateFlow<Set<MatchCacheKey>>(emptySet())
     private var cacheOwnerAccountId: String? = null
 
-    val familyProfiles: StateFlow<List<FamilyProfile>> = mutableFamilyProfiles
+    val linkedProfiles: StateFlow<List<LinkedProfile>> = mutableLinkedProfiles
     val selectedProfileId: StateFlow<String?> = mutableSelectedProfileId
-    val familyRefreshResults: StateFlow<Map<String, RefreshResult>> =
-        mutableFamilyRefreshResults
+    val linkedProfileRefreshResults: StateFlow<Map<String, RefreshResult>> =
+        mutableLinkedProfileRefreshResults
     val teamHubState: StateFlow<TeamHubUiState> = mutableTeamHubState
     val matchDetailsState: StateFlow<MatchDetailsUiState> = mutableMatchDetailsState
 
@@ -139,7 +139,7 @@ class SportsViewModel(
             .stateIn(scope, SharingStarted.Eagerly, CollectionUiState())
 
     val fixtures: StateFlow<CollectionUiState<Fixture>> =
-        combine(mutableFamilyProfiles, mutableSelectedProfileId) { profiles, selected ->
+        combine(mutableLinkedProfiles, mutableSelectedProfileId) { profiles, selected ->
             profiles to selected
         }.flatMapLatest { (profiles, selected) ->
             if (profiles.isEmpty()) {
@@ -162,27 +162,27 @@ class SportsViewModel(
         }
             .stateIn(scope, SharingStarted.Eagerly, CollectionUiState())
 
-    val familyTeams: StateFlow<List<FamilyTeam>> =
-        combine(mutableFamilyProfiles, mutableSelectedProfileId) { profiles, selected ->
+    val profileTeams: StateFlow<List<ProfileTeam>> =
+        combine(mutableLinkedProfiles, mutableSelectedProfileId) { profiles, selected ->
             profiles to selected
         }.flatMapLatest { (profiles, selected) ->
             if (profiles.isEmpty()) {
                 flowOf(emptyList())
             } else {
-                observeFamilyTeams(profiles.map { it.id }.toSet()).map { teams ->
+                observeProfileTeams(profiles.map { it.id }.toSet()).map { teams ->
                     teams.filter { selected == null || it.profileId == selected }
                 }
             }
         }.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    val familyClubs: StateFlow<List<FamilyClub>> =
-        combine(mutableFamilyProfiles, mutableSelectedProfileId) { profiles, selected ->
+    val profileClubs: StateFlow<List<ProfileClub>> =
+        combine(mutableLinkedProfiles, mutableSelectedProfileId) { profiles, selected ->
             profiles to selected
         }.flatMapLatest { (profiles, selected) ->
             if (profiles.isEmpty()) {
                 flowOf(emptyList())
             } else {
-                observeFamilyClubs(profiles.map { it.id }.toSet()).map { clubs ->
+                observeProfileClubs(profiles.map { it.id }.toSet()).map { clubs ->
                     clubs.filter { selected == null || it.profileId == selected }
                 }
             }
@@ -202,7 +202,7 @@ class SportsViewModel(
         }
     }
 
-    fun configureFamily(
+    fun configureLinkedProfiles(
         profile: Profile,
     ) {
         if (cacheOwnerAccountId != profile.accountId) {
@@ -212,17 +212,17 @@ class SportsViewModel(
             mutableTeamHubState.value = TeamHubUiState.Idle
             mutableMatchDetailsState.value = MatchDetailsUiState.Idle
         }
-        val profiles = profile.familyProfiles
-        if (mutableFamilyProfiles.value != profiles) {
-            mutableFamilyProfiles.value = profiles
-            mutableFamilyRefreshResults.value = emptyMap()
+        val profiles = profile.linkedProfiles
+        if (mutableLinkedProfiles.value != profiles) {
+            mutableLinkedProfiles.value = profiles
+            mutableLinkedProfileRefreshResults.value = emptyMap()
             if (mutableSelectedProfileId.value !in profiles.map { it.id }) {
                 mutableSelectedProfileId.value = null
             }
         }
     }
 
-    fun selectFamilyProfile(
+    fun selectLinkedProfile(
         profileId: String?,
     ) {
         mutableSelectedProfileId.value = profileId
@@ -271,12 +271,12 @@ class SportsViewModel(
                 fixturesRefreshing.value = true
                 fixturesFailure.value = null
                 try {
-                    val profiles = mutableFamilyProfiles.value
+                    val profiles = mutableLinkedProfiles.value
                     val result = if (profiles.isEmpty()) {
                         refreshFixturesUseCase(force)
                     } else {
-                        val resultsByProfile = refreshFamilyProfiles(profiles, force)
-                        mutableFamilyRefreshResults.value = resultsByProfile
+                        val resultsByProfile = refreshLinkedProfiles(profiles, force)
+                        mutableLinkedProfileRefreshResults.value = resultsByProfile
                         val results = resultsByProfile.values
                         results.filterIsInstance<RefreshResult.Failed>().firstOrNull()
                             ?: if (results.all { it == RefreshResult.NotModified }) {

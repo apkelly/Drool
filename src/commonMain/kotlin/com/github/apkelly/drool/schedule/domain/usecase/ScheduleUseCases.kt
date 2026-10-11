@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.schedule.domain.usecase
 
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 
 class ObserveFixturesUseCase(
@@ -9,7 +9,7 @@ class ObserveFixturesUseCase(
     operator fun invoke() = repository.observeFixtures()
     operator fun invoke(
         profileIds: Set<String>,
-    ) = repository.observeFamilyFixtures(profileIds)
+    ) = repository.observeLinkedProfileFixtures(profileIds)
 }
 
 class RefreshFixturesUseCase(
@@ -20,11 +20,11 @@ class RefreshFixturesUseCase(
     ) = repository.refreshFixtures(force)
 }
 
-class RefreshFamilyProfilesUseCase(
+class RefreshLinkedProfilesUseCase(
     private val repository: ScheduleRepository,
 ) {
     suspend operator fun invoke(
-        profiles: List<FamilyProfile>,
+        profiles: List<LinkedProfile>,
         force: Boolean = true,
-    ) = repository.refreshFamilyProfiles(profiles, force)
+    ) = repository.refreshLinkedProfiles(profiles, force)
 }

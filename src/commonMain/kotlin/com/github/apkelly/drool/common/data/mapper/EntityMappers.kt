@@ -146,11 +146,11 @@ fun RelatedUser.toLinkedEntity(
 ): RelatedUserEntity = toEntity(ownerAccountId).copy(isLinked = true)
 
 /**
- * Combines family profiles and linked-user records into one stable cached identity list.
+ * Combines linked profiles and linked-user records into one stable cached identity list.
  *
  * Dribl exposes these identities through separate endpoints and may assign different IDs before
  * linking. Matching therefore falls back conservatively from ID to unique email to unique
- * normalized name. Linked data wins when present, while richer family-profile fields fill gaps.
+ * normalized name. Linked data wins when present, while richer profile fields fill gaps.
  */
 fun reconcileRelatedUsers(
     relatedUsers: List<RelatedUserEntity>,
@@ -194,7 +194,7 @@ fun reconcileRelatedUsers(
 private fun String.normalizedPersonName(): String = trim().lowercase().split(Regex("\\s+")).joinToString(" ")
 
 /**
- * Enriches the cached account owner with identity data returned by family-profile endpoints.
+ * Enriches the cached account owner with identity data returned by linked-profile endpoints.
  *
  * Authentication responses can contain only a placeholder name or omit an avatar, so this keeps
  * the current profile useful without replacing values when no unambiguous identity is available.

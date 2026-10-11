@@ -26,7 +26,7 @@ data class EmergencyContact(
     val email: String? = null,
 )
 
-data class FamilyProfile(
+data class LinkedProfile(
     val id: String,
     val displayName: String,
     val avatarUrl: String?,
@@ -36,10 +36,10 @@ data class FamilyProfile(
 /**
  * Finds the profile representing the signed-in user.
  *
- * Family endpoints can return the primary profile in any position, so callers must use the
+ * Linked-profile endpoints can return the primary profile in any position, so callers must use the
  * explicit marker rather than assuming the first profile belongs to the account owner.
  */
-fun List<FamilyProfile>.primaryProfileId(): String? = firstOrNull(FamilyProfile::isPrimary)?.id
+fun List<LinkedProfile>.primaryProfileId(): String? = firstOrNull(LinkedProfile::isPrimary)?.id
 
 data class Account(
     val id: String,

@@ -27,31 +27,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.github.apkelly.drool.common.domain.model.FamilyProfile
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_sign_in
-import com.github.apkelly.drool.common.resources.family_profile_refresh_failed
-import com.github.apkelly.drool.common.resources.family_profile_session_expired
-import com.github.apkelly.drool.common.resources.family_teams
 import com.github.apkelly.drool.common.resources.home_greeting
 import com.github.apkelly.drool.common.resources.home_next_game
 import com.github.apkelly.drool.common.resources.home_no_games
 import com.github.apkelly.drool.common.resources.home_no_games_body
 import com.github.apkelly.drool.common.resources.home_overview
 import com.github.apkelly.drool.common.resources.home_view_schedule
+import com.github.apkelly.drool.common.resources.linked_profile_refresh_failed
+import com.github.apkelly.drool.common.resources.linked_profile_session_expired
+import com.github.apkelly.drool.common.resources.linked_profile_teams
 import com.github.apkelly.drool.common.ui.preview.TopLevelScreenPreviewData
 import com.github.apkelly.drool.common.ui.theme.DroolTheme
 import com.github.apkelly.drool.common.ui.widgets.CacheStatus
-import com.github.apkelly.drool.common.ui.widgets.FamilyProfileSelector
-import com.github.apkelly.drool.common.ui.widgets.FamilyTeamCard
 import com.github.apkelly.drool.common.ui.widgets.FixtureCard
+import com.github.apkelly.drool.common.ui.widgets.LinkedProfileSelector
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
+import com.github.apkelly.drool.common.ui.widgets.ProfileTeamCard
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import org.jetbrains.compose.resources.stringResource
 
@@ -65,15 +65,15 @@ fun HomeScreen(
     onFixtureSelect: (Fixture) -> Unit,
     onViewSchedule: () -> Unit,
     modifier: Modifier = Modifier,
-    onTeamSelect: (FamilyTeam) -> Unit,
+    onTeamSelect: (ProfileTeam) -> Unit,
 ) {
     val profile = model.profile
-    val familyProfiles = model.familyProfiles
+    val linkedProfiles = model.linkedProfiles
     val selectedProfileId = model.selectedProfileId
-    val familyTeams = model.familyTeams
-    val familyRefreshResults = model.familyRefreshResults
+    val profileTeams = model.profileTeams
+    val linkedProfileRefreshResults = model.linkedProfileRefreshResults
     val fixtures = model.fixtures
-    val expiredProfileNames = familyRefreshResults
+    val expiredProfileNames = linkedProfileRefreshResults
         .filterValues {
             it is RefreshResult.Failed &&
                 (
@@ -83,7 +83,7 @@ fun HomeScreen(
         }
         .keys
         .map { profileId ->
-            familyProfiles.firstOrNull { it.id == profileId }?.displayName ?: profileId
+            linkedProfiles.firstOrNull { it.id == profileId }?.displayName ?: profileId
         }
         .distinct()
         .joinToString()
@@ -122,21 +122,21 @@ fun HomeScreen(
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    FamilyProfileSelector(
-                        profiles = familyProfiles,
+                    LinkedProfileSelector(
+                        profiles = linkedProfiles,
                         selectedProfileId = selectedProfileId,
                         onSelect = onProfileSelect,
                     )
                 }
                 if (expiredProfileNames.isNotEmpty()) {
                     item(
-                        key = "expired-family-session",
+                        key = "expired-linked-profile-session",
                         span = { GridItemSpan(maxLineSpan) },
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 text = stringResource(
-                                    Res.string.family_profile_session_expired,
+                                    Res.string.linked_profile_session_expired,
                                     expiredProfileNames,
                                 ),
                                 color = MaterialTheme.colorScheme.error,
@@ -148,7 +148,7 @@ fun HomeScreen(
                         }
                     }
                 }
-                familyRefreshResults.forEach { (profileId, result) ->
+                linkedProfileRefreshResults.forEach { (profileId, result) ->
                     if (
                         result is RefreshResult.Failed &&
                         result.reason != RefreshFailure.Unauthorized &&
@@ -160,8 +160,8 @@ fun HomeScreen(
                         ) {
                             Text(
                                 text = stringResource(
-                                    Res.string.family_profile_refresh_failed,
-                                    familyProfiles.firstOrNull { it.id == profileId }
+                                    Res.string.linked_profile_refresh_failed,
+                                    linkedProfiles.firstOrNull { it.id == profileId }
                                         ?.displayName
                                         ?: profileId,
                                 ),
@@ -217,7 +217,7 @@ fun HomeScreen(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         FixtureCard(
                             fixture = next,
-                            profileName = familyProfiles.profileNameFor(
+                            profileName = linkedProfiles.profileNameFor(
                                 next.profileId,
                                 selectedProfileId,
                             ),
@@ -225,25 +225,25 @@ fun HomeScreen(
                         )
                     }
                 }
-                if (familyTeams.isNotEmpty()) {
+                if (profileTeams.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Text(
-                            stringResource(Res.string.family_teams),
+                            stringResource(Res.string.linked_profile_teams),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     }
                     items(
                         key = { "${it.profileId}:${it.team.id}" },
-                        items = familyTeams,
-                    ) { familyTeam ->
-                        FamilyTeamCard(
-                            familyTeam = familyTeam,
-                            profileName = familyProfiles
-                                .firstOrNull { it.id == familyTeam.profileId }
+                        items = profileTeams,
+                    ) { profileTeam ->
+                        ProfileTeamCard(
+                            profileTeam = profileTeam,
+                            profileName = linkedProfiles
+                                .firstOrNull { it.id == profileTeam.profileId }
                                 ?.displayName
-                                ?: familyTeam.profileId,
+                                ?: profileTeam.profileId,
                             modifier = Modifier.aspectRatio(1f),
-                            onClick = { onTeamSelect(familyTeam) },
+                            onClick = { onTeamSelect(profileTeam) },
                         )
                     }
                 }
@@ -257,7 +257,7 @@ private const val HOME_TEAM_MIN_COLUMNS = 2
 private val HOME_GRID_PADDING = 20.dp
 private val HOME_GRID_SPACING = 14.dp
 
-private fun List<FamilyProfile>.profileNameFor(
+private fun List<LinkedProfile>.profileNameFor(
     profileId: String?,
     selectedProfileId: String?,
 ): String? = if (selectedProfileId == null) {

@@ -1066,7 +1066,7 @@ paths:
     get:
       operationId: get_linked_users_lookup
       tags: ["Linked Users Lookup"]
-      summary: "Return family members available to link"
+      summary: "Return profiles available to link"
       x-method-confirmation: "confirmed from Hermes call site: axios.get('/linked-users-lookup')"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
@@ -1121,7 +1121,7 @@ paths:
     patch:
       operationId: patch_linked_user
       tags: ["Linked Users"]
-      summary: "Verify a token and link a family member"
+      summary: "Verify a token and link a profile"
       x-method-confirmation: "confirmed from Hermes call site: axios.patch('/linked-users/' + id, { token })"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
@@ -1153,7 +1153,7 @@ paths:
     delete:
       operationId: delete_linked_user
       tags: ["Linked Users"]
-      summary: "Remove a linked family member from the authenticated profile"
+      summary: "Remove a linked profile from the authenticated profile"
       x-method-confirmation: "confirmed from Hermes call site: axios.delete('linked-users/' + id)"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"

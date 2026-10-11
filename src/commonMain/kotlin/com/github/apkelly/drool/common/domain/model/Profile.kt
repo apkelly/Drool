@@ -8,9 +8,9 @@ data class Profile(
     val relatedUsers: List<RelatedUser> = emptyList(),
     val accounts: List<Account> = emptyList(),
 ) {
-    val familyProfiles: List<FamilyProfile>
+    val linkedProfiles: List<LinkedProfile>
         get() = buildList {
-            add(FamilyProfile(accountId, displayName, avatarUrl, isPrimary = true))
+            add(LinkedProfile(accountId, displayName, avatarUrl, isPrimary = true))
             relatedUsers
                 .asSequence()
                 .filter { it.isLinked }
@@ -18,7 +18,7 @@ data class Profile(
                 .distinctBy { it.subjectUserId }
                 .forEach {
                     add(
-                        FamilyProfile(
+                        LinkedProfile(
                             id = it.subjectUserId,
                             displayName = it.displayName,
                             avatarUrl = it.avatarUrl,

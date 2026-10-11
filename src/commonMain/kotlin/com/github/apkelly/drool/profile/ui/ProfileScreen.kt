@@ -90,7 +90,7 @@ fun ProfileScreen(
     val observabilityEnabled = model.observabilityEnabled
     var confirmSignOut by remember { mutableStateOf(false) }
     var pendingUnlink by remember { mutableStateOf<RelatedUser?>(null) }
-    val familyMembers = profile.relatedUsers
+    val linkedUsers = profile.relatedUsers
         .filter { it.isLinked && it.subjectUserId != profile.accountId }
         .distinctBy { it.subjectUserId }
     Scaffold(
@@ -145,10 +145,10 @@ fun ProfileScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
-            if (familyMembers.isEmpty()) {
+            if (linkedUsers.isEmpty()) {
                 item { Text(stringResource(Res.string.profile_no_related_users)) }
             } else {
-                items(familyMembers, key = { it.subjectUserId }) { user ->
+                items(linkedUsers, key = { it.subjectUserId }) { user ->
                     val linkId = user.linkId
                     ProfileAssociationCard(
                         name = user.displayName,

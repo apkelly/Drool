@@ -1,14 +1,14 @@
 package com.github.apkelly.drool.home.domain.repository
 
-import com.github.apkelly.drool.common.domain.model.FamilyClub
-import com.github.apkelly.drool.common.domain.model.FamilyTeam
+import com.github.apkelly.drool.common.domain.model.ProfileClub
+import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
-    fun observeFamilyTeams(
+    fun observeProfileTeams(
         profileIds: Set<String>,
-    ): Flow<List<FamilyTeam>>
-    fun observeFamilyClubs(
+    ): Flow<List<ProfileTeam>>
+    fun observeProfileClubs(
         profileIds: Set<String>,
-    ): Flow<List<FamilyClub>>
+    ): Flow<List<ProfileClub>>
 }
