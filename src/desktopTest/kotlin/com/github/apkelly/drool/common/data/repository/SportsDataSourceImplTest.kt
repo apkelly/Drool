@@ -357,14 +357,14 @@ class SportsDataSourceImplTest {
             )
             val profiles = listOf(
                 FamilyProfile("root", "Alex", null, isPrimary = true),
-                FamilyProfile("child", "Ethan", null, isPrimary = false),
+                FamilyProfile("child", "Jude", null, isPrimary = false),
             )
             database.profileDao().upsertRelatedUsers(
                 listOf(
                     RelatedUserEntity(
                         ownerAccountId = "root",
                         id = "child",
-                        displayName = "Ethan",
+                        displayName = "Jude",
                         email = null,
                         avatarUrl = null,
                         isLinked = true,
@@ -373,20 +373,20 @@ class SportsDataSourceImplTest {
             )
             remote.personalInformationDto = relatedUser(
                 id = "child",
-                firstName = "Ethan",
-                lastName = "Kelly",
-                email = "ethan@example.com",
-                avatarUrl = "ethan.png",
+                firstName = "Jude",
+                lastName = "Bellingham",
+                email = "jude.bellingham@example.com",
+                avatarUrl = "jude.png",
                 dateOfBirth = "2012-03-04",
                 gender = "male",
                 phoneNumber = "0400 000 000",
                 address = "1 Example Street",
                 emergencyContacts = listOf(
-                    EmergencyContact("Jordan Kelly", "0400 333 333"),
+                    EmergencyContact("Jordan Pickford", "0400 333 333"),
                 ),
             )
             remote.emergencyContacts = listOf(
-                EmergencyContact("Andrew Kelly", "0400 111 111"),
+                EmergencyContact("Harry Kane", "0400 111 111"),
             )
 
             assertEquals(
@@ -411,15 +411,15 @@ class SportsDataSourceImplTest {
             assertEquals(2, clubs.size)
             assertEquals(setOf("root", "child"), clubs.map { it.profileId }.toSet())
             val personal = database.profileDao().getRelatedUser("root", "child")
-            assertEquals("Ethan Kelly", personal?.displayName)
+            assertEquals("Jude Bellingham", personal?.displayName)
             assertEquals("male", personal?.gender)
             assertEquals("2012-03-04", personal?.dateOfBirth)
             assertEquals("0400 000 000", personal?.phoneNumber)
             assertEquals("1 Example Street", personal?.address)
             assertEquals(
                 listOf(
-                    EmergencyContact("Jordan Kelly", "0400 333 333"),
-                    EmergencyContact("Andrew Kelly", "0400 111 111"),
+                    EmergencyContact("Jordan Pickford", "0400 333 333"),
+                    EmergencyContact("Harry Kane", "0400 111 111"),
                 ),
                 personal?.toDomain()?.emergencyContacts,
             )
@@ -457,7 +457,7 @@ class SportsDataSourceImplTest {
                 emergencyContacts = emptyList(),
             )
             remote.emergencyContacts = listOf(
-                EmergencyContact("Taylor Kelly", "0400 444 444"),
+                EmergencyContact("Bukayo Saka", "0400 444 444"),
             )
             assertEquals(
                 RefreshResult.NotModified,
@@ -467,7 +467,7 @@ class SportsDataSourceImplTest {
                 database.profileDao().getRelatedUser("root", "child")
             assertEquals("0400 999 999", hydratedFromCachedRefresh?.phoneNumber)
             assertEquals(
-                listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
+                listOf(EmergencyContact("Bukayo Saka", "0400 444 444")),
                 hydratedFromCachedRefresh?.toDomain()?.emergencyContacts,
             )
             clock.now = 7L * 60L * 60L * 1_000L
@@ -490,7 +490,7 @@ class SportsDataSourceImplTest {
             )
             remote.emergencyContacts = emptyList()
             assertEquals(
-                listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
+                listOf(EmergencyContact("Bukayo Saka", "0400 444 444")),
                 database.profileDao()
                     .getRelatedUser("root", "child")
                     ?.toDomain()
@@ -498,12 +498,12 @@ class SportsDataSourceImplTest {
             )
             repository.refreshFamilyProfiles(profiles, force = true)
             val preserved = database.profileDao().getRelatedUser("root", "child")
-            assertEquals("Ethan Kelly", preserved?.displayName)
-            assertEquals("ethan@example.com", preserved?.email)
-            assertEquals("ethan.png", preserved?.avatarUrl)
+            assertEquals("Jude Bellingham", preserved?.displayName)
+            assertEquals("jude.bellingham@example.com", preserved?.email)
+            assertEquals("jude.png", preserved?.avatarUrl)
             assertEquals("male", preserved?.gender)
             assertEquals(
-                listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
+                listOf(EmergencyContact("Bukayo Saka", "0400 444 444")),
                 preserved?.toDomain()?.emergencyContacts,
             )
             database.profileDao().upsertRelatedUsers(
@@ -534,7 +534,7 @@ class SportsDataSourceImplTest {
         fixture { repository, remote, store, _, _ ->
             val profiles = listOf(
                 FamilyProfile("root", "Alex", null, isPrimary = true),
-                FamilyProfile("child", "Ethan", null, isPrimary = false),
+                FamilyProfile("child", "Jude", null, isPrimary = false),
             )
             val unauthorized = repository.refreshFamilyProfiles(profiles)
             assertTrue(
@@ -551,14 +551,14 @@ class SportsDataSourceImplTest {
             assertTrue(
                 repository.refreshFamilyProfiles(
                     listOf(
-                        FamilyProfile("child", "Ethan", null, isPrimary = false),
+                        FamilyProfile("child", "Jude", null, isPrimary = false),
                         FamilyProfile("root", "Alex", null, isPrimary = true),
                     ),
                     force = true,
                 ).values.all { it == RefreshResult.Updated },
             )
             val invalidProfiles = repository.refreshFamilyProfiles(
-                listOf(FamilyProfile("child", "Ethan", null, isPrimary = false)),
+                listOf(FamilyProfile("child", "Jude", null, isPrimary = false)),
             )
             assertEquals(
                 RefreshResult.Failed(RefreshFailure.InvalidResponse, false),

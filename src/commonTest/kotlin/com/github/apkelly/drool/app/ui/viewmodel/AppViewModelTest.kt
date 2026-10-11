@@ -64,7 +64,7 @@ class AppViewModelTest {
         assertEquals(SessionUiState.Authenticated(profile), viewModel.sessionState.value)
 
         val hydrated = profile.copy(
-            relatedUsers = listOf(RelatedUser("child", "Ethan", null, null)),
+            relatedUsers = listOf(RelatedUser("child", "Jude Bellingham", null, null)),
         )
         sessionRepository.observedProfile.value = hydrated
         advanceUntilIdle()
@@ -143,7 +143,8 @@ class AppViewModelTest {
         val sessions = FakeViewModelSessionRepository()
         val viewModel = viewModel(sessions, FakeViewModelPreferencesRepository())
         advanceUntilIdle()
-        sessions.linkCandidates = listOf(RelatedUser("candidate", "Ethan", null, null))
+        sessions.linkCandidates =
+            listOf(RelatedUser("candidate", "Jude Bellingham", null, null))
 
         viewModel.loadLinkCandidates()
         advanceUntilIdle()

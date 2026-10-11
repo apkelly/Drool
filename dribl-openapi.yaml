@@ -1014,14 +1014,14 @@ paths:
                 $ref: "#/components/schemas/GenericResponse"
               example:
                 data:
-                  id: 717620
+                  id: 2001
                   type: linked_users
                   attributes:
                     status: approved
-                    self_id: 6403118
-                    user_id: 29167
-                    first_name: Ethan
-                    last_name: Kelly
+                    self_id: 1000
+                    user_id: 1001
+                    first_name: Jude
+                    last_name: Bellingham
                     is_guardian: 1
         "401":
           description: Unauthorized or expired authentication
@@ -3865,8 +3865,8 @@ x-discovered-external-services:
     description: "Dribl asset/CDN URL literal"
   - url: "https://ocean.dribl.com/4360b6edaa464a089b2e725197d2e1fd"
     description: "Dribl asset/CDN URL literal"
-  - url: "https://ocean.dribl.com/82bcc0c009d44362b97303f08f6f7d43"
-    description: "Dribl asset/CDN URL literal"
+  - url: "https://ocean.dribl.com/example-profile-image"
+    description: "Example Dribl asset/CDN URL"
   - url: "https://help.dribl.com/"
     description: "Dribl help site"
   - url: "https://maps.googleapis.com/maps/api/staticmap?center="

@@ -19,19 +19,19 @@ import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
 
 internal object TopLevelScreenPreviewData {
     private val child = RelatedUser(
-        id = "ethan",
-        displayName = "Ethan Kelly",
-        email = "ethan@example.com",
+        id = "jude-bellingham",
+        displayName = "Jude Bellingham",
+        email = "jude.bellingham@example.com",
         avatarUrl = null,
-        subjectUserId = "ethan",
-        linkId = "linked-ethan",
+        subjectUserId = "jude-bellingham",
+        linkId = "linked-jude-bellingham",
         isLinked = true,
     )
 
     private val profile = Profile(
-        accountId = "andrew",
-        displayName = "Andrew Kelly",
-        email = "andrew@example.com",
+        accountId = "harry-kane",
+        displayName = "Harry Kane",
+        email = "harry.kane@example.com",
         relatedUsers = listOf(child),
         accounts = listOf(
             Account(
@@ -68,7 +68,7 @@ internal object TopLevelScreenPreviewData {
     private val fixtures = listOf(
         Fixture(
             id = "player-match",
-            profileId = "ethan",
+            profileId = "jude-bellingham",
             kickoffEpochMillis = 1_791_348_400_000,
             homeTeamId = "u13",
             homeTeamName = "Sheffield Wednesday",
@@ -82,7 +82,7 @@ internal object TopLevelScreenPreviewData {
         ),
         Fixture(
             id = "referee-match",
-            profileId = "ethan",
+            profileId = "jude-bellingham",
             kickoffEpochMillis = 1_791_435_600_000,
             homeTeamId = "home",
             homeTeamName = "La Masia FC",
@@ -102,8 +102,8 @@ internal object TopLevelScreenPreviewData {
         familyProfiles = profile.familyProfiles,
         selectedProfileId = null,
         familyTeams = listOf(
-            FamilyTeam("andrew", coachingTeam, TeamRelationship.Coaching),
-            FamilyTeam("ethan", playerTeam, TeamRelationship.Player),
+            FamilyTeam("harry-kane", coachingTeam, TeamRelationship.Coaching),
+            FamilyTeam("jude-bellingham", playerTeam, TeamRelationship.Player),
         ),
         familyRefreshResults = emptyMap(),
         fixtures = CollectionUiState(items = fixtures, isStale = false),

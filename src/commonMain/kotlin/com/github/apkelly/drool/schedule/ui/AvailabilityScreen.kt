@@ -671,8 +671,8 @@ private fun AvailabilityScreenPreview() {
     DroolTheme(mode = com.github.apkelly.drool.common.domain.model.ThemeMode.Light) {
         AvailabilityScreen(
             model = AvailabilityUiModel(
-                profileId = "ethan",
-                profileName = "Ethan",
+                profileId = "jude-bellingham",
+                profileName = "Jude Bellingham",
                 state = AvailabilityUiState.Ready(
                     clubs = listOf(
                         RefereeClub(
@@ -685,7 +685,7 @@ private fun AvailabilityScreenPreview() {
                     availabilities = listOf(
                         RefereeAvailability(
                             id = "availability",
-                            profileId = "ethan",
+                            profileId = "jude-bellingham",
                             startEpochMillis = 1_792_392_000_000,
                             endEpochMillis = 1_792_395_600_000,
                             clubId = "club",

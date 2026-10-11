@@ -52,15 +52,15 @@ class SessionDataSourceImplTest {
                 email = null,
             )
             sports.accounts = listOf(
-                Account("login", "andrew@example.com", "email", null),
+                Account("login", "harry.kane@example.com", "email", null),
             )
             sports.linkedUsers = listOf(
                 relatedUser(
                     id = "person",
-                    firstName = "Andrew",
-                    lastName = "Kelly",
+                    firstName = "Harry",
+                    lastName = "Kane",
                     email = null,
-                    avatarUrl = "andrew.png",
+                    avatarUrl = "harry.png",
                     isGuardian = false,
                 ),
             )
@@ -68,10 +68,10 @@ class SessionDataSourceImplTest {
             val session = repository.restoreSession()
 
             assertEquals("saved", session?.bearerToken)
-            assertEquals("Andrew", session?.profile?.displayName)
-            assertEquals("andrew@example.com", session?.profile?.email)
+            assertEquals("Harry", session?.profile?.displayName)
+            assertEquals("harry.kane@example.com", session?.profile?.email)
             assertEquals("account", store.getActiveAccountId())
-            assertEquals("Andrew", repository.observeProfile().first()?.displayName)
+            assertEquals("Harry", repository.observeProfile().first()?.displayName)
             assertEquals(
                 emptyList(),
                 database.teamDao().observeRelationships("account").first(),
@@ -127,27 +127,28 @@ class SessionDataSourceImplTest {
     fun restoreRepairsCachedAccountIdDisplayNameFromJwt() = runTest {
         fixture { repository, _, sports, store, database ->
             store.saveBearerToken(
-                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5IiwiZW1haWwiOiJhbmR5QGV4YW1wbGUuY29tIn0.signature",
+                "header.eyJzdWIiOiIxMDAwIiwidXNlcm5hbWUiOiJoYXJyeSIsImVtYWlsIjoiaGFycnkua2Fu" +
+                    "ZUBleGFtcGxlLmNvbSJ9.signature",
             )
-            database.profileDao().upsert(ProfileEntity("6403118", "6403118", null, true))
+            database.profileDao().upsert(ProfileEntity("1000", "1000", null, true))
             sports.failure = IllegalStateException("network should not be called")
 
             val session = repository.restoreSession()
 
-            assertEquals("andy", session?.profile?.displayName)
-            assertEquals("andy", repository.observeProfile().first()?.displayName)
-            assertEquals("andy@example.com", sports.relatedUsersEmail)
+            assertEquals("harry", session?.profile?.displayName)
+            assertEquals("harry", repository.observeProfile().first()?.displayName)
+            assertEquals("harry.kane@example.com", sports.relatedUsersEmail)
 
             database.profileDao().upsert(
                 ProfileEntity(
-                    "6403118",
-                    "6403118",
+                    "1000",
+                    "1000",
                     "cached@example.com",
                     true,
                 ),
             )
             store.saveBearerToken(
-                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature",
+                "header.eyJzdWIiOiIxMDAwIiwidXNlcm5hbWUiOiJoYXJyeSJ9.signature",
             )
             repository.restoreSession()
             assertEquals("cached@example.com", sports.relatedUsersEmail)
@@ -183,20 +184,20 @@ class SessionDataSourceImplTest {
     @Test
     fun restoreKeepsCachedNameWhenJwtCannotImproveIt() = runTest {
         fixture { repository, _, _, store, database ->
-            database.profileDao().upsert(ProfileEntity("6403118", "Taylor", null, true))
+            database.profileDao().upsert(ProfileEntity("1000", "Taylor", null, true))
             store.saveBearerToken(
-                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature",
+                "header.eyJzdWIiOiIxMDAwIiwidXNlcm5hbWUiOiJoYXJyeSJ9.signature",
             )
             assertEquals("Taylor", repository.restoreSession()?.profile?.displayName)
 
-            database.profileDao().upsert(ProfileEntity("6403118", "6403118", null, true))
+            database.profileDao().upsert(ProfileEntity("1000", "1000", null, true))
             store.saveBearerToken(
                 "header.eyJzdWIiOiJvdGhlciIsInVzZXJuYW1lIjoic29tZW9uZSJ9.signature",
             )
-            assertEquals("6403118", repository.restoreSession()?.profile?.displayName)
+            assertEquals("1000", repository.restoreSession()?.profile?.displayName)
 
-            store.saveBearerToken("header.eyJzdWIiOiI2NDAzMTE4In0.signature")
-            assertEquals("6403118", repository.restoreSession()?.profile?.displayName)
+            store.saveBearerToken("header.eyJzdWIiOiIxMDAwIn0.signature")
+            assertEquals("1000", repository.restoreSession()?.profile?.displayName)
         }
     }
 
@@ -310,15 +311,15 @@ class SessionDataSourceImplTest {
         fixture { repository, auth, sports, _, _ ->
             auth.result = com.github.apkelly.drool.common.domain.model.AuthenticationResult(
                 bearerToken =
-                "header.eyJzdWIiOiI2NDAzMTE4In0.signature",
+                "header.eyJzdWIiOiIxMDAwIn0.signature",
             )
             sports.failure = IllegalStateException("network should not be called")
 
             val session = repository.signIn(
-                AuthCredentials("base", "/signin", " andy ", "password"),
+                AuthCredentials("base", "/signin", " harry ", "password"),
             )
 
-            assertEquals("andy", session.profile?.displayName)
+            assertEquals("harry", session.profile?.displayName)
         }
     }
 
@@ -380,12 +381,12 @@ class SessionDataSourceImplTest {
             sports.relatedUsers = listOf(
                 relatedUser(
                     id = "person",
-                    firstName = "Andrew",
-                    lastName = "Player",
+                    firstName = "Harry",
+                    lastName = "Kane",
                     email = "alex@example.com",
-                    avatarUrl = "https://example.test/andrew.png",
+                    avatarUrl = "https://example.test/harry.png",
                     value = "alex@example.com",
-                    source = "https://example.test/andrew.png",
+                    source = "https://example.test/harry.png",
                 ),
             )
 
@@ -393,9 +394,9 @@ class SessionDataSourceImplTest {
                 AuthCredentials("base", "/signin", "alex@example.com", "password"),
             ).profile
 
-            assertEquals("Andrew Player", profile?.displayName)
-            assertEquals("https://example.test/andrew.png", profile?.avatarUrl)
-            assertEquals("Andrew Player", profile?.relatedUsers?.single()?.displayName)
+            assertEquals("Harry Kane", profile?.displayName)
+            assertEquals("https://example.test/harry.png", profile?.avatarUrl)
+            assertEquals("Harry Kane", profile?.relatedUsers?.single()?.displayName)
         }
     }
 
@@ -561,40 +562,40 @@ class SessionDataSourceImplTest {
         fixture { repository, _, sports, store, database ->
             store.saveBearerToken("token")
             store.setActiveAccountId("account")
-            val ethan = relatedUser(
+            val jude = relatedUser(
                 id = "candidate",
-                firstName = "Ethan",
-                lastName = "Kelly",
-                email = "ethan@example.com",
-                avatarUrl = "ethan.png",
+                firstName = "Jude",
+                lastName = "Bellingham",
+                email = "jude.bellingham@example.com",
+                avatarUrl = "jude.png",
                 dateOfBirth = "2012-03-04",
                 gender = "Male",
                 phoneNumber = "0400 000 000",
                 address = "1 Example Street",
                 emergencyContacts = listOf(
-                    EmergencyContact("Andrew Kelly", "0400 111 111"),
+                    EmergencyContact("Harry Kane", "0400 111 111"),
                 ),
             )
             sports.linkCandidates = listOf(
-                ethan,
+                jude,
                 relatedUser(
                     id = "account",
-                    firstName = "Alex",
-                    lastName = "Kelly",
-                    email = "alex@example.com",
+                    firstName = "Declan",
+                    lastName = "Rice",
+                    email = "declan.rice@example.com",
                     avatarUrl = null,
                 ),
             )
-            sports.relatedUsers = listOf(ethan)
+            sports.relatedUsers = listOf(jude)
 
             val candidate = repository.getLinkCandidates().single()
-            assertEquals("Ethan Kelly", candidate.displayName)
+            assertEquals("Jude Bellingham", candidate.displayName)
             assertEquals("Male", candidate.gender)
             assertEquals("2012-03-04", candidate.dateOfBirth)
             assertEquals("0400 000 000", candidate.phoneNumber)
             assertEquals("1 Example Street", candidate.address)
             assertEquals(
-                listOf(EmergencyContact("Andrew Kelly", "0400 111 111")),
+                listOf(EmergencyContact("Harry Kane", "0400 111 111")),
                 candidate.emergencyContacts,
             )
 
@@ -620,10 +621,10 @@ class SessionDataSourceImplTest {
                 relatedUser(
                     id = "candidate",
                     linkId = "linked-candidate",
-                    firstName = "Ethan",
-                    lastName = "Kelly",
-                    email = "ethan@example.com",
-                    avatarUrl = "ethan.png",
+                    firstName = "Jude",
+                    lastName = "Bellingham",
+                    email = "jude.bellingham@example.com",
+                    avatarUrl = "jude.png",
                 ),
             )
 
@@ -648,9 +649,9 @@ class SessionDataSourceImplTest {
             sports.linkedUsers = listOf(
                 relatedUser(
                     id = "child",
-                    firstName = "Ethan",
-                    lastName = "Kelly",
-                    email = "ethan@example.com",
+                    firstName = "Jude",
+                    lastName = "Bellingham",
+                    email = "jude.bellingham@example.com",
                     avatarUrl = null,
                     linkId = "linked-child",
                 ).copy(isLinked = true),
@@ -793,16 +794,16 @@ class SessionDataSourceImplTest {
             sports.relatedUsers = listOf(
                 relatedUser(
                     id = "person",
-                    firstName = "Andrew",
+                    firstName = "Harry",
                     lastName = null,
-                    email = "alex@example.com",
-                    avatarUrl = "https://example.test/andrew.png",
+                    email = "harry.kane@example.com",
+                    avatarUrl = "https://example.test/harry.png",
                 ),
             )
 
             repository.refreshProfileEndpoint(
                 ProfileApiEndpoint.RelatedUsers,
-                "alex@example.com",
+                "harry.kane@example.com",
             )
 
             assertEquals("Other", database.profileDao().getActive()?.displayName)

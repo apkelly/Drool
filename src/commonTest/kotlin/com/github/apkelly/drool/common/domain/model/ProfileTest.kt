@@ -8,26 +8,26 @@ class ProfileTest {
     fun familyProfilesContainPrimaryAndDistinctLinkedSubjectsOnly() {
         val profile = Profile(
             accountId = "root",
-            displayName = "Andrew",
-            email = "andrew@example.com",
+            displayName = "Harry",
+            email = "harry.kane@example.com",
             relatedUsers = listOf(
                 RelatedUser(
                     id = "related-login",
-                    displayName = "Andrew",
-                    email = "andrew@example.com",
+                    displayName = "Harry",
+                    email = "harry.kane@example.com",
                     avatarUrl = null,
                 ),
                 RelatedUser(
                     id = "relationship-1",
-                    displayName = "Ethan",
+                    displayName = "Jude",
                     email = null,
-                    avatarUrl = "ethan.png",
+                    avatarUrl = "jude.png",
                     subjectUserId = "child",
                     isLinked = true,
                 ),
                 RelatedUser(
                     id = "relationship-2",
-                    displayName = "Ethan duplicate",
+                    displayName = "Jude duplicate",
                     email = null,
                     avatarUrl = null,
                     subjectUserId = "child",
@@ -37,6 +37,6 @@ class ProfileTest {
         )
 
         assertEquals(listOf("root", "child"), profile.familyProfiles.map { it.id })
-        assertEquals("Ethan", profile.familyProfiles[1].displayName)
+        assertEquals("Jude", profile.familyProfiles[1].displayName)
     }
 }

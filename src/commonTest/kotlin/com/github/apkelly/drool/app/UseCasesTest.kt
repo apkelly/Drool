@@ -88,7 +88,7 @@ class UseCasesTest {
         SignOutUserUseCase(authRepository)()
         assertEquals(1, dataSource.signOutCount)
         dataSource.linkCandidates = listOf(
-            RelatedUser("candidate", "Ethan", null, null),
+            RelatedUser("candidate", "Jude Bellingham", null, null),
         )
         assertEquals(dataSource.linkCandidates, GetLinkCandidatesUseCase(profileRepository)())
         assertEquals(

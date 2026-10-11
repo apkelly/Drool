@@ -10,7 +10,7 @@ class DroolAppTest {
     @Test
     fun startupWaitsForBothAnimationAndSessionRestoration() {
         val authenticated = SessionUiState.Authenticated(
-            Profile("account", "Andrew", null),
+            Profile("account", "Harry Kane", null),
         )
 
         assertTrue(shouldShowInitialSplash(false, authenticated))

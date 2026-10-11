@@ -31,12 +31,12 @@ class JwtProfileMapperTest {
     @Test
     fun mapsUsernameAndComposedNameClaims() {
         val usernameToken =
-            "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature"
+            "header.eyJzdWIiOiIxMDAwIiwidXNlcm5hbWUiOiJoYXJyeSJ9.signature"
         val composedNameToken =
-            "header.eyJzdWIiOiI2NDAzMTE4IiwiZmlyc3RfbmFtZSI6IkFuZHkiLCJsYXN0X25hbWUiOiJQbGF5ZXIifQ.signature"
+            "header.eyJzdWIiOiIxMDAwIiwiZmlyc3RfbmFtZSI6IkhhcnJ5IiwibGFzdF9uYW1lIjoiS2FuZSJ9.signature"
 
-        assertEquals("andy", profileFromBearerToken(usernameToken)?.displayName)
-        assertEquals("Andy", profileFromBearerToken(composedNameToken)?.displayName)
+        assertEquals("harry", profileFromBearerToken(usernameToken)?.displayName)
+        assertEquals("Harry", profileFromBearerToken(composedNameToken)?.displayName)
     }
 
     @Test
