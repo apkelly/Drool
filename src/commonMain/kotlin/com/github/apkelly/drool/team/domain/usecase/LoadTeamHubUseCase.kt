@@ -1,0 +1,8 @@
+package com.github.apkelly.drool.team.domain.usecase
+
+import com.github.apkelly.drool.team.domain.repository.TeamRepository
+
+class LoadTeamHubUseCase(private val repository: TeamRepository) {
+    suspend operator fun invoke(profileId: String, teamId: String, force: Boolean = false) =
+        repository.loadTeamHub(profileId, teamId, force)
+}

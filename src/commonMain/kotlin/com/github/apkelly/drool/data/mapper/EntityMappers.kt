@@ -2,6 +2,7 @@ package com.github.apkelly.drool.data.mapper
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.github.apkelly.dribl.model.normalizedTeamName
 import com.github.apkelly.drool.data.local.entity.ClubEntity
 import com.github.apkelly.drool.data.local.entity.AccountEntity
 import com.github.apkelly.drool.data.local.entity.FixtureEntity

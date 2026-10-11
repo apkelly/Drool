@@ -78,6 +78,7 @@ kotlin {
                 implementation(libs.compose.foundation)
                 implementation(libs.compose.material3)
                 implementation(libs.compose.components.resources)
+                implementation(libs.compose.ui.tooling.preview)
                 implementation(libs.androidx.datastore.preferences)
                 implementation(libs.androidx.room.runtime)
                 implementation(libs.androidx.sqlite.bundled)
@@ -137,6 +138,7 @@ kotlin {
 }
 
 dependencies {
+    add("androidRuntimeClasspath", libs.compose.ui.tooling)
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspDesktop", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
@@ -177,8 +179,9 @@ kover {
         filters {
             includes {
                 classes(
-                    "com.github.apkelly.drool.domain.usecase.*",
                     "com.github.apkelly.drool.data.repository.*",
+                    "com.github.apkelly.drool.*.domain.usecase.*",
+                    "com.github.apkelly.drool.*.data.*RepositoryImpl",
                 )
             }
         }

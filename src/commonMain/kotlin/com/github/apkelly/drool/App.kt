@@ -5,11 +5,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import com.github.apkelly.drool.app.ui.DroolApp
+import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
+import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.di.initDroolKoin
-import com.github.apkelly.drool.ui.screens.DroolApp
 import com.github.apkelly.drool.ui.theme.DroolTheme
-import com.github.apkelly.drool.ui.viewmodel.AppViewModel
-import com.github.apkelly.drool.ui.viewmodel.SportsViewModel
 
 @Composable
 fun App() {

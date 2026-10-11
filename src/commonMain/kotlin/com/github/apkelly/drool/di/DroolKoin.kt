@@ -1,56 +1,72 @@
 package com.github.apkelly.drool.di
 
 import io.ktor.client.HttpClient
+import com.github.apkelly.drool.auth.data.AuthRepositoryImpl
+import com.github.apkelly.drool.auth.domain.repository.AuthRepository
 import com.github.apkelly.drool.data.local.createDroolDatabase
-import com.github.apkelly.drool.data.remote.DriblApi
-import com.github.apkelly.drool.data.remote.DriblSportsApi
-import com.github.apkelly.drool.data.remote.DriblTokenRenewer
-import com.github.apkelly.drool.data.remote.AuthRemoteDataSource
-import com.github.apkelly.drool.data.remote.SportsRemoteDataSource
+import com.github.apkelly.dribl.api.DriblApi
+import com.github.apkelly.dribl.api.DriblSportsApi
+import com.github.apkelly.dribl.api.DriblTokenRenewer
+import com.github.apkelly.dribl.api.DriblTokenStore
+import com.github.apkelly.dribl.api.AuthRemoteDataSource
+import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.drool.data.remote.createPlatformHttpClient
-import com.github.apkelly.drool.data.remote.withAutomaticDriblTokenRenewal
-import com.github.apkelly.drool.data.repository.PreferencesRepositoryImpl
-import com.github.apkelly.drool.data.repository.SessionRepositoryImpl
-import com.github.apkelly.drool.data.repository.SportsRepositoryImpl
-import com.github.apkelly.drool.data.weather.GoogleWeatherApi
-import com.github.apkelly.drool.data.weather.MatchWeatherRepositoryImpl
-import com.github.apkelly.drool.data.weather.WeatherRemoteDataSource
-import com.github.apkelly.drool.data.weather.platformWeatherApiKey
-import com.github.apkelly.drool.data.weather.platformWeatherRequestHeaders
+import com.github.apkelly.dribl.api.withAutomaticDriblTokenRenewal
+import com.github.apkelly.drool.profile.data.PreferencesRepositoryImpl
+import com.github.apkelly.drool.data.repository.SessionDataSourceImpl
+import com.github.apkelly.drool.data.repository.SportsDataSourceImpl
+import com.github.apkelly.drool.match.data.weather.GoogleWeatherApi
+import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSourceImpl
+import com.github.apkelly.drool.match.data.weather.WeatherRemoteDataSource
+import com.github.apkelly.drool.match.data.weather.platformWeatherApiKey
+import com.github.apkelly.drool.match.data.weather.platformWeatherRequestHeaders
+import com.github.apkelly.drool.data.storage.BearerTokenStore
 import com.github.apkelly.drool.data.storage.createPlatformBearerTokenStore
 import com.github.apkelly.drool.data.time.SystemTimeProvider
 import com.github.apkelly.drool.data.time.TimeProvider
-import com.github.apkelly.drool.domain.repository.PreferencesRepository
-import com.github.apkelly.drool.domain.repository.SessionRepository
-import com.github.apkelly.drool.domain.repository.SportsRepository
-import com.github.apkelly.drool.domain.repository.MatchWeatherRepository
-import com.github.apkelly.drool.domain.usecase.ObserveClubsUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveFixturesUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveFamilyTeamsUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveFamilyClubsUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveTeamRelationshipsUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveTeamsUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveObservabilityEnabledUseCase
-import com.github.apkelly.drool.domain.usecase.ObserveProfileUseCase
-import com.github.apkelly.drool.domain.usecase.RefreshClubsUseCase
-import com.github.apkelly.drool.domain.usecase.RefreshFixturesUseCase
-import com.github.apkelly.drool.domain.usecase.RefreshFamilyProfilesUseCase
-import com.github.apkelly.drool.domain.usecase.RefreshTeamsUseCase
-import com.github.apkelly.drool.domain.usecase.RefreshProfileEndpointUseCase
-import com.github.apkelly.drool.domain.usecase.GetLinkCandidatesUseCase
-import com.github.apkelly.drool.domain.usecase.LoadTeamHubUseCase
-import com.github.apkelly.drool.domain.usecase.LoadMatchDetailsUseCase
-import com.github.apkelly.drool.domain.usecase.LoadMatchWeatherUseCase
-import com.github.apkelly.drool.domain.usecase.VerifyLinkedUserUseCase
-import com.github.apkelly.drool.domain.usecase.RestoreSessionUseCase
-import com.github.apkelly.drool.domain.usecase.SetTeamFollowingUseCase
-import com.github.apkelly.drool.domain.usecase.SetThemeModeUseCase
-import com.github.apkelly.drool.domain.usecase.SetObservabilityEnabledUseCase
-import com.github.apkelly.drool.domain.usecase.SignInUserUseCase
-import com.github.apkelly.drool.domain.usecase.SignOutUserUseCase
-import com.github.apkelly.drool.ui.viewmodel.AppViewModel
-import com.github.apkelly.drool.ui.viewmodel.SportsViewModel
+import com.github.apkelly.drool.discover.data.DiscoverRepositoryImpl
+import com.github.apkelly.drool.discover.domain.repository.DiscoverRepository
+import com.github.apkelly.drool.home.data.HomeRepositoryImpl
+import com.github.apkelly.drool.home.domain.repository.HomeRepository
+import com.github.apkelly.drool.match.data.MatchRepositoryImpl
+import com.github.apkelly.drool.match.domain.repository.MatchRepository
+import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
+import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
+import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
+import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
+import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
+import com.github.apkelly.drool.team.data.TeamRepositoryImpl
+import com.github.apkelly.drool.team.domain.repository.TeamRepository
+import com.github.apkelly.drool.data.repository.SessionDataSource
+import com.github.apkelly.drool.data.repository.SportsDataSource
+import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
+import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamRelationshipsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
+import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
+import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
+import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
+import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
+import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
+import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
+import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.observability.Observability
 import com.github.apkelly.drool.observability.createPlatformObservability
 import org.koin.core.Koin
@@ -79,6 +95,7 @@ private val dataModule = module {
         )
     }
     single { createPlatformBearerTokenStore() }
+    single<DriblTokenStore> { get<BearerTokenStore>() }
     single { DriblTokenRenewer(get(authHttpClient), get()) }
     single { createDroolDatabase() }
     single<TimeProvider> { SystemTimeProvider }
@@ -90,29 +107,41 @@ private val dataModule = module {
             requestHeaders = platformWeatherRequestHeaders(),
         )
     }
-    single<SessionRepository> {
-        SessionRepositoryImpl(
+    single<SessionDataSource> {
+        SessionDataSourceImpl(
             authApi = get(),
             sportsApi = get(),
             store = get(),
             database = get(),
         )
     }
-    single<SportsRepository> {
-        SportsRepositoryImpl(
+    single<SportsDataSource> {
+        SportsDataSourceImpl(
             api = get(),
             database = get(),
             store = get(),
             timeProvider = get(),
         )
     }
+    single<AuthRepository> { AuthRepositoryImpl(sessionDataSource = get()) }
+    single<ProfileRepository> { ProfileRepositoryImpl(sessionDataSource = get()) }
+    single<HomeRepository> { HomeRepositoryImpl(sportsDataSource = get()) }
+    single<ScheduleRepository> { ScheduleRepositoryImpl(sportsDataSource = get()) }
+    single<DiscoverRepository> { DiscoverRepositoryImpl(sportsDataSource = get()) }
+    single<TeamRepository> { TeamRepositoryImpl(sportsDataSource = get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(store = get()) }
-    single<MatchWeatherRepository> {
-        MatchWeatherRepositoryImpl(
+    single<MatchWeatherDataSource> {
+        MatchWeatherDataSourceImpl(
             api = get(),
             database = get(),
             timeProvider = get(),
             apiKey = platformWeatherApiKey(),
+        )
+    }
+    single<MatchRepository> {
+        MatchRepositoryImpl(
+            sportsDataSource = get(),
+            weatherDataSource = get(),
         )
     }
     single<Observability> { createPlatformObservability() }

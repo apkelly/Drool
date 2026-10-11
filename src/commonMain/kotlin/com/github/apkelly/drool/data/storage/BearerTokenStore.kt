@@ -9,21 +9,24 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import com.github.apkelly.dribl.api.DriblTokenStore
 import com.github.apkelly.drool.domain.model.ThemeMode
 import okio.Path.Companion.toPath
 
 internal const val DataStoreFileName = "drool.preferences_pb"
 
-class BearerTokenStore(private val dataStore: DataStore<Preferences>) {
+class BearerTokenStore(
+    private val dataStore: DataStore<Preferences>,
+) : DriblTokenStore {
     fun observeBearerToken(): Flow<String?> =
         dataStore.data.map { preferences ->
             preferences[BearerTokenKey]?.takeIf { it.isNotBlank() }
         }
 
-    suspend fun getBearerToken(): String? =
+    override suspend fun getBearerToken(): String? =
         dataStore.data.first()[BearerTokenKey]?.takeIf { it.isNotBlank() }
 
-    suspend fun saveBearerToken(token: String) {
+    override suspend fun saveBearerToken(token: String) {
         dataStore.edit { preferences ->
             preferences[BearerTokenKey] = token
         }

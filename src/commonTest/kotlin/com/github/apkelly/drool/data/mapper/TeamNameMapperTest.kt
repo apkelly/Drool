@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.data.mapper
 
+import com.github.apkelly.dribl.model.normalizedTeamName
 import com.github.apkelly.drool.data.local.entity.FixtureEntity
 import com.github.apkelly.drool.data.local.entity.TeamEntity
 import kotlin.test.Test
