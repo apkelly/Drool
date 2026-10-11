@@ -1,5 +1,7 @@
 package com.github.apkelly.drool.schedule.ui.viewmodel
 
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityDraft
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityOverview
@@ -35,12 +37,13 @@ class AvailabilityViewModel(
 
     private val checkedProfileIds = mutableSetOf<String>()
     private val overviewCache = mutableMapOf<String, RefereeAvailabilityOverview>()
+    private var linkedProfilesById = emptyMap<String, LinkedProfile>()
     private var configuredAccountId: String? = null
     private var configurationVersion = 0
 
     fun configureLinkedProfiles(
         accountId: String,
-        profileIds: List<String>,
+        profiles: List<LinkedProfile>,
     ) {
         if (configuredAccountId != accountId) {
             configuredAccountId = accountId
@@ -51,17 +54,19 @@ class AvailabilityViewModel(
             mutableRefereeProfileIds.value = emptySet()
             mutableState.value = AvailabilityUiState.Idle
         }
-        checkEligibility(profileIds)
+        linkedProfilesById = profiles.associateBy(LinkedProfile::id)
+        checkEligibility(profiles)
     }
 
     fun checkEligibility(
-        profileIds: List<String>,
+        profiles: List<LinkedProfile>,
     ) {
-        profileIds.distinct().forEach { profileId ->
+        profiles.distinctBy(LinkedProfile::id).forEach { profile ->
+            val profileId = profile.id
             if (!checkedProfileIds.add(profileId)) return@forEach
             val requestVersion = configurationVersion
             scope.launch {
-                when (val result = getRefereeClubs(profileId)) {
+                when (val result = getRefereeClubs(profile)) {
                     is AvailabilityResult.Success -> {
                         if (
                             configurationVersion == requestVersion &&
@@ -85,6 +90,11 @@ class AvailabilityViewModel(
         profileId: String,
         force: Boolean = false,
     ) {
+        val profile = linkedProfilesById[profileId]
+        if (profile == null) {
+            mutableState.value = AvailabilityUiState.Failed(AvailabilityFailure.InvalidResponse)
+            return
+        }
         mutableActiveProfileId.value = profileId
         overviewCache[profileId]
             ?.takeUnless { force }
@@ -95,7 +105,7 @@ class AvailabilityViewModel(
         mutableState.value = AvailabilityUiState.Loading
         val requestVersion = configurationVersion
         scope.launch {
-            when (val result = getAvailability(profileId)) {
+            when (val result = getAvailability(profile)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
                     overviewCache[profileId] = result.value
@@ -125,10 +135,15 @@ class AvailabilityViewModel(
     ) {
         val ready = mutableState.value as? AvailabilityUiState.Ready ?: return
         if (ready.isSaving) return
+        val profile = linkedProfilesById[profileId]
+        if (profile == null) {
+            mutableState.value = ready.copy(failure = AvailabilityFailure.InvalidResponse)
+            return
+        }
         mutableState.value = ready.copy(isSaving = true, failure = null)
         val requestVersion = configurationVersion
         scope.launch {
-            when (val result = createAvailability(profileId, draft)) {
+            when (val result = createAvailability(profile, draft)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
                     overviewCache.remove(profileId)
@@ -160,13 +175,18 @@ class AvailabilityViewModel(
     ) {
         val ready = mutableState.value as? AvailabilityUiState.Ready ?: return
         if (ready.deletingAvailabilityId != null) return
+        val profile = linkedProfilesById[profileId]
+        if (profile == null) {
+            mutableState.value = ready.copy(failure = AvailabilityFailure.InvalidResponse)
+            return
+        }
         mutableState.value = ready.copy(
             deletingAvailabilityId = availabilityId,
             failure = null,
         )
         val requestVersion = configurationVersion
         scope.launch {
-            when (val result = deleteAvailability(profileId, availabilityId)) {
+            when (val result = deleteAvailability(profile, availabilityId)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
                     val updated = ready.availabilities.filterNot { it.id == availabilityId }

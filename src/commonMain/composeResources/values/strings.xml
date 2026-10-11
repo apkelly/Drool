@@ -160,8 +160,6 @@
     <string name="profile_teams">Your teams</string>
     <string name="profile_related_users">Related and linked users</string>
     <string name="profile_no_related_users">No related users were returned for this profile.</string>
-    <string name="profile_accounts">Accounts</string>
-    <string name="profile_no_accounts">No accounts were returned for this profile.</string>
     <string name="profile_appearance">Appearance</string>
     <string name="profile_observability">Share anonymous diagnostics</string>
     <string name="profile_observability_body">Send privacy-safe usage events and crash reports to help improve Drool. No names, email addresses, account details, team or match IDs, tokens, or API data are included.</string>
@@ -180,6 +178,5 @@
     <string name="content_club_logo">%1$s club logo</string>
     <string name="content_team_logo">%1$s team logo</string>
     <string name="content_profile_image">%1$s profile image</string>
-    <string name="content_account_logo">%1$s account logo</string>
     <string name="content_splash_animation">Animated soccer trophy with a ball and boots</string>
 </resources>

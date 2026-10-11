@@ -7,6 +7,7 @@ import com.github.apkelly.dribl.model.RefereeClub
 import com.github.apkelly.drool.common.data.repository.FakeSportsRemote
 import com.github.apkelly.drool.common.data.repository.TestTokenStore
 import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
@@ -39,10 +40,10 @@ class AvailabilityRepositoryImplTest {
                     List<com.github.apkelly.drool.schedule.domain.model.RefereeClub>,
                     >,
                 >(
-                repository.getRefereeClubs("9702906"),
+                repository.getRefereeClubs(linkedProfile),
             )
             val result = assertIs<AvailabilityResult.Success<*>>(
-                repository.getAvailability("9702906"),
+                repository.getAvailability(linkedProfile),
             )
             val overview = assertIs<
                 com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityOverview,
@@ -52,19 +53,48 @@ class AvailabilityRepositoryImplTest {
                 "Marrickville Referees",
                 clubs.value.single().name,
             )
-            assertEquals(listOf("9702906", "9702906"), remote.profileSessionUsers)
+            assertEquals(listOf("1001", "1001"), remote.profileSessionUsers)
             assertEquals(
-                "9702906" to "2026-10-12T00:00:00Z",
+                "1001" to "2026-10-12T00:00:00Z",
                 remote.refereeAvailabilityQuery,
             )
             assertEquals("Marrickville Referees", overview.clubs.single().name)
             assertEquals(
-                setOf("9702906"),
+                setOf("child"),
                 overview.availabilities.map { it.profileId }.toSet(),
             )
             assertEquals(
                 AvailabilityRecurrence.entries,
                 overview.availabilities.map { it.recurrence },
+            )
+        }
+    }
+
+    @Test
+    fun primaryProfileUsesRootSessionAndPersonId() = runTest {
+        TestTokenStore().use { testStore ->
+            testStore.store.saveBearerToken("root-token")
+            val remote = FakeSportsRemote()
+            val repository = AvailabilityRepositoryImpl(
+                remote,
+                testStore.store,
+                fixedTimeProvider,
+            )
+            val primaryProfile = LinkedProfile(
+                id = "account",
+                displayName = "Harry Kane",
+                avatarUrl = null,
+                isPrimary = true,
+                subjectUserId = "1000",
+            )
+
+            val result = repository.getAvailability(primaryProfile)
+
+            assertIs<AvailabilityResult.Success<*>>(result)
+            assertEquals(emptyList(), remote.profileSessionUsers)
+            assertEquals(
+                "1000" to "2026-10-11T00:00:00Z",
+                remote.refereeAvailabilityQuery,
             )
         }
     }
@@ -83,7 +113,7 @@ class AvailabilityRepositoryImplTest {
             )
 
             val result = repository.createAvailability(
-                profileId = "9702906",
+                profile = linkedProfile,
                 draft = RefereeAvailabilityDraft(
                     startDateEpochMillis =
                     Instant.parse("2026-10-13T00:00:00Z").toEpochMilliseconds(),
@@ -101,7 +131,7 @@ class AvailabilityRepositoryImplTest {
 
             assertIs<AvailabilityResult.Success<Unit>>(result)
             with(requireNotNull(remote.createAvailabilityRequest)) {
-                assertEquals("9702906", userId)
+                assertEquals("1001", userId)
                 assertEquals("2026-10-13T07:00:00Z", start)
                 assertEquals("2026-12-29T08:00:00Z", end)
                 assertEquals("18:00", startTime)
@@ -115,7 +145,7 @@ class AvailabilityRepositoryImplTest {
                 AvailabilityRecurrence.Monthly,
             ).forEach { recurrence ->
                 repository.createAvailability(
-                    profileId = "9702906",
+                    profile = linkedProfile,
                     draft = RefereeAvailabilityDraft(
                         startDateEpochMillis =
                         Instant.parse("2026-10-13T00:00:00Z").toEpochMilliseconds(),
@@ -150,7 +180,7 @@ class AvailabilityRepositoryImplTest {
 
             assertEquals(
                 AvailabilityResult.Failed(AvailabilityFailure.Unauthorized),
-                repository.getRefereeClubs("9702906"),
+                repository.getRefereeClubs(linkedProfile),
             )
 
             testStore.store.saveBearerToken("root-token")
@@ -158,7 +188,7 @@ class AvailabilityRepositoryImplTest {
 
             assertEquals(
                 AvailabilityResult.Failed(AvailabilityFailure.Forbidden),
-                repository.getRefereeClubs("9702906"),
+                repository.getRefereeClubs(linkedProfile),
             )
         }
     }
@@ -175,7 +205,7 @@ class AvailabilityRepositoryImplTest {
             )
 
             val result = repository.createAvailability(
-                profileId = "9702906",
+                profile = linkedProfile,
                 draft = RefereeAvailabilityDraft(
                     startDateEpochMillis =
                     Instant.parse("2026-10-11T00:00:00Z").toEpochMilliseconds(),
@@ -210,7 +240,7 @@ class AvailabilityRepositoryImplTest {
             )
 
             val result = repository.createAvailability(
-                profileId = "9702906",
+                profile = linkedProfile,
                 draft = RefereeAvailabilityDraft(
                     startDateEpochMillis =
                     Instant.parse("2027-04-13T00:00:00Z").toEpochMilliseconds(),
@@ -245,11 +275,11 @@ class AvailabilityRepositoryImplTest {
             )
 
             assertIs<AvailabilityResult.Success<*>>(
-                repository.getAvailability("9702906"),
+                repository.getAvailability(linkedProfile),
             )
 
             assertEquals(
-                "9702906" to "2026-10-11T00:00:00Z",
+                "1001" to "2026-10-11T00:00:00Z",
                 remote.refereeAvailabilityQuery,
             )
         }
@@ -266,7 +296,7 @@ class AvailabilityRepositoryImplTest {
                 fixedTimeProvider,
             )
 
-            val result = repository.deleteAvailability("9702906", "21484775")
+            val result = repository.deleteAvailability(linkedProfile, "21484775")
 
             assertIs<AvailabilityResult.Success<Unit>>(result)
             assertEquals("21484775", remote.deletedAvailabilityId)
@@ -277,6 +307,13 @@ class AvailabilityRepositoryImplTest {
         val fixedTimeProvider = TimeProvider {
             Instant.parse("2026-10-11T14:00:00Z").toEpochMilliseconds()
         }
+        val linkedProfile = LinkedProfile(
+            id = "child",
+            displayName = "Jude Bellingham",
+            avatarUrl = null,
+            isPrimary = false,
+            subjectUserId = "1001",
+        )
         val refereeClub = RefereeClub(
             id = "5129",
             name = "Marrickville Referees",

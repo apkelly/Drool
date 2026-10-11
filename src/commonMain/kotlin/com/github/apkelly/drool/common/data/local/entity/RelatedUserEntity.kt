@@ -18,4 +18,6 @@ data class RelatedUserEntity(
     val phoneNumber: String? = null,
     val address: String? = null,
     val emergencyContactsJson: String? = null,
+    val firstName: String? = null,
+    val isGuardian: Boolean? = null,
 )

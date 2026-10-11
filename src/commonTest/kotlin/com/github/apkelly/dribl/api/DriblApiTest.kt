@@ -348,7 +348,7 @@ class DriblApiTest {
                     "id": 1000,
                     "sending_email_address": "alex@example.com",
                     "primary_email": "alex@example.com",
-                    "primary_email_id": 7222103,
+                    "primary_email_id": 3000,
                     "last_login": "2026-10-05T04:12:25.144002Z",
                     "first_name": "Alex",
                     "last_name": "Player",
@@ -1053,7 +1053,7 @@ class DriblApiTest {
                             request.url.parameters["start_date"],
                         )
                         assertEquals("asc", request.url.parameters["direction"])
-                        assertEquals("9702906", request.url.parameters["user_id"])
+                        assertEquals("1001", request.url.parameters["user_id"])
                     }
                     if (request.method == HttpMethod.Post) {
                         postBody = (
@@ -1077,13 +1077,13 @@ class DriblApiTest {
 
         val loaded = api.fetchRefereeAvailabilities(
             bearerToken = "token",
-            userId = "9702906",
+            userId = "1001",
             startDate = "2026-10-11T00:00:00Z",
         ).single()
         val created = api.createRefereeAvailability(
             bearerToken = "token",
             request = CreateRefereeAvailabilityRequest(
-                userId = "9702906",
+                userId = "1001",
                 start = "2026-10-13T07:00:00Z",
                 end = "2026-12-29T08:00:00Z",
                 startTime = "18:00",
@@ -1111,7 +1111,7 @@ class DriblApiTest {
         )
         val body = driblJson.parseToJsonElement(checkNotNull(postBody)).toString()
         assertEquals(
-            """{"user_id":"9702906","start":"2026-10-13T07:00:00Z","end":""" +
+            """{"user_id":"1001","start":"2026-10-13T07:00:00Z","end":""" +
                 """"2026-12-29T08:00:00Z","start_time":"18:00","end_time":"19:00",""" +
                 """"all_clubs":false,"club_id":"5129","period":"Weekly","day":2,""" +
                 """"use_timezone":"Australia/Sydney"}""",

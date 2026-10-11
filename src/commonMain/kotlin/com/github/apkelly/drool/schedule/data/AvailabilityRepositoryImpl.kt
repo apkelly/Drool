@@ -7,6 +7,7 @@ import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.model.AvailabilityPeriod
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
 import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
@@ -30,26 +31,26 @@ class AvailabilityRepositoryImpl(
     private val timeProvider: TimeProvider,
 ) : AvailabilityRepository {
     override suspend fun getRefereeClubs(
-        profileId: String,
-    ) = withProfileToken(profileId) { token ->
+        profile: LinkedProfile,
+    ) = withProfileToken(profile) { token ->
         api.fetchActiveRefereeClubs(token).map { it.toDomain() }
     }
 
     override suspend fun getAvailability(
-        profileId: String,
-    ) = withProfileToken(profileId) { token ->
+        profile: LinkedProfile,
+    ) = withProfileToken(profile) { token ->
         val clubs = api.fetchActiveRefereeClubs(token).map { it.toDomain() }
         RefereeAvailabilityOverview(
             clubs = clubs,
             availabilities = api.fetchRefereeAvailabilities(
                 bearerToken = token,
-                userId = profileId,
+                userId = profile.subjectUserId,
                 startDate = availabilityStartDate(
                     epochMillis = timeProvider.nowEpochMillis(),
                     timeZone = if (clubs.isEmpty()) "UTC" else clubs.first().timeZone,
                 ),
             )
-                .map { it.toDomain(profileId) }
+                .map { it.toDomain(profile.id) }
                 .sortedBy { it.startEpochMillis },
         )
     }
@@ -65,31 +66,35 @@ class AvailabilityRepositoryImpl(
     }
 
     override suspend fun createAvailability(
-        profileId: String,
+        profile: LinkedProfile,
         draft: RefereeAvailabilityDraft,
-    ) = withProfileToken(profileId) { token ->
+    ) = withProfileToken(profile) { token ->
         api.createRefereeAvailability(
             token,
-            draft.toRequest(profileId, timeProvider.nowEpochMillis()),
+            draft.toRequest(profile.subjectUserId, timeProvider.nowEpochMillis()),
         )
         Unit
     }
 
     override suspend fun deleteAvailability(
-        profileId: String,
+        profile: LinkedProfile,
         availabilityId: String,
-    ) = withProfileToken(profileId) { token ->
+    ) = withProfileToken(profile) { token ->
         api.deleteRefereeAvailability(token, availabilityId)
     }
 
     private suspend fun <T> withProfileToken(
-        profileId: String,
+        profile: LinkedProfile,
         block: suspend (String) -> T,
     ): AvailabilityResult<T> {
         val rootToken = tokenStore.getBearerToken()
             ?: return AvailabilityResult.Failed(AvailabilityFailure.Unauthorized)
         return availabilityResult {
-            val profileToken = api.createProfileSession(rootToken, profileId)
+            val profileToken = if (profile.isPrimary) {
+                rootToken
+            } else {
+                api.createProfileSession(rootToken, profile.subjectUserId)
+            }
             block(profileToken)
         }
     }

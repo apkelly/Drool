@@ -40,12 +40,9 @@ import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_cancel
 import com.github.apkelly.drool.common.resources.action_sign_out
-import com.github.apkelly.drool.common.resources.content_account_logo
 import com.github.apkelly.drool.common.resources.content_profile_image
-import com.github.apkelly.drool.common.resources.profile_accounts
 import com.github.apkelly.drool.common.resources.profile_appearance
 import com.github.apkelly.drool.common.resources.profile_link_member
-import com.github.apkelly.drool.common.resources.profile_no_accounts
 import com.github.apkelly.drool.common.resources.profile_no_related_users
 import com.github.apkelly.drool.common.resources.profile_observability
 import com.github.apkelly.drool.common.resources.profile_observability_body
@@ -91,7 +88,10 @@ fun ProfileScreen(
     var confirmSignOut by remember { mutableStateOf(false) }
     var pendingUnlink by remember { mutableStateOf<RelatedUser?>(null) }
     val linkedUsers = profile.relatedUsers
-        .filter { it.isLinked && it.subjectUserId != profile.accountId }
+        .filter {
+            it.isLinked &&
+                it.subjectUserId != profile.accountId
+        }
         .distinctBy { it.subjectUserId }
     Scaffold(
         modifier = modifier,
@@ -170,29 +170,6 @@ fun ProfileScreen(
                                 )
                             }
                         },
-                    )
-                }
-            }
-            item {
-                Text(
-                    stringResource(Res.string.profile_accounts),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-            if (profile.accounts.isEmpty()) {
-                item { Text(stringResource(Res.string.profile_no_accounts)) }
-            } else {
-                items(profile.accounts, key = { it.id }) { account ->
-                    ProfileAssociationCard(
-                        name = account.name,
-                        subtitle = account.subtitle,
-                        imageUrl = account.logoUrl,
-                        contentDescription = stringResource(
-                            Res.string.content_account_logo,
-                            account.name,
-                        ),
-                        fallbackIcon = MaterialSymbol.AccountBalance,
-                        onClick = null,
                     )
                 }
             }

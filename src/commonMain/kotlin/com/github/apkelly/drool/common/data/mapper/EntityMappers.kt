@@ -139,6 +139,8 @@ fun RelatedUser.toEntity(
     address = address,
     emergencyContactsJson = emergencyContacts.encodeForStorage(),
     isLinked = isLinked,
+    firstName = firstName,
+    isGuardian = isGuardian,
 )
 
 fun RelatedUser.toLinkedEntity(
@@ -171,25 +173,29 @@ fun reconcileRelatedUsers(
                 }
         if (matched != null) {
             remaining.remove(matched)
-            linked.copy(
-                displayName = linked.displayName.takeUnless { it == linked.id }
-                    ?: matched.displayName,
-                email = linked.email ?: matched.email,
-                avatarUrl = linked.avatarUrl ?: matched.avatarUrl,
-                gender = linked.gender ?: matched.gender,
-                dateOfBirth = linked.dateOfBirth ?: matched.dateOfBirth,
-                phoneNumber = linked.phoneNumber ?: matched.phoneNumber,
-                address = linked.address ?: matched.address,
-                emergencyContactsJson =
-                linked.emergencyContactsJson ?: matched.emergencyContactsJson,
-                isLinked = true,
-            )
+            linked.mergedWith(matched)
         } else {
             linked.copy(isLinked = true)
         }
     }
     return remaining.filterNot { it.isLinked } + reconciled
 }
+
+private fun RelatedUserEntity.mergedWith(
+    matched: RelatedUserEntity,
+): RelatedUserEntity = copy(
+    displayName = displayName.takeUnless { it == id } ?: matched.displayName,
+    email = email ?: matched.email,
+    avatarUrl = avatarUrl ?: matched.avatarUrl,
+    gender = gender ?: matched.gender,
+    dateOfBirth = dateOfBirth ?: matched.dateOfBirth,
+    phoneNumber = phoneNumber ?: matched.phoneNumber,
+    address = address ?: matched.address,
+    emergencyContactsJson = emergencyContactsJson ?: matched.emergencyContactsJson,
+    firstName = firstName ?: matched.firstName,
+    isGuardian = isGuardian ?: matched.isGuardian,
+    isLinked = true,
+)
 
 private fun String.normalizedPersonName(): String = trim().lowercase().split(Regex("\\s+")).joinToString(" ")
 
@@ -274,6 +280,8 @@ fun RelatedUserEntity.toDomain() = RelatedUser(
     phoneNumber = phoneNumber,
     address = address,
     emergencyContacts = emergencyContactsJson.decodeEmergencyContacts(),
+    firstName = firstName,
+    isGuardian = isGuardian,
 )
 
 /**

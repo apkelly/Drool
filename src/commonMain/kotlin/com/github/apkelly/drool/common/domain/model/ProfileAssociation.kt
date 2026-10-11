@@ -26,11 +26,18 @@ data class EmergencyContact(
     val email: String? = null,
 )
 
+/**
+ * Identifies one selectable sports profile within the authenticated account.
+ *
+ * [id] is the stable local selector/cache key. [subjectUserId] is the backend person ID used for
+ * user-scoped API queries.
+ */
 data class LinkedProfile(
     val id: String,
     val displayName: String,
     val avatarUrl: String?,
     val isPrimary: Boolean,
+    val subjectUserId: String = id,
 )
 
 /**

@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.schedule.ui.viewmodel
 
+import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
@@ -29,7 +30,7 @@ class AvailabilityViewModelTest {
         val repository = FakeAvailabilityRepository()
         val viewModel = viewModel(repository)
 
-        viewModel.checkEligibility(listOf("player", "referee"))
+        viewModel.configureLinkedProfiles("account", listOf(playerProfile, refereeProfile))
         advanceUntilIdle()
 
         assertEquals(setOf("referee"), viewModel.refereeProfileIds.value)
@@ -45,6 +46,7 @@ class AvailabilityViewModelTest {
     fun createReloadsAndDeleteRemovesTheSelectedAvailability() = runTest {
         val repository = FakeAvailabilityRepository()
         val viewModel = viewModel(repository)
+        viewModel.configureLinkedProfiles("account", listOf(refereeProfile))
         viewModel.load("referee")
         advanceUntilIdle()
 
@@ -68,6 +70,7 @@ class AvailabilityViewModelTest {
     fun operationFailureIsSurfacedAndCanBeCleared() = runTest {
         val repository = FakeAvailabilityRepository()
         val viewModel = viewModel(repository)
+        viewModel.configureLinkedProfiles("account", listOf(refereeProfile))
         viewModel.load("referee")
         advanceUntilIdle()
         repository.createResult =
@@ -104,19 +107,19 @@ class AvailabilityViewModelTest {
         var createResult: AvailabilityResult<Unit> = AvailabilityResult.Success(Unit)
 
         override suspend fun getRefereeClubs(
-            profileId: String,
+            profile: LinkedProfile,
         ): AvailabilityResult<List<RefereeClub>> =
-            AvailabilityResult.Success(if (profileId == "referee") listOf(club) else emptyList())
+            AvailabilityResult.Success(if (profile.id == "referee") listOf(club) else emptyList())
 
         override suspend fun getAvailability(
-            profileId: String,
+            profile: LinkedProfile,
         ): AvailabilityResult<RefereeAvailabilityOverview> {
             loadCalls += 1
             return AvailabilityResult.Success(overview)
         }
 
         override suspend fun createAvailability(
-            profileId: String,
+            profile: LinkedProfile,
             draft: RefereeAvailabilityDraft,
         ): AvailabilityResult<Unit> {
             createdDraft = draft
@@ -124,7 +127,7 @@ class AvailabilityViewModelTest {
         }
 
         override suspend fun deleteAvailability(
-            profileId: String,
+            profile: LinkedProfile,
             availabilityId: String,
         ): AvailabilityResult<Unit> {
             deletedId = availabilityId
@@ -133,6 +136,8 @@ class AvailabilityViewModelTest {
     }
 
     private companion object {
+        val playerProfile = LinkedProfile("player", "Player", null, isPrimary = true)
+        val refereeProfile = LinkedProfile("referee", "Referee", null, isPrimary = false)
         val club = RefereeClub(
             id = "club",
             name = "Referee Club",

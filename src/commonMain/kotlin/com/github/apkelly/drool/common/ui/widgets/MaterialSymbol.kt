@@ -27,7 +27,6 @@ import org.jetbrains.compose.resources.Font
 enum class MaterialSymbol(
     val glyph: String,
 ) {
-    AccountBalance("\uE84F"),
     Add("\uE145"),
     ArrowBack("\uE5C4"),
     CalendarMonth("\uEBCC"),

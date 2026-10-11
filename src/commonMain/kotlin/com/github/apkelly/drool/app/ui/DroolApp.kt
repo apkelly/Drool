@@ -92,7 +92,7 @@ fun DroolApp(
             sportsViewModel.configureLinkedProfiles(profile)
             availabilityViewModel.configureLinkedProfiles(
                 accountId = profile.accountId,
-                profileIds = profile.linkedProfiles.map { it.id },
+                profiles = profile.linkedProfiles,
             )
             sportsViewModel.refreshAll(force = false)
         }

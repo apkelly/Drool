@@ -216,8 +216,8 @@ class SportsDataSourceImpl(
                     if (refreshSports) {
                         val teams = api.fetchProfileTeams(token).map { it.toDomain() }
                         val fixtures = (
-                            api.fetchFixtures(token, profile.id).map { it.toDomain() } +
-                                api.fetchRefereeFixtures(token, profile.id)
+                            api.fetchFixtures(token, profile.subjectUserId).map { it.toDomain() } +
+                                api.fetchRefereeFixtures(token, profile.subjectUserId)
                                     .map { it.toDomain() }
                             ).distinctBy { it.id to it.role }
                         val clubs = api.fetchProfileClubs(token).map { it.toDomain() }

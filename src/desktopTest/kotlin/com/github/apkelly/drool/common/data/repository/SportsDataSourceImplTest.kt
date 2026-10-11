@@ -356,7 +356,12 @@ class SportsDataSourceImplTest {
                 Club("club", "United", "U", null, "#008000", "#FFFFFF"),
             )
             val profiles = listOf(
-                LinkedProfile("root", "Alex", null, isPrimary = true),
+                LinkedProfile(
+                    id = "root",
+                    displayName = "Alex",
+                    avatarUrl = null,
+                    isPrimary = true,
+                ),
                 LinkedProfile("child", "Jude", null, isPrimary = false),
             )
             database.profileDao().upsertRelatedUsers(

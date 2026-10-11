@@ -10,7 +10,14 @@ data class Profile(
 ) {
     val linkedProfiles: List<LinkedProfile>
         get() = buildList {
-            add(LinkedProfile(accountId, displayName, avatarUrl, isPrimary = true))
+            add(
+                LinkedProfile(
+                    id = accountId,
+                    displayName = displayName,
+                    avatarUrl = avatarUrl,
+                    isPrimary = true,
+                ),
+            )
             relatedUsers
                 .asSequence()
                 .filter { it.isLinked }

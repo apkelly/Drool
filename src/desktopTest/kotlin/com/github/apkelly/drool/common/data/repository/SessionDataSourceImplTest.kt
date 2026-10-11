@@ -616,15 +616,19 @@ class SessionDataSourceImplTest {
         fixture { repository, _, sports, store, database ->
             store.saveBearerToken("token")
             store.setActiveAccountId("account")
+            database.profileDao().upsert(
+                ProfileEntity("account", "Harry", null, active = true),
+            )
             sports.linkRequestApproved = true
             sports.linkedUsers = listOf(
                 relatedUser(
                     id = "candidate",
                     linkId = "linked-candidate",
-                    firstName = "Jude",
-                    lastName = "Bellingham",
-                    email = "jude.bellingham@example.com",
-                    avatarUrl = "jude.png",
+                    firstName = "Harry",
+                    lastName = "Kane",
+                    email = "harry.kane@example.com",
+                    avatarUrl = "harry.png",
+                    isGuardian = false,
                 ),
             )
 
@@ -637,6 +641,15 @@ class SessionDataSourceImplTest {
             assertEquals(
                 "linked-candidate",
                 database.profileDao().getRelatedUsers("account").single().linkId,
+            )
+            val profile = repository.observeProfile().first()
+            assertEquals(
+                listOf("account", "candidate"),
+                profile?.linkedProfiles?.map { it.id },
+            )
+            assertEquals(
+                listOf("account", "candidate"),
+                profile?.linkedProfiles?.map { it.subjectUserId },
             )
         }
     }
