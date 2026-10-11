@@ -371,26 +371,43 @@ class SportsViewModel(
     fun loadMatch(
         profileId: String,
         matchId: String,
+    ) = requestMatch(profileId, matchId, force = false)
+
+    fun refreshMatch(
+        profileId: String,
+        matchId: String,
+    ) = requestMatch(profileId, matchId, force = true)
+
+    private fun requestMatch(
+        profileId: String,
+        matchId: String,
+        force: Boolean,
     ) {
         val key = MatchCacheKey(profileId, matchId)
-        if (key in resolvedMatchDetails.value &&
-            (mutableMatchDetailsState.value as? MatchDetailsUiState.Content)
-                ?.let { it.profileId == profileId && it.matchId == matchId } == true
-        ) {
+        val current = (mutableMatchDetailsState.value as? MatchDetailsUiState.Content)
+            ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+        if (!force && key in resolvedMatchDetails.value && current != null) {
             return
         }
-        val cached = matchCache.value[key]
-        cached?.let {
-            mutableMatchDetailsState.value =
-                MatchDetailsUiState.Content(profileId, matchId, it)
-        }
+        if (force && current?.isRefreshing == true) return
         if (mutableMatchDetailsState.value == MatchDetailsUiState.Loading(profileId, matchId)) {
             return
+        }
+        val cached = current?.fixture ?: matchCache.value[key]
+        if (force && current != null) {
+            mutableMatchDetailsState.value = current.copy(
+                isRefreshing = true,
+                refreshFailed = false,
+            )
+        } else if (cached != null) {
+            mutableMatchDetailsState.value =
+                MatchDetailsUiState.Content(profileId, matchId, cached)
         }
         if (cached == null) {
             mutableMatchDetailsState.value = MatchDetailsUiState.Loading(profileId, matchId)
         }
         scope.launch {
+            var refreshFailed = false
             val fixture = try {
                 val fixture = loadMatchDetails(profileId, matchId)
                 matchCache.update {
@@ -407,28 +424,35 @@ class SportsViewModel(
                         MatchDetailsUiState.Failed(profileId, matchId)
                     return@launch
                 }
+                refreshFailed = true
                 cached
             }
             mutableMatchDetailsState.value = MatchDetailsUiState.Content(
                 profileId = profileId,
                 matchId = matchId,
                 fixture = fixture,
+                weather = current?.weather,
                 isWeatherLoading = fixture.latitude != null && fixture.longitude != null,
+                isRefreshing = force,
+                refreshFailed = refreshFailed,
             )
             val weather = try {
-                loadMatchWeather(fixture)
+                loadMatchWeather(fixture, force)
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
             } catch (unexpected: Exception) {
                 logger.w { "Unable to load match weather (${unexpected::class.simpleName})" }
-                null
+                refreshFailed = true
+                current?.weather
             }
-            val current = mutableMatchDetailsState.value as? MatchDetailsUiState.Content
-            if (current?.profileId == profileId && current.matchId == matchId) {
-                mutableMatchDetailsState.value = current.copy(
+            val latest = mutableMatchDetailsState.value as? MatchDetailsUiState.Content
+            if (latest?.profileId == profileId && latest.matchId == matchId) {
+                mutableMatchDetailsState.value = latest.copy(
                     weather = weather,
                     isWeatherLoading = false,
                     weatherUnavailable = weather == null,
+                    isRefreshing = false,
+                    refreshFailed = refreshFailed,
                 )
             }
         }

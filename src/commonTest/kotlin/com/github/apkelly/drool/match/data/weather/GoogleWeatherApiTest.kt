@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class GoogleWeatherApiTest {
     @Test
@@ -68,6 +69,25 @@ class GoogleWeatherApiTest {
             .fetchMatchWeather("api-key", -33.9, 151.17, 0L)
 
         assertNull(weather)
+    }
+
+    @Test
+    fun eveningForecastDoesNotInheritDaytimeUvIndex() = runTest {
+        val client = weatherClient { forecastResponse }
+
+        val weather = GoogleWeatherApi(client, "https://example.test")
+            .fetchMatchWeather(
+                apiKey = "api-key",
+                latitude = -33.9,
+                longitude = 151.17,
+                kickoffEpochMillis = Instant.parse("2026-10-07T10:00:00Z")
+                    .toEpochMilliseconds(),
+            )
+
+        requireNotNull(weather)
+        assertEquals(88, weather.relativeHumidityPercent)
+        assertEquals(0, weather.uvIndex)
+        assertEquals(false, weather.sunscreenRecommended)
     }
 
     private fun weatherClient(

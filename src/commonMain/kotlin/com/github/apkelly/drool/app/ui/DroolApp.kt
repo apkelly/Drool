@@ -399,6 +399,7 @@ private fun MainNavigation(
                             }
                         },
                         onLoad = sportsViewModel::loadMatch,
+                        onRefresh = sportsViewModel::refreshMatch,
                         onTeamSelect = { teamId, teamName, logoUrl ->
                             currentStack.add(
                                 AppRoute.Team(

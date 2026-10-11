@@ -6,5 +6,6 @@ import com.github.apkelly.drool.common.domain.model.MatchWeather
 interface MatchWeatherDataSource {
     suspend fun loadMatchWeather(
         fixture: Fixture,
+        force: Boolean = false,
     ): MatchWeather?
 }

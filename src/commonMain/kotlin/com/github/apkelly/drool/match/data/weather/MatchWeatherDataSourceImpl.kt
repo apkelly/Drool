@@ -16,13 +16,15 @@ class MatchWeatherDataSourceImpl(
 ) : MatchWeatherDataSource {
     override suspend fun loadMatchWeather(
         fixture: Fixture,
+        force: Boolean,
     ): MatchWeather? {
         val latitude = fixture.latitude ?: return null
         val longitude = fixture.longitude ?: return null
         val key = apiKey?.takeIf(String::isNotBlank) ?: return null
         val now = timeProvider.nowEpochMillis()
-        val cached = database.matchWeatherCacheDao().get(fixture.id)
-        if (cached != null && now - cached.updatedAtEpochMillis < WEATHER_CACHE_TTL) {
+        val cacheKey = "$CACHE_VERSION:${fixture.id}"
+        val cached = database.matchWeatherCacheDao().get(cacheKey)
+        if (!force && cached != null && now - cached.updatedAtEpochMillis < WEATHER_CACHE_TTL) {
             return cached.payloadJson?.let(Json::decodeFromString)
         }
         val weather = api.fetchMatchWeather(
@@ -33,7 +35,7 @@ class MatchWeatherDataSourceImpl(
         )
         database.matchWeatherCacheDao().upsert(
             MatchWeatherCacheEntity(
-                matchId = fixture.id,
+                matchId = cacheKey,
                 payloadJson = weather?.let { Json.encodeToString(it) },
                 updatedAtEpochMillis = now,
             ),
@@ -42,6 +44,7 @@ class MatchWeatherDataSourceImpl(
     }
 
     private companion object {
+        const val CACHE_VERSION = "kickoff-period-v1"
         const val WEATHER_CACHE_TTL = 24L * 60L * 60L * 1_000L
     }
 }

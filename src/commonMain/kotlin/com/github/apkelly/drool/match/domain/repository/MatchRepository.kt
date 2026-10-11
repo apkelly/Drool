@@ -10,5 +10,6 @@ interface MatchRepository {
     ): Fixture
     suspend fun loadMatchWeather(
         fixture: Fixture,
+        force: Boolean = false,
     ): MatchWeather?
 }

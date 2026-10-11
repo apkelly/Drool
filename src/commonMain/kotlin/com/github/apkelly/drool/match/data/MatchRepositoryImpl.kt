@@ -16,5 +16,6 @@ class MatchRepositoryImpl(
 
     override suspend fun loadMatchWeather(
         fixture: Fixture,
-    ) = weatherDataSource.loadMatchWeather(fixture)
+        force: Boolean,
+    ) = weatherDataSource.loadMatchWeather(fixture, force)
 }

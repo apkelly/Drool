@@ -197,6 +197,9 @@ class UseCasesTest {
             LoadMatchWeatherUseCase(match)(dataSource.matchDetails),
         )
         assertEquals(dataSource.matchDetails, weatherDataSource.lastFixture)
+        assertEquals(false, weatherDataSource.lastForce)
+        LoadMatchWeatherUseCase(match)(dataSource.matchDetails, force = true)
+        assertEquals(true, weatherDataSource.lastForce)
     }
 
     @Test
@@ -250,11 +253,16 @@ class UseCasesTest {
             advanceUntilIdle()
             assertEquals(1, dataSource.matchDetailsCalls)
 
-            viewModel.loadMatch("profile", "uncached")
-            advanceUntilIdle()
-            viewModel.loadMatch("profile", "uncached")
+            viewModel.refreshMatch("profile", "match")
             advanceUntilIdle()
             assertEquals(2, dataSource.matchDetailsCalls)
+            assertEquals(true, weatherDataSource.lastForce)
+
+            viewModel.loadMatch("profile", "uncached")
+            advanceUntilIdle()
+            viewModel.loadMatch("profile", "uncached")
+            advanceUntilIdle()
+            assertEquals(3, dataSource.matchDetailsCalls)
         } finally {
             scope.cancel()
         }
@@ -264,11 +272,14 @@ class UseCasesTest {
 private class FakeMatchWeatherDataSource : MatchWeatherDataSource {
     val weather = MatchWeather("Sunny", 16.0, 24.0, 55, 10, 0.0, 6)
     var lastFixture: Fixture? = null
+    var lastForce = false
 
     override suspend fun loadMatchWeather(
         fixture: Fixture,
+        force: Boolean,
     ): MatchWeather {
         lastFixture = fixture
+        lastForce = force
         return weather
     }
 }

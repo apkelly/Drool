@@ -16,6 +16,8 @@ sealed interface MatchDetailsUiState {
         val weather: MatchWeather? = null,
         val isWeatherLoading: Boolean = false,
         val weatherUnavailable: Boolean = false,
+        val isRefreshing: Boolean = false,
+        val refreshFailed: Boolean = false,
     ) : MatchDetailsUiState
     data class Failed(
         val profileId: String,

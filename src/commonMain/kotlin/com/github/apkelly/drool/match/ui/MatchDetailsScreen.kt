@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.MatchWeather
+import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_retry
 import com.github.apkelly.drool.common.resources.content_team_logo
@@ -71,6 +73,7 @@ import com.github.apkelly.drool.common.ui.format.formatFixtureDay
 import com.github.apkelly.drool.common.ui.format.formatFixtureTime
 import com.github.apkelly.drool.common.ui.platform.GoogleMapPreview
 import com.github.apkelly.drool.common.ui.platform.rememberLocationActionLauncher
+import com.github.apkelly.drool.common.ui.widgets.CacheStatus
 import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
@@ -88,6 +91,7 @@ fun MatchDetailsScreen(
     state: MatchDetailsUiState,
     onBack: () -> Unit,
     onLoad: (String, String) -> Unit,
+    onRefresh: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     onTeamSelect: (String, String, String?) -> Unit,
 ) {
@@ -108,31 +112,39 @@ fun MatchDetailsScreen(
             )
         },
     ) { padding ->
-        when {
-            state is MatchDetailsUiState.Failed &&
-                state.profileId == profileId && state.matchId == matchId -> {
-                Column(Modifier.fillMaxSize().padding(padding)) {
-                    LoadFailure(
-                        message = stringResource(Res.string.match_load_failed),
-                        onRetry = { onLoad(profileId, matchId) },
-                    )
+        PullToRefreshBox(
+            isRefreshing = details?.isRefreshing == true,
+            onRefresh = { onRefresh(profileId, matchId) },
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            when {
+                state is MatchDetailsUiState.Failed &&
+                    state.profileId == profileId && state.matchId == matchId -> {
+                    Column(Modifier.fillMaxSize()) {
+                        LoadFailure(
+                            message = stringResource(Res.string.match_load_failed),
+                            onRetry = { onLoad(profileId, matchId) },
+                        )
+                    }
                 }
-            }
 
-            details == null -> {
-                Column(Modifier.fillMaxSize().padding(padding)) {
-                    LoadingContent()
+                details == null -> {
+                    Column(Modifier.fillMaxSize()) {
+                        LoadingContent()
+                    }
                 }
-            }
 
-            else -> MatchDetails(
-                fixture = details.fixture,
-                weather = details.weather,
-                isWeatherLoading = details.isWeatherLoading,
-                weatherUnavailable = details.weatherUnavailable,
-                contentPadding = padding,
-                onTeamSelect = onTeamSelect,
-            )
+                else -> MatchDetails(
+                    fixture = details.fixture,
+                    weather = details.weather,
+                    isWeatherLoading = details.isWeatherLoading,
+                    weatherUnavailable = details.weatherUnavailable,
+                    refreshFailed = details.refreshFailed,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    onRefresh = { onRefresh(profileId, matchId) },
+                    onTeamSelect = onTeamSelect,
+                )
+            }
         }
     }
 }
@@ -143,7 +155,9 @@ private fun MatchDetails(
     weather: MatchWeather?,
     isWeatherLoading: Boolean,
     weatherUnavailable: Boolean,
+    refreshFailed: Boolean,
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
+    onRefresh: () -> Unit,
     onTeamSelect: (String, String, String?) -> Unit,
 ) {
     val locationLauncher = rememberLocationActionLauncher()
@@ -160,6 +174,16 @@ private fun MatchDetails(
         modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        if (refreshFailed) {
+            item {
+                CacheStatus(
+                    isStale = false,
+                    failure = RefreshFailure.Unknown,
+                    hasContent = true,
+                    onRetry = onRefresh,
+                )
+            }
+        }
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -313,7 +337,9 @@ private fun MatchWeatherSection(
                         weather.rainfallAmountMillimetres.toOneDecimalString(),
                     ),
                 )
-                Text(stringResource(Res.string.match_weather_uv, weather.uvIndex))
+                if (weather.uvIndex > 0) {
+                    Text(stringResource(Res.string.match_weather_uv, weather.uvIndex))
+                }
                 if (weather.sunscreenRecommended) {
                     Text(
                         stringResource(Res.string.match_weather_sunscreen),

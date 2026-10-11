@@ -1,11 +1,14 @@
 package com.github.apkelly.drool.match.data.weather
 
+import com.github.apkelly.drool.common.data.local.entity.MatchWeatherCacheEntity
 import com.github.apkelly.drool.common.data.repository.TestDatabase
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.MatchWeather
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -63,6 +66,57 @@ class MatchWeatherDataSourceImplTest {
             assertNull(withKey.loadMatchWeather(fixture().copy(latitude = null)))
             assertNull(withKey.loadMatchWeather(fixture().copy(longitude = null)))
             assertEquals(0, remote.calls)
+        }
+    }
+
+    @Test
+    fun forcedLoadBypassesFreshCache() = runTest {
+        TestDatabase().use { testDatabase ->
+            val remote = FakeWeatherRemote()
+            val repository = MatchWeatherDataSourceImpl(
+                api = remote,
+                database = testDatabase.database,
+                timeProvider = MutableWeatherTimeProvider(),
+                apiKey = "key",
+            )
+            val fixture = fixture()
+            assertEquals("Fine", repository.loadMatchWeather(fixture)?.condition)
+            remote.weather = remote.weather?.copy(condition = "Clear", uvIndex = 0)
+
+            val refreshed = repository.loadMatchWeather(fixture, force = true)
+
+            assertEquals("Clear", refreshed?.condition)
+            assertEquals(0, refreshed?.uvIndex)
+            assertEquals(2, remote.calls)
+        }
+    }
+
+    @Test
+    fun legacyAllDayUvCacheIsIgnored() = runTest {
+        TestDatabase().use { testDatabase ->
+            testDatabase.database.matchWeatherCacheDao().upsert(
+                MatchWeatherCacheEntity(
+                    matchId = "match",
+                    payloadJson = Json.encodeToString(
+                        MatchWeather("Fine", 15.0, 25.0, 50, 10, 0.0, 7),
+                    ),
+                    updatedAtEpochMillis = 0L,
+                ),
+            )
+            val remote = FakeWeatherRemote().apply {
+                weather = MatchWeather("Clear", 15.0, 25.0, 50, 10, 0.0, 0)
+            }
+            val repository = MatchWeatherDataSourceImpl(
+                api = remote,
+                database = testDatabase.database,
+                timeProvider = MutableWeatherTimeProvider(),
+                apiKey = "key",
+            )
+
+            val weather = repository.loadMatchWeather(fixture())
+
+            assertEquals(0, weather?.uvIndex)
+            assertEquals(1, remote.calls)
         }
     }
 

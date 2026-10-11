@@ -113,7 +113,7 @@ private data class ForecastDayDto(
                     qpf.unit.equals("MILLIMETERS", ignoreCase = true)
                 }?.quantity ?: 0.0
             },
-            uvIndex = periods.maxOfOrNull { it.uvIndex ?: 0 } ?: 0,
+            uvIndex = matchPeriod?.uvIndex ?: 0,
         )
     }
 }
