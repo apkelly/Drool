@@ -1,9 +1,9 @@
 package com.github.apkelly.drool.data.repository
 
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
 import com.github.apkelly.drool.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.data.PreferencesRepositoryImpl
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

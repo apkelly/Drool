@@ -30,11 +30,12 @@ import org.jetbrains.compose.resources.stringResource
 fun RefreshAction(
     refreshing: Boolean,
     onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (refreshing) {
-        CircularProgressIndicator(modifier = Modifier.padding(12.dp))
+        CircularProgressIndicator(modifier = modifier.padding(12.dp))
     } else {
-        IconButton(onClick = onRefresh) {
+        IconButton(onClick = onRefresh, modifier = modifier) {
             MaterialSymbolIcon(
                 symbol = MaterialSymbol.Refresh,
                 contentDescription = stringResource(Res.string.action_refresh),
@@ -49,11 +50,12 @@ fun CacheStatus(
     failure: RefreshFailure?,
     hasContent: Boolean,
     onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (!isStale && failure == null) return
     val offline = failure == RefreshFailure.Offline
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),

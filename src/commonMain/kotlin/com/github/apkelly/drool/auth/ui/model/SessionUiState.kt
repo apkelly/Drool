@@ -7,8 +7,12 @@ sealed interface SessionUiState {
     data object AuthenticationRequired : SessionUiState
     data object ReconnectRequired : SessionUiState
     data object Authenticating : SessionUiState
-    data class Authenticated(val profile: Profile) : SessionUiState
-    data class AuthenticationFailed(val reason: AuthFailure) : SessionUiState
+    data class Authenticated(
+        val profile: Profile,
+    ) : SessionUiState
+    data class AuthenticationFailed(
+        val reason: AuthFailure,
+    ) : SessionUiState
 }
 
 enum class AuthFailure {

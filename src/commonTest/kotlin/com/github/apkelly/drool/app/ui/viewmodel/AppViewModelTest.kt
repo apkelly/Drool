@@ -1,5 +1,32 @@
 package com.github.apkelly.drool.app.ui.viewmodel
 
+import com.github.apkelly.drool.auth.domain.repository.AuthRepository
+import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
+import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
+import com.github.apkelly.drool.auth.ui.model.AuthFailure
+import com.github.apkelly.drool.auth.ui.model.SessionUiState
+import com.github.apkelly.drool.domain.model.AuthCredentials
+import com.github.apkelly.drool.domain.model.AuthenticatedSession
+import com.github.apkelly.drool.domain.model.AuthenticationException
+import com.github.apkelly.drool.domain.model.AuthenticationFailure
+import com.github.apkelly.drool.domain.model.LinkMemberException
+import com.github.apkelly.drool.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.domain.model.ThemeMode
+import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
+import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
+import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
+import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
@@ -8,33 +35,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import com.github.apkelly.drool.domain.model.AuthCredentials
-import com.github.apkelly.drool.domain.model.AuthenticatedSession
-import com.github.apkelly.drool.domain.model.AuthenticationException
-import com.github.apkelly.drool.domain.model.AuthenticationFailure
-import com.github.apkelly.drool.domain.model.Profile
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
-import com.github.apkelly.drool.domain.model.ThemeMode
-import com.github.apkelly.drool.domain.model.RelatedUser
-import com.github.apkelly.drool.domain.model.LinkMemberException
-import com.github.apkelly.drool.domain.model.LinkMemberFailure
-import com.github.apkelly.drool.auth.domain.repository.AuthRepository
-import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
-import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
-import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
-import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
-import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
-import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
-import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
-import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
-import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
-import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
-import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
-import com.github.apkelly.drool.auth.ui.model.AuthFailure
-import com.github.apkelly.drool.auth.ui.model.SessionUiState
-import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -62,7 +62,7 @@ class AppViewModelTest {
         assertEquals(SessionUiState.Authenticated(profile), viewModel.sessionState.value)
 
         val hydrated = profile.copy(
-            relatedUsers = listOf(RelatedUser("child", "Ethan", null, null))
+            relatedUsers = listOf(RelatedUser("child", "Ethan", null, null)),
         )
         sessionRepository.observedProfile.value = hydrated
         advanceUntilIdle()
@@ -198,7 +198,9 @@ class AppViewModelTest {
     )
 }
 
-private class FakeViewModelSessionRepository : AuthRepository, ProfileRepository {
+private class FakeViewModelSessionRepository :
+    AuthRepository,
+    ProfileRepository {
     val observedProfile = MutableStateFlow<Profile?>(null)
     var restoreResult: AuthenticatedSession? = null
     var signInResult = AuthenticatedSession("token", null)
@@ -213,7 +215,9 @@ private class FakeViewModelSessionRepository : AuthRepository, ProfileRepository
     override fun observeProfile(): Flow<Profile?> = observedProfile
     override suspend fun restoreSession(): AuthenticatedSession? = restoreResult
 
-    override suspend fun signIn(credentials: AuthCredentials): AuthenticatedSession {
+    override suspend fun signIn(
+        credentials: AuthCredentials,
+    ): AuthenticatedSession {
         signInFailure?.let { throw it }
         this.credentials = credentials
         return signInResult
@@ -223,7 +227,10 @@ private class FakeViewModelSessionRepository : AuthRepository, ProfileRepository
         signOutCount += 1
     }
 
-    override suspend fun refreshProfileEndpoint(endpoint: ProfileApiEndpoint, email: String) {
+    override suspend fun refreshProfileEndpoint(
+        endpoint: ProfileApiEndpoint,
+        email: String,
+    ) {
         profileRefreshes += endpoint to email
     }
 
@@ -232,7 +239,10 @@ private class FakeViewModelSessionRepository : AuthRepository, ProfileRepository
         return linkCandidates
     }
 
-    override suspend fun verifyLinkedUser(candidateId: String, token: String) {
+    override suspend fun verifyLinkedUser(
+        candidateId: String,
+        token: String,
+    ) {
         linkFailure?.let { throw it }
         verifiedLink = candidateId to token
     }
@@ -244,13 +254,17 @@ private class FakeViewModelPreferencesRepository : PreferencesRepository {
 
     override fun observeThemeMode(): Flow<ThemeMode> = theme
 
-    override suspend fun setThemeMode(mode: ThemeMode) {
+    override suspend fun setThemeMode(
+        mode: ThemeMode,
+    ) {
         theme.value = mode
     }
 
     override fun observeObservabilityEnabled(): Flow<Boolean> = observabilityEnabled
 
-    override suspend fun setObservabilityEnabled(enabled: Boolean) {
+    override suspend fun setObservabilityEnabled(
+        enabled: Boolean,
+    ) {
         observabilityEnabled.value = enabled
     }
 }

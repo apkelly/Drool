@@ -6,22 +6,21 @@ import com.github.apkelly.dribl.api.DriblTokenStore
 import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.model.AvailabilityPeriod
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.drool.data.time.TimeProvider
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityDraft
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityOverview
 import com.github.apkelly.drool.schedule.domain.repository.AvailabilityRepository
-import com.github.apkelly.drool.data.time.TimeProvider
-import kotlinx.coroutines.CancellationException
-import kotlinx.io.IOException
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
 import kotlin.time.Instant
 
@@ -55,7 +54,10 @@ class AvailabilityRepositoryImpl(
         )
     }
 
-    private fun availabilityStartDate(epochMillis: Long, timeZone: String): String {
+    private fun availabilityStartDate(
+        epochMillis: Long,
+        timeZone: String,
+    ): String {
         val date = Instant.fromEpochMilliseconds(epochMillis)
             .toLocalDateTime(TimeZone.of(timeZone))
             .date
@@ -138,9 +140,9 @@ private fun RefereeAvailabilityDraft.toRequest(
             requireNotNull(endDateEpochMillis)
         } else {
             startDateEpochMillis
-        }
+        },
     ).toLocalDateTime(TimeZone.UTC).date
-    require(finalDate <= today.plus(6, DateTimeUnit.MONTH)) {
+    require(finalDate <= today.plus(MAX_AVAILABILITY_MONTHS, DateTimeUnit.MONTH)) {
         "Availability cannot extend more than six months into the future"
     }
     val start = LocalDateTime(startDate, LocalTime(startHour, startMinute))
@@ -166,31 +168,34 @@ private fun RefereeAvailabilityDraft.toRequest(
     )
 }
 
-private fun localTime(hour: Int, minute: Int): String =
-    "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+private fun localTime(
+    hour: Int,
+    minute: Int,
+): String = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
 
 private suspend fun <T> availabilityResult(
     block: suspend () -> T,
-): AvailabilityResult<T> =
-    try {
-        AvailabilityResult.Success(block())
-    } catch (error: DriblHttpException) {
-        AvailabilityResult.Failed(
-            when (error.statusCode) {
-                401 -> AvailabilityFailure.Unauthorized
-                403 -> AvailabilityFailure.Forbidden
-                in 500..599 -> AvailabilityFailure.Server
-                else -> AvailabilityFailure.InvalidResponse
-            }
-        )
-    } catch (_: DriblResponseException) {
-        AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
-    } catch (_: SerializationException) {
-        AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
-    } catch (_: IllegalArgumentException) {
-        AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
-    } catch (_: IOException) {
-        AvailabilityResult.Failed(AvailabilityFailure.Offline)
-    } catch (error: CancellationException) {
-        throw error
-    }
+): AvailabilityResult<T> = try {
+    AvailabilityResult.Success(block())
+} catch (error: DriblHttpException) {
+    AvailabilityResult.Failed(
+        when (error.statusCode) {
+            HTTP_UNAUTHORIZED -> AvailabilityFailure.Unauthorized
+            HTTP_FORBIDDEN -> AvailabilityFailure.Forbidden
+            in 500..599 -> AvailabilityFailure.Server
+            else -> AvailabilityFailure.InvalidResponse
+        },
+    )
+} catch (_: DriblResponseException) {
+    AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
+} catch (_: SerializationException) {
+    AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
+} catch (_: IllegalArgumentException) {
+    AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
+} catch (_: IOException) {
+    AvailabilityResult.Failed(AvailabilityFailure.Offline)
+}
+
+private const val MAX_AVAILABILITY_MONTHS = 6
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403

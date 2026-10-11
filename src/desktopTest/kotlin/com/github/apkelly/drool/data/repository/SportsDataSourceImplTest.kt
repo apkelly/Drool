@@ -1,38 +1,38 @@
 package com.github.apkelly.drool.data.repository
 
+import com.github.apkelly.dribl.api.DriblHttpException
+import com.github.apkelly.dribl.api.DriblResponseException
+import com.github.apkelly.drool.data.local.entity.ClubEntity
+import com.github.apkelly.drool.data.local.entity.ClubRelationshipEntity
+import com.github.apkelly.drool.data.local.entity.ProfileEntity
+import com.github.apkelly.drool.data.local.entity.RelatedUserEntity
+import com.github.apkelly.drool.data.local.entity.TeamEntity
+import com.github.apkelly.drool.data.local.entity.TeamRelationshipEntity
+import com.github.apkelly.drool.data.mapper.toDomain
+import com.github.apkelly.drool.data.time.TimeProvider
+import com.github.apkelly.drool.domain.model.Club
+import com.github.apkelly.drool.domain.model.EmergencyContact
+import com.github.apkelly.drool.domain.model.FamilyProfile
+import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.FixtureStatus
+import com.github.apkelly.drool.domain.model.RefreshFailure
+import com.github.apkelly.drool.domain.model.RefreshResult
+import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.domain.model.Team
+import com.github.apkelly.drool.domain.model.TeamAssociation
+import com.github.apkelly.drool.domain.model.TeamHub
+import com.github.apkelly.drool.domain.model.TeamRelationship
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
-import com.github.apkelly.drool.data.local.entity.ClubEntity
-import com.github.apkelly.drool.data.local.entity.ClubRelationshipEntity
-import com.github.apkelly.drool.data.local.entity.ProfileEntity
-import com.github.apkelly.drool.data.local.entity.TeamRelationshipEntity
-import com.github.apkelly.drool.data.local.entity.TeamEntity
-import com.github.apkelly.drool.data.local.entity.RelatedUserEntity
-import com.github.apkelly.drool.data.mapper.toDomain
-import com.github.apkelly.dribl.api.DriblHttpException
-import com.github.apkelly.dribl.api.DriblResponseException
-import com.github.apkelly.drool.domain.model.Club
-import com.github.apkelly.drool.domain.model.EmergencyContact
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.FixtureStatus
-import com.github.apkelly.drool.domain.model.TeamAssociation
-import com.github.apkelly.drool.domain.model.RelatedUser
-import com.github.apkelly.drool.domain.model.Team
-import com.github.apkelly.drool.domain.model.TeamHub
-import com.github.apkelly.drool.data.time.TimeProvider
-import com.github.apkelly.drool.domain.model.RefreshFailure
-import com.github.apkelly.drool.domain.model.RefreshResult
-import com.github.apkelly.drool.domain.model.FamilyProfile
-import com.github.apkelly.drool.domain.model.TeamRelationship
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlin.test.assertFailsWith
 
 class SportsDataSourceImplTest {
     @Test
@@ -111,7 +111,7 @@ class SportsDataSourceImplTest {
                         null,
                         "team",
                         "scheduled",
-                    )
+                    ),
                 ),
                 ladderName = "Premier League",
                 ladder = emptyList(),
@@ -147,7 +147,7 @@ class SportsDataSourceImplTest {
         fixture { repository, remote, store, clock, database ->
             store.saveBearerToken("token")
             remote.clubs = listOf(
-                Club("club", "United", "U", null, "#008000", "#FFFFFF")
+                Club("club", "United", "U", null, "#008000", "#FFFFFF"),
             )
 
             val empty = repository.observeClubs().first()
@@ -196,10 +196,10 @@ class SportsDataSourceImplTest {
                         true,
                     ),
                     TeamEntity("old", "club-a", "Old Team", null, null, null, null, true),
-                )
+                ),
             )
             database.teamDao().upsertRelationship(
-                TeamRelationshipEntity("account", "profile-same", TeamRelationship.Player.name)
+                TeamRelationshipEntity("account", "profile-same", TeamRelationship.Player.name),
             )
             remote.teams = listOf(
                 Team("a", "club-a", "Alpha", null, null, null, null, true),
@@ -250,7 +250,7 @@ class SportsDataSourceImplTest {
                     venueName = "Oval",
                     userTeamId = "home",
                     status = "scheduled",
-                )
+                ),
             )
 
             val empty = repository.observeFixtures().first()
@@ -264,7 +264,7 @@ class SportsDataSourceImplTest {
 
             remote.failure = IOException("offline")
             val failed = assertIs<RefreshResult.Failed>(
-                repository.refreshFixtures(force = true)
+                repository.refreshFixtures(force = true),
             )
             assertTrue(failed.hasCachedData)
         }
@@ -321,259 +321,261 @@ class SportsDataSourceImplTest {
 
     @Test
     fun familyProfilesRefreshAndObserveAttributedFixturesAndTeams() = runTest {
-            fixture { repository, remote, store, clock, database ->
-                store.saveBearerToken("root-token")
-                remote.fixtures = listOf(
-                    fixture(
-                        id = "shared-fixture",
-                        kickoffEpochMillis = 123,
-                        homeTeamId = "team",
-                        homeTeamName = "Home",
-                        awayTeamId = null,
-                        awayTeamName = "Away",
-                        competitionName = null,
-                        venueName = null,
-                        userTeamId = "team",
-                        status = "scheduled",
-                    )
-                )
-                remote.profileTeams = listOf(
-                    association(
-                        team = Team(
-                            "team",
-                            "club",
-                            "Under 12",
-                            null,
-                            null,
-                            null,
-                            null,
-                            true,
-                        ),
-                        relationship = TeamRelationship.Following.name,
-                    )
-                )
-                remote.profileClubs = listOf(
-                    Club("club", "United", "U", null, "#008000", "#FFFFFF")
-                )
-                val profiles = listOf(
-                    FamilyProfile("root", "Alex", null, isPrimary = true),
-                    FamilyProfile("child", "Ethan", null, isPrimary = false),
-                )
-                database.profileDao().upsertRelatedUsers(
-                    listOf(
-                        RelatedUserEntity(
-                            ownerAccountId = "root",
-                            id = "child",
-                            displayName = "Ethan",
-                            email = null,
-                            avatarUrl = null,
-                            isLinked = true,
-                        )
-                    )
-                )
-                remote.personalInformationDto = relatedUser(
-                    id = "child",
-                    firstName = "Ethan",
-                    lastName = "Kelly",
-                    email = "ethan@example.com",
-                    avatarUrl = "ethan.png",
-                    dateOfBirth = "2012-03-04",
-                    gender = "male",
-                    phoneNumber = "0400 000 000",
-                    address = "1 Example Street",
-                    emergencyContacts = listOf(
-                        EmergencyContact("Jordan Kelly", "0400 333 333"),
+        fixture { repository, remote, store, clock, database ->
+            store.saveBearerToken("root-token")
+            remote.fixtures = listOf(
+                fixture(
+                    id = "shared-fixture",
+                    kickoffEpochMillis = 123,
+                    homeTeamId = "team",
+                    homeTeamName = "Home",
+                    awayTeamId = null,
+                    awayTeamName = "Away",
+                    competitionName = null,
+                    venueName = null,
+                    userTeamId = "team",
+                    status = "scheduled",
+                ),
+            )
+            remote.profileTeams = listOf(
+                association(
+                    team = Team(
+                        "team",
+                        "club",
+                        "Under 12",
+                        null,
+                        null,
+                        null,
+                        null,
+                        true,
                     ),
-                )
-                remote.emergencyContacts = listOf(
-                    EmergencyContact("Andrew Kelly", "0400 111 111")
-                )
-
-                assertEquals(
-                    mapOf(
-                        "root" to RefreshResult.Updated,
-                        "child" to RefreshResult.Updated,
+                    relationship = TeamRelationship.Following.name,
+                ),
+            )
+            remote.profileClubs = listOf(
+                Club("club", "United", "U", null, "#008000", "#FFFFFF"),
+            )
+            val profiles = listOf(
+                FamilyProfile("root", "Alex", null, isPrimary = true),
+                FamilyProfile("child", "Ethan", null, isPrimary = false),
+            )
+            database.profileDao().upsertRelatedUsers(
+                listOf(
+                    RelatedUserEntity(
+                        ownerAccountId = "root",
+                        id = "child",
+                        displayName = "Ethan",
+                        email = null,
+                        avatarUrl = null,
+                        isLinked = true,
                     ),
-                    repository.refreshFamilyProfiles(profiles, force = false),
-                )
-                assertEquals(listOf("child"), remote.profileSessionUsers)
-                assertEquals(listOf<String?>("root", "child"), remote.fixtureUserIds)
-                assertEquals(listOf("root", "child"), remote.refereeFixtureUserIds)
+                ),
+            )
+            remote.personalInformationDto = relatedUser(
+                id = "child",
+                firstName = "Ethan",
+                lastName = "Kelly",
+                email = "ethan@example.com",
+                avatarUrl = "ethan.png",
+                dateOfBirth = "2012-03-04",
+                gender = "male",
+                phoneNumber = "0400 000 000",
+                address = "1 Example Street",
+                emergencyContacts = listOf(
+                    EmergencyContact("Jordan Kelly", "0400 333 333"),
+                ),
+            )
+            remote.emergencyContacts = listOf(
+                EmergencyContact("Andrew Kelly", "0400 111 111"),
+            )
 
-                val fixtures = repository.observeFamilyFixtures(setOf("root", "child")).first()
-                assertEquals(2, fixtures.size)
-                assertEquals(setOf("root", "child"), fixtures.mapNotNull { it.profileId }.toSet())
+            assertEquals(
+                mapOf(
+                    "root" to RefreshResult.Updated,
+                    "child" to RefreshResult.Updated,
+                ),
+                repository.refreshFamilyProfiles(profiles, force = false),
+            )
+            assertEquals(listOf("child"), remote.profileSessionUsers)
+            assertEquals(listOf<String?>("root", "child"), remote.fixtureUserIds)
+            assertEquals(listOf("root", "child"), remote.refereeFixtureUserIds)
 
-                val teams = repository.observeFamilyTeams(setOf("root", "child")).first()
-                assertEquals(2, teams.size)
-                assertTrue(teams.all { it.relationship == TeamRelationship.Following })
-                val clubs = repository.observeFamilyClubs(setOf("root", "child")).first()
-                assertEquals(2, clubs.size)
-                assertEquals(setOf("root", "child"), clubs.map { it.profileId }.toSet())
-                val personal = database.profileDao().getRelatedUser("root", "child")
-                assertEquals("Ethan Kelly", personal?.displayName)
-                assertEquals("male", personal?.gender)
-                assertEquals("2012-03-04", personal?.dateOfBirth)
-                assertEquals("0400 000 000", personal?.phoneNumber)
-                assertEquals("1 Example Street", personal?.address)
-                assertEquals(
-                    listOf(
-                        EmergencyContact("Jordan Kelly", "0400 333 333"),
-                        EmergencyContact("Andrew Kelly", "0400 111 111"),
-                    ),
-                    personal?.toDomain()?.emergencyContacts,
-                )
+            val fixtures = repository.observeFamilyFixtures(setOf("root", "child")).first()
+            assertEquals(2, fixtures.size)
+            assertEquals(setOf("root", "child"), fixtures.mapNotNull { it.profileId }.toSet())
 
-                database.teamDao().upsertRelationship(
-                    TeamRelationshipEntity("child", "team", "PlaysFor")
-                )
-                assertEquals(
-                    TeamRelationship.None,
-                    repository.observeFamilyTeams(setOf("child")).first().single().relationship,
-                )
-                database.teamDao().upsertRelationship(
-                    TeamRelationshipEntity("child", "missing", "Following")
-                )
-                assertEquals(
-                    1,
-                    repository.observeFamilyTeams(setOf("child")).first().size,
-                )
-                database.clubDao().upsertRelationships(
-                    listOf(ClubRelationshipEntity("child", "missing"))
-                )
-                assertEquals(
-                    1,
-                    repository.observeFamilyClubs(setOf("child")).first().size,
-                )
-                assertEquals(
-                    mapOf(
-                        "root" to RefreshResult.NotModified,
-                        "child" to RefreshResult.NotModified,
-                    ),
-                    repository.refreshFamilyProfiles(profiles, force = false),
-                )
-                remote.personalInformationDto = remote.personalInformationDto?.copy(
-                    phoneNumber = "0400 999 999",
-                    emergencyContacts = emptyList(),
-                )
-                remote.emergencyContacts = listOf(
-                    EmergencyContact("Taylor Kelly", "0400 444 444")
-                )
-                assertEquals(
-                    RefreshResult.NotModified,
-                    repository.refreshFamilyProfiles(profiles, force = false)["child"],
-                )
-                val hydratedFromCachedRefresh =
-                    database.profileDao().getRelatedUser("root", "child")
-                assertEquals("0400 999 999", hydratedFromCachedRefresh?.phoneNumber)
-                assertEquals(
-                    listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
-                    hydratedFromCachedRefresh?.toDomain()?.emergencyContacts,
-                )
-                clock.now = 7L * 60L * 60L * 1_000L
-                assertTrue(
-                    repository.refreshFamilyProfiles(profiles, force = false)
-                        .values
-                        .all { it == RefreshResult.Updated }
-                )
-                assertTrue(
-                    repository.refreshFamilyProfiles(profiles, force = true)
-                        .values
-                        .all { it == RefreshResult.Updated }
-                )
-                remote.personalInformationDto = relatedUser(
-                    id = "child",
-                    firstName = null,
-                    lastName = null,
-                    email = null,
-                    avatarUrl = null,
-                )
-                remote.emergencyContacts = emptyList()
-                assertEquals(
-                    listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
-                    database.profileDao()
-                        .getRelatedUser("root", "child")
-                        ?.toDomain()
-                        ?.emergencyContacts,
-                )
+            val teams = repository.observeFamilyTeams(setOf("root", "child")).first()
+            assertEquals(2, teams.size)
+            assertTrue(teams.all { it.relationship == TeamRelationship.Following })
+            val clubs = repository.observeFamilyClubs(setOf("root", "child")).first()
+            assertEquals(2, clubs.size)
+            assertEquals(setOf("root", "child"), clubs.map { it.profileId }.toSet())
+            val personal = database.profileDao().getRelatedUser("root", "child")
+            assertEquals("Ethan Kelly", personal?.displayName)
+            assertEquals("male", personal?.gender)
+            assertEquals("2012-03-04", personal?.dateOfBirth)
+            assertEquals("0400 000 000", personal?.phoneNumber)
+            assertEquals("1 Example Street", personal?.address)
+            assertEquals(
+                listOf(
+                    EmergencyContact("Jordan Kelly", "0400 333 333"),
+                    EmergencyContact("Andrew Kelly", "0400 111 111"),
+                ),
+                personal?.toDomain()?.emergencyContacts,
+            )
+
+            database.teamDao().upsertRelationship(
+                TeamRelationshipEntity("child", "team", "PlaysFor"),
+            )
+            assertEquals(
+                TeamRelationship.None,
+                repository.observeFamilyTeams(setOf("child")).first().single().relationship,
+            )
+            database.teamDao().upsertRelationship(
+                TeamRelationshipEntity("child", "missing", "Following"),
+            )
+            assertEquals(
+                1,
+                repository.observeFamilyTeams(setOf("child")).first().size,
+            )
+            database.clubDao().upsertRelationships(
+                listOf(ClubRelationshipEntity("child", "missing")),
+            )
+            assertEquals(
+                1,
+                repository.observeFamilyClubs(setOf("child")).first().size,
+            )
+            assertEquals(
+                mapOf(
+                    "root" to RefreshResult.NotModified,
+                    "child" to RefreshResult.NotModified,
+                ),
+                repository.refreshFamilyProfiles(profiles, force = false),
+            )
+            remote.personalInformationDto = remote.personalInformationDto?.copy(
+                phoneNumber = "0400 999 999",
+                emergencyContacts = emptyList(),
+            )
+            remote.emergencyContacts = listOf(
+                EmergencyContact("Taylor Kelly", "0400 444 444"),
+            )
+            assertEquals(
+                RefreshResult.NotModified,
+                repository.refreshFamilyProfiles(profiles, force = false)["child"],
+            )
+            val hydratedFromCachedRefresh =
+                database.profileDao().getRelatedUser("root", "child")
+            assertEquals("0400 999 999", hydratedFromCachedRefresh?.phoneNumber)
+            assertEquals(
+                listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
+                hydratedFromCachedRefresh?.toDomain()?.emergencyContacts,
+            )
+            clock.now = 7L * 60L * 60L * 1_000L
+            assertTrue(
+                repository.refreshFamilyProfiles(profiles, force = false)
+                    .values
+                    .all { it == RefreshResult.Updated },
+            )
+            assertTrue(
                 repository.refreshFamilyProfiles(profiles, force = true)
-                val preserved = database.profileDao().getRelatedUser("root", "child")
-                assertEquals("Ethan Kelly", preserved?.displayName)
-                assertEquals("ethan@example.com", preserved?.email)
-                assertEquals("ethan.png", preserved?.avatarUrl)
-                assertEquals("male", preserved?.gender)
-                assertEquals(
-                    listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
-                    preserved?.toDomain()?.emergencyContacts,
-                )
-                database.profileDao().upsertRelatedUsers(
-                    listOf(checkNotNull(preserved).copy(emergencyContactsJson = null))
-                )
-                repository.refreshFamilyProfiles(profiles, force = true)
-                assertEquals(
-                    null,
-                    database.profileDao()
-                        .getRelatedUser("root", "child")
-                        ?.emergencyContactsJson,
-                )
-                assertEquals(
-                    RefreshResult.Updated,
-                    repository.refreshFamilyProfiles(
-                        listOf(
-                            FamilyProfile("root", "Alex", null, isPrimary = true),
-                            FamilyProfile("orphan", "Orphan", null, isPrimary = false),
-                        ),
-                        force = true,
-                    )["orphan"],
-                )
-            }
+                    .values
+                    .all { it == RefreshResult.Updated },
+            )
+            remote.personalInformationDto = relatedUser(
+                id = "child",
+                firstName = null,
+                lastName = null,
+                email = null,
+                avatarUrl = null,
+            )
+            remote.emergencyContacts = emptyList()
+            assertEquals(
+                listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
+                database.profileDao()
+                    .getRelatedUser("root", "child")
+                    ?.toDomain()
+                    ?.emergencyContacts,
+            )
+            repository.refreshFamilyProfiles(profiles, force = true)
+            val preserved = database.profileDao().getRelatedUser("root", "child")
+            assertEquals("Ethan Kelly", preserved?.displayName)
+            assertEquals("ethan@example.com", preserved?.email)
+            assertEquals("ethan.png", preserved?.avatarUrl)
+            assertEquals("male", preserved?.gender)
+            assertEquals(
+                listOf(EmergencyContact("Taylor Kelly", "0400 444 444")),
+                preserved?.toDomain()?.emergencyContacts,
+            )
+            database.profileDao().upsertRelatedUsers(
+                listOf(checkNotNull(preserved).copy(emergencyContactsJson = null)),
+            )
+            repository.refreshFamilyProfiles(profiles, force = true)
+            assertEquals(
+                null,
+                database.profileDao()
+                    .getRelatedUser("root", "child")
+                    ?.emergencyContactsJson,
+            )
+            assertEquals(
+                RefreshResult.Updated,
+                repository.refreshFamilyProfiles(
+                    listOf(
+                        FamilyProfile("root", "Alex", null, isPrimary = true),
+                        FamilyProfile("orphan", "Orphan", null, isPrimary = false),
+                    ),
+                    force = true,
+                )["orphan"],
+            )
         }
+    }
 
     @Test
     fun familyRefreshReportsAuthenticationAndProfileFailuresIndependently() = runTest {
-            fixture { repository, remote, store, _, _ ->
-                val profiles = listOf(
-                    FamilyProfile("root", "Alex", null, isPrimary = true),
-                    FamilyProfile("child", "Ethan", null, isPrimary = false),
-                )
-                val unauthorized = repository.refreshFamilyProfiles(profiles)
-                assertTrue(unauthorized.values.all {
+        fixture { repository, remote, store, _, _ ->
+            val profiles = listOf(
+                FamilyProfile("root", "Alex", null, isPrimary = true),
+                FamilyProfile("child", "Ethan", null, isPrimary = false),
+            )
+            val unauthorized = repository.refreshFamilyProfiles(profiles)
+            assertTrue(
+                unauthorized.values.all {
                     it == RefreshResult.Failed(RefreshFailure.Unauthorized, false)
-                })
+                },
+            )
 
-                store.saveBearerToken("root-token")
-                assertEquals(
-                    emptyMap(),
-                    repository.refreshFamilyProfiles(emptyList()),
-                )
-                assertTrue(
-                    repository.refreshFamilyProfiles(
-                        listOf(
-                            FamilyProfile("child", "Ethan", null, isPrimary = false),
-                            FamilyProfile("root", "Alex", null, isPrimary = true),
-                        ),
-                        force = true,
-                    ).values.all { it == RefreshResult.Updated }
-                )
-                val invalidProfiles = repository.refreshFamilyProfiles(
-                    listOf(FamilyProfile("child", "Ethan", null, isPrimary = false))
-                )
-                assertEquals(
-                    RefreshResult.Failed(RefreshFailure.InvalidResponse, false),
-                    invalidProfiles["child"],
-                )
-                remote.profileSessionFailureUsers += "child"
-                val results = repository.refreshFamilyProfiles(profiles, force = true)
-                assertEquals(RefreshResult.Updated, results["root"])
-                assertEquals(
-                    RefreshResult.Failed(RefreshFailure.Unknown, false),
-                    results["child"],
-                )
-                assertEquals(
-                    RefreshResult.Failed(RefreshFailure.Unknown, false),
-                    repository.refreshFamilyProfiles(profiles, force = false)["child"],
-                )
-            }
+            store.saveBearerToken("root-token")
+            assertEquals(
+                emptyMap(),
+                repository.refreshFamilyProfiles(emptyList()),
+            )
+            assertTrue(
+                repository.refreshFamilyProfiles(
+                    listOf(
+                        FamilyProfile("child", "Ethan", null, isPrimary = false),
+                        FamilyProfile("root", "Alex", null, isPrimary = true),
+                    ),
+                    force = true,
+                ).values.all { it == RefreshResult.Updated },
+            )
+            val invalidProfiles = repository.refreshFamilyProfiles(
+                listOf(FamilyProfile("child", "Ethan", null, isPrimary = false)),
+            )
+            assertEquals(
+                RefreshResult.Failed(RefreshFailure.InvalidResponse, false),
+                invalidProfiles["child"],
+            )
+            remote.profileSessionFailureUsers += "child"
+            val results = repository.refreshFamilyProfiles(profiles, force = true)
+            assertEquals(RefreshResult.Updated, results["root"])
+            assertEquals(
+                RefreshResult.Failed(RefreshFailure.Unknown, false),
+                results["child"],
+            )
+            assertEquals(
+                RefreshResult.Failed(RefreshFailure.Unknown, false),
+                repository.refreshFamilyProfiles(profiles, force = false)["child"],
+            )
+        }
     }
 
     @Test
@@ -584,7 +586,7 @@ class SportsDataSourceImplTest {
             assertFalse(empty.hasCachedData)
 
             database.clubDao().upsertAll(
-                listOf(ClubEntity("club", "United", null, null, null, null))
+                listOf(ClubEntity("club", "United", null, null, null, null)),
             )
             val cached = assertIs<RefreshResult.Failed>(repository.refreshClubs())
             assertTrue(cached.hasCachedData)
@@ -656,7 +658,7 @@ class SportsDataSourceImplTest {
             )
 
             database.teamDao().upsertRelationship(
-                TeamRelationshipEntity("account", "unknown", "unexpected")
+                TeamRelationshipEntity("account", "unknown", "unexpected"),
             )
             assertEquals(
                 TeamRelationship.None,
@@ -689,25 +691,24 @@ class SportsDataSourceImplTest {
         status: String?,
         homeScore: Int? = null,
         awayScore: Int? = null,
-    ): com.github.apkelly.drool.domain.model.Fixture =
-        com.github.apkelly.drool.domain.model.Fixture(
-            id = id,
-            kickoffEpochMillis = kickoffEpochMillis,
-            homeTeamId = homeTeamId,
-            homeTeamName = homeTeamName,
-            awayTeamId = awayTeamId,
-            awayTeamName = awayTeamName,
-            competitionName = competitionName,
-            venueName = venueName,
-            userTeamId = userTeamId,
-            status = when (status) {
-                "scheduled" -> com.github.apkelly.drool.domain.model.FixtureStatus.Scheduled
-                "complete" -> com.github.apkelly.drool.domain.model.FixtureStatus.Completed
-                else -> com.github.apkelly.drool.domain.model.FixtureStatus.Unknown
-            },
-            homeScore = homeScore,
-            awayScore = awayScore,
-        )
+    ): com.github.apkelly.drool.domain.model.Fixture = com.github.apkelly.drool.domain.model.Fixture(
+        id = id,
+        kickoffEpochMillis = kickoffEpochMillis,
+        homeTeamId = homeTeamId,
+        homeTeamName = homeTeamName,
+        awayTeamId = awayTeamId,
+        awayTeamName = awayTeamName,
+        competitionName = competitionName,
+        venueName = venueName,
+        userTeamId = userTeamId,
+        status = when (status) {
+            "scheduled" -> com.github.apkelly.drool.domain.model.FixtureStatus.Scheduled
+            "complete" -> com.github.apkelly.drool.domain.model.FixtureStatus.Completed
+            else -> com.github.apkelly.drool.domain.model.FixtureStatus.Unknown
+        },
+        homeScore = homeScore,
+        awayScore = awayScore,
+    )
 
     private fun teamHub(
         teamId: String,
@@ -794,6 +795,8 @@ class SportsDataSourceImplTest {
     }
 }
 
-private class MutableTimeProvider(var now: Long = 0) : TimeProvider {
+private class MutableTimeProvider(
+    var now: Long = 0,
+) : TimeProvider {
     override fun nowEpochMillis(): Long = now
 }

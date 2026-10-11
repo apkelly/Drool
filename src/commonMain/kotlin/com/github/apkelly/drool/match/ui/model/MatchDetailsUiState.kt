@@ -5,7 +5,10 @@ import com.github.apkelly.drool.domain.model.MatchWeather
 
 sealed interface MatchDetailsUiState {
     data object Idle : MatchDetailsUiState
-    data class Loading(val profileId: String, val matchId: String) : MatchDetailsUiState
+    data class Loading(
+        val profileId: String,
+        val matchId: String,
+    ) : MatchDetailsUiState
     data class Content(
         val profileId: String,
         val matchId: String,
@@ -14,5 +17,8 @@ sealed interface MatchDetailsUiState {
         val isWeatherLoading: Boolean = false,
         val weatherUnavailable: Boolean = false,
     ) : MatchDetailsUiState
-    data class Failed(val profileId: String, val matchId: String) : MatchDetailsUiState
+    data class Failed(
+        val profileId: String,
+        val matchId: String,
+    ) : MatchDetailsUiState
 }

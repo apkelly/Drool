@@ -11,20 +11,23 @@ actual fun rememberContactActionLauncher(): ContactActionLauncher {
     val context = LocalContext.current
     return remember(context) {
         object : ContactActionLauncher {
-            override fun call(phoneNumber: String) {
+            override fun call(
+                phoneNumber: String,
+            ) {
                 context.startActivity(
-                    Intent(Intent.ACTION_DIAL, Uri.parse("tel:${phoneNumber.phoneUriValue()}"))
+                    Intent(Intent.ACTION_DIAL, Uri.parse("tel:${phoneNumber.phoneUriValue()}")),
                 )
             }
 
-            override fun email(emailAddress: String) {
+            override fun email(
+                emailAddress: String,
+            ) {
                 context.startActivity(
-                    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$emailAddress"))
+                    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$emailAddress")),
                 )
             }
         }
     }
 }
 
-private fun String.phoneUriValue(): String =
-    filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
+private fun String.phoneUriValue(): String = filter { it.isDigit() || it == '+' || it == '*' || it == '#' }

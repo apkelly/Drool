@@ -7,12 +7,11 @@ data class FixtureTeamNames(
     val away: String,
 )
 
-fun Fixture.displayTeamNames(): FixtureTeamNames =
-    displayTeamNames(
-        homeName = homeTeamName,
-        awayName = awayTeamName,
-        namingContexts = listOfNotNull(competitionName, leagueName),
-    )
+fun Fixture.displayTeamNames(): FixtureTeamNames = displayTeamNames(
+    homeName = homeTeamName,
+    awayName = awayTeamName,
+    namingContexts = listOfNotNull(competitionName, leagueName),
+)
 
 internal fun displayTeamNames(
     homeName: String,

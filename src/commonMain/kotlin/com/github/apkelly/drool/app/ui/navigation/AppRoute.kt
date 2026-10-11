@@ -24,7 +24,9 @@ sealed interface AppRoute : NavKey {
     data object Discover : AppRoute
 
     @Serializable
-    data class Club(val clubId: String) : AppRoute
+    data class Club(
+        val clubId: String,
+    ) : AppRoute
 
     @Serializable
     data class Team(
@@ -46,10 +48,14 @@ sealed interface AppRoute : NavKey {
     data object Profile : AppRoute
 
     @Serializable
-    data class PersonalInformation(val userId: String) : AppRoute
+    data class PersonalInformation(
+        val userId: String,
+    ) : AppRoute
 
     @Serializable
-    data class Availability(val profileId: String) : AppRoute
+    data class Availability(
+        val profileId: String,
+    ) : AppRoute
 
     @Serializable
     data object LinkMember : AppRoute

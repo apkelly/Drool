@@ -1,9 +1,9 @@
 package com.github.apkelly.drool.match.data.weather
 
-import android.os.Build
 import android.content.pm.PackageManager
-import java.security.MessageDigest
+import android.os.Build
 import com.github.apkelly.drool.data.storage.requireAndroidApplicationContext
+import java.security.MessageDigest
 
 actual fun platformWeatherApiKey(): String? {
     val context = requireAndroidApplicationContext()

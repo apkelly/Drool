@@ -32,8 +32,7 @@ data class FamilyProfile(
     val isPrimary: Boolean,
 )
 
-fun List<FamilyProfile>.primaryProfileId(): String? =
-    firstOrNull(FamilyProfile::isPrimary)?.id
+fun List<FamilyProfile>.primaryProfileId(): String? = firstOrNull(FamilyProfile::isPrimary)?.id
 
 data class Account(
     val id: String,
@@ -52,19 +51,23 @@ enum class LinkMemberFailure {
 fun linkMemberFailureForHttpStatus(
     statusCode: Int,
     invalidTokenOnClientError: Boolean,
-): LinkMemberFailure =
-    when (statusCode) {
-        401, 403 -> LinkMemberFailure.SessionExpired
-        in 400..499 ->
-            if (invalidTokenOnClientError) {
-                LinkMemberFailure.InvalidToken
-            } else {
-                LinkMemberFailure.Unknown
-            }
-        else -> LinkMemberFailure.Unknown
-    }
+): LinkMemberFailure = when (statusCode) {
+    HTTP_UNAUTHORIZED, HTTP_FORBIDDEN -> LinkMemberFailure.SessionExpired
+
+    in 400..499 ->
+        if (invalidTokenOnClientError) {
+            LinkMemberFailure.InvalidToken
+        } else {
+            LinkMemberFailure.Unknown
+        }
+
+    else -> LinkMemberFailure.Unknown
+}
 
 class LinkMemberException(
     val reason: LinkMemberFailure,
     cause: Throwable? = null,
 ) : IllegalStateException(reason.name, cause)
+
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403

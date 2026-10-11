@@ -2,29 +2,15 @@ package com.github.apkelly.drool.data.repository
 
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import java.io.File
-import kotlinx.coroutines.Dispatchers
-import com.github.apkelly.drool.data.local.DroolDatabase
 import com.github.apkelly.dribl.api.AuthRemoteDataSource
 import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.model.AuthApiRequest
-import com.github.apkelly.dribl.model.AuthenticationResult as DriblAuthenticationResult
-import com.github.apkelly.dribl.model.Account as DriblAccount
-import com.github.apkelly.dribl.model.Club as DriblClub
-import com.github.apkelly.dribl.model.EmergencyContact as DriblEmergencyContact
-import com.github.apkelly.dribl.model.Fixture as DriblFixture
-import com.github.apkelly.dribl.model.Profile as DriblProfile
-import com.github.apkelly.dribl.model.RelatedUser as DriblRelatedUser
-import com.github.apkelly.dribl.model.Team as DriblTeam
-import com.github.apkelly.dribl.model.TeamAssociation as DriblTeamAssociation
-import com.github.apkelly.dribl.model.TeamHub as DriblTeamHub
-import com.github.apkelly.dribl.model.RefereeClub as DriblRefereeClub
-import com.github.apkelly.dribl.model.RefereeAvailability as DriblRefereeAvailability
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.drool.data.local.DroolDatabase
 import com.github.apkelly.drool.data.storage.BearerTokenStore
 import com.github.apkelly.drool.data.storage.createBearerTokenStore
-import com.github.apkelly.drool.domain.model.AuthenticationResult
 import com.github.apkelly.drool.domain.model.Account
+import com.github.apkelly.drool.domain.model.AuthenticationResult
 import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.Fixture
@@ -34,6 +20,20 @@ import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.domain.model.Team
 import com.github.apkelly.drool.domain.model.TeamAssociation
 import com.github.apkelly.drool.domain.model.TeamHub
+import kotlinx.coroutines.Dispatchers
+import java.io.File
+import com.github.apkelly.dribl.model.Account as DriblAccount
+import com.github.apkelly.dribl.model.AuthenticationResult as DriblAuthenticationResult
+import com.github.apkelly.dribl.model.Club as DriblClub
+import com.github.apkelly.dribl.model.EmergencyContact as DriblEmergencyContact
+import com.github.apkelly.dribl.model.Fixture as DriblFixture
+import com.github.apkelly.dribl.model.Profile as DriblProfile
+import com.github.apkelly.dribl.model.RefereeAvailability as DriblRefereeAvailability
+import com.github.apkelly.dribl.model.RefereeClub as DriblRefereeClub
+import com.github.apkelly.dribl.model.RelatedUser as DriblRelatedUser
+import com.github.apkelly.dribl.model.Team as DriblTeam
+import com.github.apkelly.dribl.model.TeamAssociation as DriblTeamAssociation
+import com.github.apkelly.dribl.model.TeamHub as DriblTeamHub
 
 internal class TestDatabase : AutoCloseable {
     private val file = File.createTempFile("drool-test-", ".db").apply { delete() }
@@ -63,7 +63,9 @@ internal class FakeAuthRemote : AuthRemoteDataSource {
     var request: AuthApiRequest? = null
     var failure: Throwable? = null
 
-    override suspend fun signIn(request: AuthApiRequest): DriblAuthenticationResult {
+    override suspend fun signIn(
+        request: AuthApiRequest,
+    ): DriblAuthenticationResult {
         failure?.let { throw it }
         this.request = request
         return result.toDribl()
@@ -117,7 +119,9 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     var failure: Exception? = null
     var associationFailure: Exception? = null
 
-    override suspend fun fetchClubs(bearerToken: String): List<DriblClub> {
+    override suspend fun fetchClubs(
+        bearerToken: String,
+    ): List<DriblClub> {
         failure?.let { throw it }
         return clubs.map { it.toDribl() }
     }
@@ -149,7 +153,9 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         return emptyList()
     }
 
-    override suspend fun fetchProfile(bearerToken: String): DriblProfile {
+    override suspend fun fetchProfile(
+        bearerToken: String,
+    ): DriblProfile {
         failure?.let { throw it }
         return profile.toDribl()
     }
@@ -165,7 +171,9 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         return relatedUsers.map { it.toDribl() }
     }
 
-    override suspend fun fetchAccounts(bearerToken: String): List<DriblAccount> {
+    override suspend fun fetchAccounts(
+        bearerToken: String,
+    ): List<DriblAccount> {
         accountsCalls++
         associationFailure?.let { throw it }
         failure?.let { throw it }
@@ -197,7 +205,10 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         verifiedLink = candidateId to token
     }
 
-    override suspend fun createProfileSession(bearerToken: String, userId: String): String {
+    override suspend fun createProfileSession(
+        bearerToken: String,
+        userId: String,
+    ): String {
         failure?.let { throw it }
         if (userId in profileSessionFailureUsers) {
             throw IllegalStateException("Profile session failed for $userId")
@@ -211,12 +222,14 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         userId: String,
     ): DriblRelatedUser {
         failure?.let { throw it }
-        return (personalInformationDto ?: RelatedUser(
-            id = userId,
-            displayName = userId,
-            email = null,
-            avatarUrl = null,
-        )).toDribl()
+        return (
+            personalInformationDto ?: RelatedUser(
+                id = userId,
+                displayName = userId,
+                email = null,
+                avatarUrl = null,
+            )
+            ).toDribl()
     }
 
     override suspend fun fetchEmergencyContacts(
@@ -372,7 +385,7 @@ private fun Team.toDribl() = DriblTeam(
 private fun TeamAssociation.toDribl() = DriblTeamAssociation(
     team = team.toDribl(),
     relationship = com.github.apkelly.dribl.model.TeamRelationship.valueOf(
-        relationship.name
+        relationship.name,
     ),
 )
 

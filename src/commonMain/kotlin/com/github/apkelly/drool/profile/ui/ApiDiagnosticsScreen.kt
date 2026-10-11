@@ -28,10 +28,11 @@ fun ApiDiagnosticsScreen(
     onLinkedUsers: () -> Unit,
     onClubs: () -> Unit,
     onTeams: () -> Unit,
+    modifier: Modifier = Modifier,
     onSchedule: () -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
+        modifier = modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {

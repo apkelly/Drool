@@ -10,6 +10,8 @@ sealed interface LinkMemberUiState {
         val candidates: List<RelatedUser>,
         val verifyingCandidateId: String? = null,
     ) : LinkMemberUiState
-    data class Failed(val reason: LinkMemberFailure) : LinkMemberUiState
+    data class Failed(
+        val reason: LinkMemberFailure,
+    ) : LinkMemberUiState
     data object Linked : LinkMemberUiState
 }

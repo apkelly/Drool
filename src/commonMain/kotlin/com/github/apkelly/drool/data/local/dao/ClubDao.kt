@@ -3,9 +3,9 @@ package com.github.apkelly.drool.data.local.dao
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
-import kotlinx.coroutines.flow.Flow
 import com.github.apkelly.drool.data.local.entity.ClubEntity
 import com.github.apkelly.drool.data.local.entity.ClubRelationshipEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ClubDao {
@@ -16,16 +16,24 @@ interface ClubDao {
     suspend fun count(): Int
 
     @Upsert
-    suspend fun upsertAll(clubs: List<ClubEntity>)
+    suspend fun upsertAll(
+        clubs: List<ClubEntity>,
+    )
 
     @Query("SELECT * FROM ClubRelationshipEntity WHERE accountId IN (:accountIds)")
-    fun observeRelationships(accountIds: List<String>): Flow<List<ClubRelationshipEntity>>
+    fun observeRelationships(
+        accountIds: List<String>,
+    ): Flow<List<ClubRelationshipEntity>>
 
     @Upsert
-    suspend fun upsertRelationships(relationships: List<ClubRelationshipEntity>)
+    suspend fun upsertRelationships(
+        relationships: List<ClubRelationshipEntity>,
+    )
 
     @Query("DELETE FROM ClubRelationshipEntity WHERE accountId = :accountId")
-    suspend fun deleteRelationships(accountId: String)
+    suspend fun deleteRelationships(
+        accountId: String,
+    )
 
     @Query("DELETE FROM ClubRelationshipEntity")
     suspend fun deleteAllRelationships()

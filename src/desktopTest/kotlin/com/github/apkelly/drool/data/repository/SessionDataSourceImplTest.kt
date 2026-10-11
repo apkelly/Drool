@@ -1,12 +1,9 @@
 package com.github.apkelly.drool.data.repository
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
-import kotlinx.io.IOException
-import kotlinx.serialization.SerializationException
-import com.github.apkelly.drool.data.local.entity.CacheMetadataEntity
+import com.github.apkelly.dribl.api.DriblHttpException
+import com.github.apkelly.dribl.api.DriblResponseException
 import com.github.apkelly.drool.data.local.entity.AccountEntity
+import com.github.apkelly.drool.data.local.entity.CacheMetadataEntity
 import com.github.apkelly.drool.data.local.entity.ClubEntity
 import com.github.apkelly.drool.data.local.entity.ClubRelationshipEntity
 import com.github.apkelly.drool.data.local.entity.FixtureEntity
@@ -14,25 +11,27 @@ import com.github.apkelly.drool.data.local.entity.ProfileEntity
 import com.github.apkelly.drool.data.local.entity.RelatedUserEntity
 import com.github.apkelly.drool.data.local.entity.TeamEntity
 import com.github.apkelly.drool.data.local.entity.TeamRelationshipEntity
-import com.github.apkelly.drool.domain.model.Profile
 import com.github.apkelly.drool.domain.model.Account
-import com.github.apkelly.drool.domain.model.EmergencyContact
-import com.github.apkelly.drool.domain.model.RelatedUser
-import com.github.apkelly.dribl.api.DriblHttpException
-import com.github.apkelly.dribl.api.DriblResponseException
 import com.github.apkelly.drool.domain.model.AuthCredentials
 import com.github.apkelly.drool.domain.model.AuthenticationException
 import com.github.apkelly.drool.domain.model.AuthenticationFailure
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.LinkMemberException
 import com.github.apkelly.drool.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.domain.model.ThemeMode
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
+import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 class SessionDataSourceImplTest {
     @Test
@@ -41,7 +40,6 @@ class SessionDataSourceImplTest {
             assertNull(repository.restoreSession())
             assertNull(repository.observeProfile().first())
         }
-
     }
 
     @Test
@@ -54,7 +52,7 @@ class SessionDataSourceImplTest {
                 email = null,
             )
             sports.accounts = listOf(
-                Account("login", "andrew@example.com", "email", null)
+                Account("login", "andrew@example.com", "email", null),
             )
             sports.linkedUsers = listOf(
                 relatedUser(
@@ -64,7 +62,7 @@ class SessionDataSourceImplTest {
                     email = null,
                     avatarUrl = "andrew.png",
                     isGuardian = false,
-                )
+                ),
             )
 
             val session = repository.restoreSession()
@@ -85,7 +83,7 @@ class SessionDataSourceImplTest {
     fun restoreBuildsProfileFromJwtWithoutNetwork() = runTest {
         fixture { repository, _, sports, store, _ ->
             store.saveBearerToken(
-                "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6IkFsZXgiLCJlbWFpbCI6ImFsZXhAZXhhbXBsZS5jb20ifQ.signature"
+                "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6IkFsZXgiLCJlbWFpbCI6ImFsZXhAZXhhbXBsZS5jb20ifQ.signature",
             )
             sports.failure = IllegalStateException("network should not be called")
 
@@ -110,11 +108,11 @@ class SessionDataSourceImplTest {
                         "Sam Player",
                         "sam@example.com",
                         null,
-                    )
-                )
+                    ),
+                ),
             )
             database.profileDao().upsertAccounts(
-                listOf(AccountEntity("account", "club", "Example Club", "Manager", null))
+                listOf(AccountEntity("account", "club", "Example Club", "Manager", null)),
             )
             sports.failure = IllegalStateException("network should not be called")
 
@@ -129,7 +127,7 @@ class SessionDataSourceImplTest {
     fun restoreRepairsCachedAccountIdDisplayNameFromJwt() = runTest {
         fixture { repository, _, sports, store, database ->
             store.saveBearerToken(
-                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5IiwiZW1haWwiOiJhbmR5QGV4YW1wbGUuY29tIn0.signature"
+                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5IiwiZW1haWwiOiJhbmR5QGV4YW1wbGUuY29tIn0.signature",
             )
             database.profileDao().upsert(ProfileEntity("6403118", "6403118", null, true))
             sports.failure = IllegalStateException("network should not be called")
@@ -146,10 +144,10 @@ class SessionDataSourceImplTest {
                     "6403118",
                     "cached@example.com",
                     true,
-                )
+                ),
             )
             store.saveBearerToken(
-                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature"
+                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature",
             )
             repository.restoreSession()
             assertEquals("cached@example.com", sports.relatedUsersEmail)
@@ -160,7 +158,9 @@ class SessionDataSourceImplTest {
     fun restoreRepairsCachedEmailDisplayNameFromJwtFirstName() = runTest {
         fixture { repository, _, sports, store, database ->
             store.saveBearerToken(
-                "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6ImFsZXhAZXhhbXBsZS5jb20iLCJmaXJzdF9uYW1lIjoiQWxleCIsImxhc3RfbmFtZSI6IlBsYXllciIsImVtYWlsIjoiYWxleEBleGFtcGxlLmNvbSJ9.signature"
+                "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6ImFsZXhAZXhhbXBsZS5jb20iLCJmaXJzdF9uYW1l" +
+                    "IjoiQWxleCIsImxhc3RfbmFtZSI6IlBsYXllciIsImVtYWlsIjoiYWxleEBleGFtcGxlLmNvbSJ9" +
+                    ".signature",
             )
             database.profileDao().upsert(
                 ProfileEntity(
@@ -168,7 +168,7 @@ class SessionDataSourceImplTest {
                     displayName = "alex@example.com",
                     email = null,
                     active = true,
-                )
+                ),
             )
             sports.failure = IllegalStateException("association refresh may fail")
 
@@ -185,13 +185,13 @@ class SessionDataSourceImplTest {
         fixture { repository, _, _, store, database ->
             database.profileDao().upsert(ProfileEntity("6403118", "Taylor", null, true))
             store.saveBearerToken(
-                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature"
+                "header.eyJzdWIiOiI2NDAzMTE4IiwidXNlcm5hbWUiOiJhbmR5In0.signature",
             )
             assertEquals("Taylor", repository.restoreSession()?.profile?.displayName)
 
             database.profileDao().upsert(ProfileEntity("6403118", "6403118", null, true))
             store.saveBearerToken(
-                "header.eyJzdWIiOiJvdGhlciIsInVzZXJuYW1lIjoic29tZW9uZSJ9.signature"
+                "header.eyJzdWIiOiJvdGhlciIsInVzZXJuYW1lIjoic29tZW9uZSJ9.signature",
             )
             assertEquals("6403118", repository.restoreSession()?.profile?.displayName)
 
@@ -259,7 +259,7 @@ class SessionDataSourceImplTest {
                         lastName = "Player",
                         email = "sam@example.com",
                         avatarUrl = "https://example.test/sam.png",
-                    )
+                    ),
                 ),
                 accounts = listOf(
                     Account(
@@ -267,7 +267,7 @@ class SessionDataSourceImplTest {
                         name = "Example Club",
                         subtitle = "Manager",
                         logoUrl = "https://example.test/club.png",
-                    )
+                    ),
                 ),
             )
             sports.relatedUsers = auth.result.relatedUsers
@@ -310,12 +310,12 @@ class SessionDataSourceImplTest {
         fixture { repository, auth, sports, _, _ ->
             auth.result = com.github.apkelly.drool.domain.model.AuthenticationResult(
                 bearerToken =
-                    "header.eyJzdWIiOiI2NDAzMTE4In0.signature",
+                "header.eyJzdWIiOiI2NDAzMTE4In0.signature",
             )
             sports.failure = IllegalStateException("network should not be called")
 
             val session = repository.signIn(
-                AuthCredentials("base", "/signin", " andy ", "password")
+                AuthCredentials("base", "/signin", " andy ", "password"),
             )
 
             assertEquals("andy", session.profile?.displayName)
@@ -343,7 +343,7 @@ class SessionDataSourceImplTest {
             )
 
             val profile = repository.signIn(
-                AuthCredentials("base", "/signin", "user", "password")
+                AuthCredentials("base", "/signin", "user", "password"),
             ).profile
 
             assertEquals("Taylor", profile?.displayName)
@@ -357,12 +357,12 @@ class SessionDataSourceImplTest {
         fixture { repository, auth, sports, _, _ ->
             auth.result = com.github.apkelly.drool.domain.model.AuthenticationResult(
                 bearerToken =
-                    "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6IlRheWxvciJ9.signature",
+                "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6IlRheWxvciJ9.signature",
             )
             sports.associationFailure = IOException("offline")
 
             val profile = repository.signIn(
-                AuthCredentials("base", "/signin", " alex@example.com ", "password")
+                AuthCredentials("base", "/signin", " alex@example.com ", "password"),
             ).profile
 
             assertEquals("Taylor", profile?.displayName)
@@ -375,7 +375,7 @@ class SessionDataSourceImplTest {
         fixture { repository, auth, sports, _, _ ->
             auth.result = com.github.apkelly.drool.domain.model.AuthenticationResult(
                 bearerToken =
-                    "header.eyJzdWIiOiJhY2NvdW50IiwiZW1haWwiOiJhbGV4QGV4YW1wbGUuY29tIn0.signature",
+                "header.eyJzdWIiOiJhY2NvdW50IiwiZW1haWwiOiJhbGV4QGV4YW1wbGUuY29tIn0.signature",
             )
             sports.relatedUsers = listOf(
                 relatedUser(
@@ -386,11 +386,11 @@ class SessionDataSourceImplTest {
                     avatarUrl = "https://example.test/andrew.png",
                     value = "alex@example.com",
                     source = "https://example.test/andrew.png",
-                )
+                ),
             )
 
             val profile = repository.signIn(
-                AuthCredentials("base", "/signin", "alex@example.com", "password")
+                AuthCredentials("base", "/signin", "alex@example.com", "password"),
             ).profile
 
             assertEquals("Andrew Player", profile?.displayName)
@@ -411,7 +411,7 @@ class SessionDataSourceImplTest {
                         lastName = "Player",
                         email = null,
                         avatarUrl = null,
-                    )
+                    ),
                 ),
                 accounts = listOf(
                     Account(
@@ -419,7 +419,7 @@ class SessionDataSourceImplTest {
                         name = "Example Club",
                         subtitle = null,
                         logoUrl = null,
-                    )
+                    ),
                 ),
             )
             sports.profile = Profile(
@@ -430,7 +430,7 @@ class SessionDataSourceImplTest {
             sports.associationFailure = IOException("offline")
 
             val profile = repository.signIn(
-                AuthCredentials("base", "/signin", "user", "password")
+                AuthCredentials("base", "/signin", "user", "password"),
             ).profile
 
             assertEquals("Sam Player", profile?.relatedUsers?.single()?.displayName)
@@ -445,13 +445,13 @@ class SessionDataSourceImplTest {
         fixture { repository, auth, sports, _, _ ->
             auth.result = com.github.apkelly.drool.domain.model.AuthenticationResult(
                 bearerToken =
-                    "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6IlRheWxvciJ9.signature",
+                "header.eyJzdWIiOiJhY2NvdW50IiwibmFtZSI6IlRheWxvciJ9.signature",
             )
             sports.associationFailure = CancellationException("cancelled")
 
             assertFailsWith<CancellationException> {
                 repository.signIn(
-                    AuthCredentials("base", "/signin", "user", "password")
+                    AuthCredentials("base", "/signin", "user", "password"),
                 )
             }
             assertEquals(0, sports.relatedUsersCalls)
@@ -484,7 +484,7 @@ class SessionDataSourceImplTest {
                     email = "sam@example.com",
                     avatarUrl = null,
                     dateOfBirth = "2012-03-04",
-                )
+                ),
             )
             sports.linkedUsers = listOf(
                 relatedUser(
@@ -494,7 +494,7 @@ class SessionDataSourceImplTest {
                     email = null,
                     avatarUrl = "sam.png",
                     userId = "child",
-                )
+                ),
             )
             sports.accounts = listOf(
                 Account(
@@ -502,7 +502,7 @@ class SessionDataSourceImplTest {
                     name = "alex@example.com",
                     subtitle = "email",
                     logoUrl = null,
-                )
+                ),
             )
 
             repository.refreshProfileEndpoint(
@@ -558,123 +558,123 @@ class SessionDataSourceImplTest {
 
     @Test
     fun linkMemberFlowMapsCandidatesVerifiesTokenAndRefreshesLinkedUsers() = runTest {
-            fixture { repository, _, sports, store, database ->
-                store.saveBearerToken("token")
-                store.setActiveAccountId("account")
-                sports.linkCandidates = listOf(
-                    relatedUser(
-                        id = "candidate",
-                        firstName = "Ethan",
-                        lastName = "Kelly",
-                        email = "ethan@example.com",
-                        avatarUrl = "ethan.png",
-                        dateOfBirth = "2012-03-04",
-                        gender = "Male",
-                        phoneNumber = "0400 000 000",
-                        address = "1 Example Street",
-                        emergencyContacts = listOf(
-                            EmergencyContact("Andrew Kelly", "0400 111 111")
-                        ),
-                    )
-                )
-                sports.relatedUsers = sports.linkCandidates
+        fixture { repository, _, sports, store, database ->
+            store.saveBearerToken("token")
+            store.setActiveAccountId("account")
+            sports.linkCandidates = listOf(
+                relatedUser(
+                    id = "candidate",
+                    firstName = "Ethan",
+                    lastName = "Kelly",
+                    email = "ethan@example.com",
+                    avatarUrl = "ethan.png",
+                    dateOfBirth = "2012-03-04",
+                    gender = "Male",
+                    phoneNumber = "0400 000 000",
+                    address = "1 Example Street",
+                    emergencyContacts = listOf(
+                        EmergencyContact("Andrew Kelly", "0400 111 111"),
+                    ),
+                ),
+            )
+            sports.relatedUsers = sports.linkCandidates
 
-                val candidate = repository.getLinkCandidates().single()
-                assertEquals("Ethan Kelly", candidate.displayName)
-                assertEquals("Male", candidate.gender)
-                assertEquals("2012-03-04", candidate.dateOfBirth)
-                assertEquals("0400 000 000", candidate.phoneNumber)
-                assertEquals("1 Example Street", candidate.address)
-                assertEquals(
-                    listOf(EmergencyContact("Andrew Kelly", "0400 111 111")),
-                    candidate.emergencyContacts,
-                )
+            val candidate = repository.getLinkCandidates().single()
+            assertEquals("Ethan Kelly", candidate.displayName)
+            assertEquals("Male", candidate.gender)
+            assertEquals("2012-03-04", candidate.dateOfBirth)
+            assertEquals("0400 000 000", candidate.phoneNumber)
+            assertEquals("1 Example Street", candidate.address)
+            assertEquals(
+                listOf(EmergencyContact("Andrew Kelly", "0400 111 111")),
+                candidate.emergencyContacts,
+            )
 
-                repository.verifyLinkedUser("candidate", "123456")
+            repository.verifyLinkedUser("candidate", "123456")
 
-                assertEquals("candidate" to "123456", sports.verifiedLink)
-                assertEquals(
-                    true,
-                    database.profileDao().getRelatedUsers("account").single().isLinked,
-                )
-            }
+            assertEquals("candidate" to "123456", sports.verifiedLink)
+            assertEquals(
+                true,
+                database.profileDao().getRelatedUsers("account").single().isLinked,
+            )
         }
+    }
 
     @Test
     fun linkMemberRequiresSessionAndClassifiesFailures() = runTest {
-            fixture { repository, _, sports, store, _ ->
-                assertEquals(
-                    LinkMemberFailure.SessionExpired,
-                    assertFailsWith<LinkMemberException> {
-                        repository.getLinkCandidates()
-                    }.reason,
-                )
-                assertEquals(
-                    LinkMemberFailure.SessionExpired,
-                    assertFailsWith<LinkMemberException> {
-                        repository.verifyLinkedUser("candidate", "123456")
-                    }.reason,
-                )
-
-                store.saveBearerToken("token")
-                assertEquals(
-                    LinkMemberFailure.SessionExpired,
-                    assertFailsWith<LinkMemberException> {
-                        repository.verifyLinkedUser("candidate", "123456")
-                    }.reason,
-                )
-
-                listOf(
-                    DriblHttpException(401, "url", "body") to LinkMemberFailure.SessionExpired,
-                    DriblHttpException(403, "url", "body") to LinkMemberFailure.SessionExpired,
-                    DriblHttpException(422, "url", "body") to LinkMemberFailure.Unknown,
-                    IOException("offline") to LinkMemberFailure.Offline,
-                    IllegalStateException("unexpected") to LinkMemberFailure.Unknown,
-                ).forEach { (failure, expected) ->
-                    sports.failure = failure as Exception
-                    assertEquals(
-                        expected,
-                        assertFailsWith<LinkMemberException> {
-                            repository.getLinkCandidates()
-                        }.reason,
-                    )
-                }
-
-                sports.failure = DriblHttpException(422, "url", "body")
-                assertEquals(
-                    LinkMemberFailure.InvalidToken,
-                    assertFailsWith<LinkMemberException> {
-                        repository.verifyLinkedUser("candidate", "123456")
-                    }.reason,
-                )
-                listOf(
-                    399 to LinkMemberFailure.Unknown,
-                    400 to LinkMemberFailure.InvalidToken,
-                    499 to LinkMemberFailure.InvalidToken,
-                    500 to LinkMemberFailure.Unknown,
-                ).forEach { (status, expected) ->
-                    sports.failure = DriblHttpException(status, "url", "body")
-                    assertEquals(
-                        expected,
-                        assertFailsWith<LinkMemberException> {
-                            repository.verifyLinkedUser("candidate", "123456")
-                        }.reason,
-                    )
-                }
-
-                sports.failure = LinkMemberException(LinkMemberFailure.InvalidToken)
-                assertEquals(
-                    LinkMemberFailure.InvalidToken,
-                    assertFailsWith<LinkMemberException> {
-                        repository.getLinkCandidates()
-                    }.reason,
-                )
-
-                sports.failure = CancellationException("cancelled")
-                assertFailsWith<CancellationException> {
+        fixture { repository, _, sports, store, _ ->
+            assertEquals(
+                LinkMemberFailure.SessionExpired,
+                assertFailsWith<LinkMemberException> {
                     repository.getLinkCandidates()
-                }
+                }.reason,
+            )
+            assertEquals(
+                LinkMemberFailure.SessionExpired,
+                assertFailsWith<LinkMemberException> {
+                    repository.verifyLinkedUser("candidate", "123456")
+                }.reason,
+            )
+
+            store.saveBearerToken("token")
+            assertEquals(
+                LinkMemberFailure.SessionExpired,
+                assertFailsWith<LinkMemberException> {
+                    repository.verifyLinkedUser("candidate", "123456")
+                }.reason,
+            )
+
+            listOf(
+                DriblHttpException(401, "url", "body") to LinkMemberFailure.SessionExpired,
+                DriblHttpException(403, "url", "body") to LinkMemberFailure.SessionExpired,
+                DriblHttpException(422, "url", "body") to LinkMemberFailure.Unknown,
+                IOException("offline") to LinkMemberFailure.Offline,
+                IllegalStateException("unexpected") to LinkMemberFailure.Unknown,
+            ).forEach { (failure, expected) ->
+                sports.failure = failure as Exception
+                assertEquals(
+                    expected,
+                    assertFailsWith<LinkMemberException> {
+                        repository.getLinkCandidates()
+                    }.reason,
+                )
             }
+
+            sports.failure = DriblHttpException(422, "url", "body")
+            assertEquals(
+                LinkMemberFailure.InvalidToken,
+                assertFailsWith<LinkMemberException> {
+                    repository.verifyLinkedUser("candidate", "123456")
+                }.reason,
+            )
+            listOf(
+                399 to LinkMemberFailure.Unknown,
+                400 to LinkMemberFailure.InvalidToken,
+                499 to LinkMemberFailure.InvalidToken,
+                500 to LinkMemberFailure.Unknown,
+            ).forEach { (status, expected) ->
+                sports.failure = DriblHttpException(status, "url", "body")
+                assertEquals(
+                    expected,
+                    assertFailsWith<LinkMemberException> {
+                        repository.verifyLinkedUser("candidate", "123456")
+                    }.reason,
+                )
+            }
+
+            sports.failure = LinkMemberException(LinkMemberFailure.InvalidToken)
+            assertEquals(
+                LinkMemberFailure.InvalidToken,
+                assertFailsWith<LinkMemberException> {
+                    repository.getLinkCandidates()
+                }.reason,
+            )
+
+            sports.failure = CancellationException("cancelled")
+            assertFailsWith<CancellationException> {
+                repository.getLinkCandidates()
+            }
+        }
     }
 
     @Test
@@ -688,7 +688,7 @@ class SessionDataSourceImplTest {
                     displayName = "Other",
                     email = "other@example.com",
                     active = true,
-                )
+                ),
             )
             sports.relatedUsers = listOf(
                 relatedUser(
@@ -697,7 +697,7 @@ class SessionDataSourceImplTest {
                     lastName = null,
                     email = "alex@example.com",
                     avatarUrl = "https://example.test/andrew.png",
-                )
+                ),
             )
 
             repository.refreshProfileEndpoint(
@@ -751,23 +751,23 @@ class SessionDataSourceImplTest {
                         "Sam Player",
                         "sam@example.com",
                         null,
-                    )
-                )
+                    ),
+                ),
             )
             database.profileDao().upsertAccounts(
-                listOf(AccountEntity("account", "club", "Example Club", "Manager", null))
+                listOf(AccountEntity("account", "club", "Example Club", "Manager", null)),
             )
             database.teamDao().upsertRelationship(
-                TeamRelationshipEntity("account", "team", TeamRelationship.Following.name)
+                TeamRelationshipEntity("account", "team", TeamRelationship.Following.name),
             )
             database.clubDao().upsertAll(
-                listOf(ClubEntity("club", "Example Club", null, null, null, null))
+                listOf(ClubEntity("club", "Example Club", null, null, null, null)),
             )
             database.clubDao().upsertRelationships(
-                listOf(ClubRelationshipEntity("account", "club"))
+                listOf(ClubRelationshipEntity("account", "club")),
             )
             database.teamDao().upsertAll(
-                listOf(TeamEntity("team", "club", "Example Team", null, null, null, null, true))
+                listOf(TeamEntity("team", "club", "Example Team", null, null, null, null, true)),
             )
             database.fixtureDao().upsertAll(
                 listOf(
@@ -783,8 +783,8 @@ class SessionDataSourceImplTest {
                         venueName = null,
                         userTeamId = null,
                         status = "",
-                    )
-                )
+                    ),
+                ),
             )
             database.cacheMetadataDao().upsert(CacheMetadataEntity("fixtures", "account", 1))
 

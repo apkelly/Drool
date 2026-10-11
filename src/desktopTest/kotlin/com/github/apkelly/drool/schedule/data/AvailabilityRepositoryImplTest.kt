@@ -34,16 +34,18 @@ class AvailabilityRepositoryImplTest {
                 fixedTimeProvider,
             )
 
-            val clubs = assertIs<AvailabilityResult.Success<
-                List<com.github.apkelly.drool.schedule.domain.model.RefereeClub>
-                >>(
-                repository.getRefereeClubs("9702906")
+            val clubs = assertIs<
+                AvailabilityResult.Success<
+                    List<com.github.apkelly.drool.schedule.domain.model.RefereeClub>,
+                    >,
+                >(
+                repository.getRefereeClubs("9702906"),
             )
             val result = assertIs<AvailabilityResult.Success<*>>(
-                repository.getAvailability("9702906")
+                repository.getAvailability("9702906"),
             )
             val overview = assertIs<
-                com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityOverview
+                com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityOverview,
                 >(result.value)
 
             assertEquals(
@@ -84,9 +86,9 @@ class AvailabilityRepositoryImplTest {
                 profileId = "9702906",
                 draft = RefereeAvailabilityDraft(
                     startDateEpochMillis =
-                        Instant.parse("2026-10-13T00:00:00Z").toEpochMilliseconds(),
+                    Instant.parse("2026-10-13T00:00:00Z").toEpochMilliseconds(),
                     endDateEpochMillis =
-                        Instant.parse("2026-12-29T00:00:00Z").toEpochMilliseconds(),
+                    Instant.parse("2026-12-29T00:00:00Z").toEpochMilliseconds(),
                     startHour = 18,
                     startMinute = 0,
                     endHour = 19,
@@ -116,9 +118,9 @@ class AvailabilityRepositoryImplTest {
                     profileId = "9702906",
                     draft = RefereeAvailabilityDraft(
                         startDateEpochMillis =
-                            Instant.parse("2026-10-13T00:00:00Z").toEpochMilliseconds(),
+                        Instant.parse("2026-10-13T00:00:00Z").toEpochMilliseconds(),
                         endDateEpochMillis =
-                            Instant.parse("2026-12-29T00:00:00Z").toEpochMilliseconds(),
+                        Instant.parse("2026-12-29T00:00:00Z").toEpochMilliseconds(),
                         startHour = 18,
                         startMinute = 0,
                         endHour = 19,
@@ -176,7 +178,7 @@ class AvailabilityRepositoryImplTest {
                 profileId = "9702906",
                 draft = RefereeAvailabilityDraft(
                     startDateEpochMillis =
-                        Instant.parse("2026-10-11T00:00:00Z").toEpochMilliseconds(),
+                    Instant.parse("2026-10-11T00:00:00Z").toEpochMilliseconds(),
                     endDateEpochMillis = null,
                     startHour = 18,
                     startMinute = 0,
@@ -211,7 +213,7 @@ class AvailabilityRepositoryImplTest {
                 profileId = "9702906",
                 draft = RefereeAvailabilityDraft(
                     startDateEpochMillis =
-                        Instant.parse("2027-04-13T00:00:00Z").toEpochMilliseconds(),
+                    Instant.parse("2027-04-13T00:00:00Z").toEpochMilliseconds(),
                     endDateEpochMillis = null,
                     startHour = 18,
                     startMinute = 0,
@@ -243,7 +245,7 @@ class AvailabilityRepositoryImplTest {
             )
 
             assertIs<AvailabilityResult.Success<*>>(
-                repository.getAvailability("9702906")
+                repository.getAvailability("9702906"),
             )
 
             assertEquals(
@@ -289,7 +291,7 @@ class AvailabilityRepositoryImplTest {
             clubName = "Marrickville Referees",
             period = AvailabilityPeriod.Weekly,
             templateEndEpochMillis =
-                Instant.parse("2026-12-29T08:00:00Z").toEpochMilliseconds(),
+            Instant.parse("2026-12-29T08:00:00Z").toEpochMilliseconds(),
         )
     }
 }

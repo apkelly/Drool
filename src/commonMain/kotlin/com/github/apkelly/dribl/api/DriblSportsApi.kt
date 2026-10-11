@@ -1,5 +1,57 @@
 package com.github.apkelly.dribl.api
 
+import com.github.apkelly.dribl.dto.AccountDto
+import com.github.apkelly.dribl.dto.ClubDto
+import com.github.apkelly.dribl.dto.ClubListResponse
+import com.github.apkelly.dribl.dto.ClubResourceDto
+import com.github.apkelly.dribl.dto.EmergencyContactDto
+import com.github.apkelly.dribl.dto.EmergencyContactResourceDto
+import com.github.apkelly.dribl.dto.FixtureDto
+import com.github.apkelly.dribl.dto.ImpersonationResponse
+import com.github.apkelly.dribl.dto.LadderDetailResponse
+import com.github.apkelly.dribl.dto.LadderEntryDto
+import com.github.apkelly.dribl.dto.LadderEntryResourceDto
+import com.github.apkelly.dribl.dto.LadderListResponse
+import com.github.apkelly.dribl.dto.MatchAttributesDto
+import com.github.apkelly.dribl.dto.MatchListResponse
+import com.github.apkelly.dribl.dto.MatchResourceDto
+import com.github.apkelly.dribl.dto.MatchResponse
+import com.github.apkelly.dribl.dto.MatchRoleAttributesDto
+import com.github.apkelly.dribl.dto.MatchRoleResourceDto
+import com.github.apkelly.dribl.dto.MemberCardsResponse
+import com.github.apkelly.dribl.dto.NestedResourceResponse
+import com.github.apkelly.dribl.dto.PersonDto
+import com.github.apkelly.dribl.dto.PersonResourceDto
+import com.github.apkelly.dribl.dto.ProfileResponse
+import com.github.apkelly.dribl.dto.RefereeAvailabilityListResponse
+import com.github.apkelly.dribl.dto.RefereeAvailabilityResourceDto
+import com.github.apkelly.dribl.dto.RefereeAvailabilityResponse
+import com.github.apkelly.dribl.dto.ResourceList
+import com.github.apkelly.dribl.dto.ScheduleAllocationResourceDto
+import com.github.apkelly.dribl.dto.ScheduleResponse
+import com.github.apkelly.dribl.dto.ShortcutResponse
+import com.github.apkelly.dribl.dto.TeamDto
+import com.github.apkelly.dribl.dto.TeamListResponse
+import com.github.apkelly.dribl.dto.TokenVerificationRequest
+import com.github.apkelly.dribl.dto.UserResponse
+import com.github.apkelly.dribl.model.Account
+import com.github.apkelly.dribl.model.AvailabilityPeriod
+import com.github.apkelly.dribl.model.Club
+import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.dribl.model.EmergencyContact
+import com.github.apkelly.dribl.model.Fixture
+import com.github.apkelly.dribl.model.FixtureRole
+import com.github.apkelly.dribl.model.FixtureStatus
+import com.github.apkelly.dribl.model.LadderEntry
+import com.github.apkelly.dribl.model.Profile
+import com.github.apkelly.dribl.model.RefereeAvailability
+import com.github.apkelly.dribl.model.RefereeClub
+import com.github.apkelly.dribl.model.RelatedUser
+import com.github.apkelly.dribl.model.Team
+import com.github.apkelly.dribl.model.TeamAssociation
+import com.github.apkelly.dribl.model.TeamHub
+import com.github.apkelly.dribl.model.TeamRelationship
+import com.github.apkelly.dribl.model.normalizedTeamName
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
@@ -20,58 +72,6 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlin.time.Clock
 import kotlin.time.Instant
-import com.github.apkelly.dribl.dto.AccountDto
-import com.github.apkelly.dribl.dto.ClubListResponse
-import com.github.apkelly.dribl.dto.ClubDto
-import com.github.apkelly.dribl.dto.ClubResourceDto
-import com.github.apkelly.dribl.dto.EmergencyContactDto
-import com.github.apkelly.dribl.dto.EmergencyContactResourceDto
-import com.github.apkelly.dribl.dto.FixtureDto
-import com.github.apkelly.dribl.dto.ImpersonationResponse
-import com.github.apkelly.dribl.dto.LadderDetailResponse
-import com.github.apkelly.dribl.dto.LadderEntryResourceDto
-import com.github.apkelly.dribl.dto.LadderEntryDto
-import com.github.apkelly.dribl.dto.LadderListResponse
-import com.github.apkelly.dribl.dto.MatchAttributesDto
-import com.github.apkelly.dribl.dto.MatchListResponse
-import com.github.apkelly.dribl.dto.MatchRoleAttributesDto
-import com.github.apkelly.dribl.dto.MatchRoleResourceDto
-import com.github.apkelly.dribl.dto.MatchResourceDto
-import com.github.apkelly.dribl.dto.MatchResponse
-import com.github.apkelly.dribl.dto.MemberCardsResponse
-import com.github.apkelly.dribl.dto.NestedResourceResponse
-import com.github.apkelly.dribl.dto.PersonResourceDto
-import com.github.apkelly.dribl.dto.PersonDto
-import com.github.apkelly.dribl.dto.ProfileResponse
-import com.github.apkelly.dribl.dto.ResourceList
-import com.github.apkelly.dribl.dto.ShortcutResponse
-import com.github.apkelly.dribl.dto.ScheduleAllocationResourceDto
-import com.github.apkelly.dribl.dto.ScheduleResponse
-import com.github.apkelly.dribl.dto.RefereeAvailabilityListResponse
-import com.github.apkelly.dribl.dto.RefereeAvailabilityResourceDto
-import com.github.apkelly.dribl.dto.RefereeAvailabilityResponse
-import com.github.apkelly.dribl.dto.TeamListResponse
-import com.github.apkelly.dribl.dto.TeamDto
-import com.github.apkelly.dribl.dto.TokenVerificationRequest
-import com.github.apkelly.dribl.dto.UserResponse
-import com.github.apkelly.dribl.model.Account
-import com.github.apkelly.dribl.model.Club
-import com.github.apkelly.dribl.model.EmergencyContact
-import com.github.apkelly.dribl.model.Fixture
-import com.github.apkelly.dribl.model.FixtureStatus
-import com.github.apkelly.dribl.model.FixtureRole
-import com.github.apkelly.dribl.model.LadderEntry
-import com.github.apkelly.dribl.model.Profile
-import com.github.apkelly.dribl.model.RelatedUser
-import com.github.apkelly.dribl.model.Team
-import com.github.apkelly.dribl.model.TeamAssociation
-import com.github.apkelly.dribl.model.TeamHub
-import com.github.apkelly.dribl.model.normalizedTeamName
-import com.github.apkelly.dribl.model.TeamRelationship
-import com.github.apkelly.dribl.model.AvailabilityPeriod
-import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
-import com.github.apkelly.dribl.model.RefereeAvailability
-import com.github.apkelly.dribl.model.RefereeClub
 
 private const val DISCOVER_PAGE_SIZE = 1_000
 
@@ -82,7 +82,9 @@ class DriblSportsApi(
         Clock.System.now().toEpochMilliseconds()
     },
 ) : SportsRemoteDataSource {
-    override suspend fun fetchClubs(bearerToken: String): List<Club> {
+    override suspend fun fetchClubs(
+        bearerToken: String,
+    ): List<Club> {
         val clubs = mutableListOf<Club>()
         var page = 1
         var lastPage: Int
@@ -104,7 +106,10 @@ class DriblSportsApi(
         return clubs.distinctBy(Club::id)
     }
 
-    override suspend fun fetchTeams(bearerToken: String, clubId: String?): List<Team> {
+    override suspend fun fetchTeams(
+        bearerToken: String,
+        clubId: String?,
+    ): List<Team> {
         val teams = mutableListOf<Team>()
         var page = 1
         var lastPage: Int
@@ -185,15 +190,14 @@ class DriblSportsApi(
         bearerToken: String,
         userId: String,
         startDate: String,
-    ): List<RefereeAvailability> =
-        getBody<RefereeAvailabilityListResponse>(
-            "/universal/availabilities",
-            bearerToken,
-        ) {
-            parameter("start_date", startDate)
-            parameter("direction", "asc")
-            parameter("user_id", userId)
-        }.data.mapNotNull(RefereeAvailabilityResourceDto::toDomain)
+    ): List<RefereeAvailability> = getBody<RefereeAvailabilityListResponse>(
+        "/universal/availabilities",
+        bearerToken,
+    ) {
+        parameter("start_date", startDate)
+        parameter("direction", "asc")
+        parameter("user_id", userId)
+    }.data.mapNotNull(RefereeAvailabilityResourceDto::toDomain)
 
     override suspend fun createRefereeAvailability(
         bearerToken: String,
@@ -204,13 +208,13 @@ class DriblSportsApi(
         val response = client.post(url) {
             accept(ContentType.Application.Json)
             contentType(ContentType.Application.Json)
-            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
             bearerAuth(bearerToken)
             setBody(request)
         }.requireBody<RefereeAvailabilityResponse>(url)
         return response.data.toDomain()
             ?: throw DriblResponseException(
-                "Availability response did not contain valid dates"
+                "Availability response did not contain valid dates",
             )
     }
 
@@ -221,7 +225,7 @@ class DriblSportsApi(
         val url = url("/universal/availabilities/$availabilityId")
         client.delete(url) {
             accept(ContentType.Application.Json)
-            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
             bearerAuth(bearerToken)
         }.requireSuccess(url)
     }
@@ -247,8 +251,10 @@ class DriblSportsApi(
         val ladders = laddersResponse.ladders.ifEmpty { laddersResponse.data }
         var selectedName: String? = null
         var selectedEntries = emptyList<LadderEntry>()
-        for (ladder in ladders) {
-            val ladderId = ladder.id.textValue ?: continue
+        val identifiedLadders = ladders.mapNotNull { ladder ->
+            ladder.id.textValue?.let { ladderId -> ladder to ladderId }
+        }
+        for ((ladder, ladderId) in identifiedLadders) {
             val detail = getBody<LadderDetailResponse>(
                 "/universal/ladders/$ladderId",
                 bearerToken,
@@ -272,8 +278,8 @@ class DriblSportsApi(
                     selected?.upcomingMatches.orEmpty() +
                         selected?.recentMatches.orEmpty()
                     ).mapIndexedNotNull { index, fixture ->
-                        fixture.toDto(index, competitionName = ladder.name)
-                    }
+                    fixture.toDto(index, competitionName = ladder.name)
+                }
                 fixtures = (fixtures + formFixtures)
                     .filter { it.involves(teamId) }
                     .distinctBy(Fixture::id)
@@ -307,29 +313,21 @@ class DriblSportsApi(
         return response.data.toDomain()
     }
 
-    override suspend fun fetchProfile(bearerToken: String): Profile {
+    override suspend fun fetchProfile(
+        bearerToken: String,
+    ): Profile {
         val response = getBody<ProfileResponse>("/auth/related-users", bearerToken)
-        val payload = response.data
-        val profile = payload?.account ?: payload?.profile ?: payload?.user ?: response.profile
+        val profile = response.profile()
             ?: throw DriblResponseException("Profile response did not contain a profile")
-        val accountId = (profile.accountId ?: profile.userId ?: profile.id).textValue
+        val accountId = profile.identifier()
             ?: throw DriblResponseException(
-                "Profile response did not contain an account identifier"
+                "Profile response did not contain an account identifier",
             )
-        val displayName = profile.firstName
-            ?: profile.displayName
-            ?: profile.fullName
-            ?: profile.name
-            ?: profile.email
-            ?: accountId
         return Profile(
             accountId = accountId,
-            displayName = displayName,
+            displayName = profile.displayName(accountId),
             email = profile.email ?: profile.emailAddress,
-            avatarUrl = profile.avatarUrl
-                ?: profile.profileImage
-                ?: profile.image
-                ?: profile.source,
+            avatarUrl = profile.avatar(),
         )
     }
 
@@ -348,7 +346,9 @@ class DriblSportsApi(
         }
     }
 
-    override suspend fun fetchAccounts(bearerToken: String): List<Account> {
+    override suspend fun fetchAccounts(
+        bearerToken: String,
+    ): List<Account> {
         val response = getBody<ResourceList<AccountDto>>(
             "/access/accounts",
             bearerToken,
@@ -393,7 +393,7 @@ class DriblSportsApi(
         client.patch(url) {
             accept(ContentType.Application.Json)
             contentType(ContentType.Application.Json)
-            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
             bearerAuth(bearerToken)
             setBody(TokenVerificationRequest(token))
         }.requireSuccess(url)
@@ -406,12 +406,12 @@ class DriblSportsApi(
         val url = url("/auth/impersonate/$userId")
         val response = client.post(url) {
             accept(ContentType.Application.Json)
-            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
             bearerAuth(bearerToken)
         }.requireBody<ImpersonationResponse>(url)
         return response.token
             ?: throw DriblResponseException(
-                "Profile session response did not contain token"
+                "Profile session response did not contain token",
             )
     }
 
@@ -422,7 +422,7 @@ class DriblSportsApi(
         val response = getBody<UserResponse>("/users/$userId", bearerToken)
         val user = response.data
             ?: throw DriblResponseException(
-                "Personal information response did not contain a user"
+                "Personal information response did not contain a user",
             )
         return relatedUserFromResource(0, user, isLinked = true)
     }
@@ -500,28 +500,38 @@ class DriblSportsApi(
         val url = url(path)
         return client.get(url) {
             accept(ContentType.Application.Json)
-            header(HttpHeaders.UserAgent, OriginalDriblUserAgent)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
             bearerAuth(bearerToken)
             configure()
         }.requireBody(url)
     }
 
-    private fun url(path: String): String =
-        baseUrl.trimEnd('/') + "/" + path.trimStart('/')
+    private fun url(
+        path: String,
+    ): String = baseUrl.trimEnd('/') + "/" + path.trimStart('/')
 }
 
 class DriblHttpException(
     val statusCode: Int,
     url: String,
     responseBody: String,
-) : IllegalStateException("HTTP $statusCode for $url\n${responseBody.take(2_000)}")
+) : IllegalStateException(
+    "HTTP $statusCode for $url\n${responseBody.take(MAX_ERROR_BODY_LENGTH)}",
+)
 
-class DriblResponseException(message: String) : IllegalStateException(message)
+class DriblResponseException(
+    message: String,
+    cause: Throwable? = null,
+) : IllegalStateException(message, cause)
 
-private fun clubFromDto(index: Int, club: ClubDto): Club? =
-    club.toDto(index)
+private fun clubFromDto(
+    index: Int,
+    club: ClubDto,
+): Club? = club.toDto(index)
 
-private fun ClubDto.toDto(index: Int): Club? {
+private fun ClubDto.toDto(
+    index: Int,
+): Club? {
     val resolvedName = name ?: clubName ?: return null
     return Club(
         id = (clubId ?: id).textValue ?: "club-$index-$resolvedName",
@@ -533,10 +543,14 @@ private fun ClubDto.toDto(index: Int): Club? {
     )
 }
 
-private fun teamFromDto(index: Int, team: TeamDto): Team? =
-    team.toDto(index)
+private fun teamFromDto(
+    index: Int,
+    team: TeamDto,
+): Team? = team.toDto(index)
 
-private fun TeamDto.toDto(index: Int): Team? {
+private fun TeamDto.toDto(
+    index: Int,
+): Team? {
     val resolvedName = name ?: parsedName ?: teamName ?: return null
     val resolvedCompetitionName = competitionName ?: teamCompetitionName
     return Team(
@@ -557,13 +571,46 @@ private fun relatedUserFromResource(
     index: Int,
     resource: PersonResourceDto,
     isLinked: Boolean = false,
-): RelatedUser =
-    relatedUserFromPerson(
-        index = index,
-        person = resource.attributes,
-        relationshipId = resource.id.textValue,
-        isLinked = isLinked,
-    )
+): RelatedUser = relatedUserFromPerson(
+    index = index,
+    person = resource.attributes,
+    relationshipId = resource.id.textValue,
+    isLinked = isLinked,
+)
+
+private fun ProfileResponse.profile(): PersonDto? = data?.account ?: data?.profile ?: data?.user ?: profile
+
+private fun PersonDto.identifier(): String? = (accountId ?: userId ?: id).textValue
+
+private fun PersonDto.displayName(
+    fallback: String,
+): String = firstName ?: displayName ?: fullName ?: name ?: email ?: fallback
+
+private fun PersonDto.email(): String? = email ?: emailAddress ?: contactEmail ?: value?.takeIf { it.contains('@') }
+
+private fun PersonDto.identifier(
+    index: Int,
+    relationshipId: String?,
+    userId: String?,
+    email: String?,
+): String = userId
+    ?: relationshipId
+    ?: accountId.textValue
+    ?: id.textValue
+    ?: "related-$index-${email ?: firstName.orEmpty()}"
+
+private fun PersonDto.displayName(
+    email: String?,
+    fallback: String,
+): String = listOfNotNull(firstName, lastName)
+    .joinToString(" ")
+    .takeIf(String::isNotBlank)
+    ?: email
+    ?: fallback
+
+private fun PersonDto.avatar(): String? = avatarUrl ?: profileImage ?: image ?: source
+
+private fun PersonDto.phoneNumber(): String? = phone ?: mobile ?: phoneNumber ?: mobileNumber
 
 private fun relatedUserFromPerson(
     index: Int,
@@ -571,37 +618,19 @@ private fun relatedUserFromPerson(
     relationshipId: String? = null,
     isLinked: Boolean = false,
 ): RelatedUser {
-    val email = person.email
-        ?: person.emailAddress
-        ?: person.contactEmail
-        ?: person.value?.takeIf { it.contains('@') }
+    val email = person.email()
     val userId = person.userId.textValue
-    val id = userId
-            ?: relationshipId
-            ?: person.accountId.textValue
-            ?: person.id.textValue
-            ?: "related-$index-${email ?: person.firstName.orEmpty()}"
-    val displayName = listOfNotNull(person.firstName, person.lastName)
-        .joinToString(" ")
-        .takeIf(String::isNotBlank)
-        ?: email
-        ?: id
+    val id = person.identifier(index, relationshipId, userId, email)
     return RelatedUser(
         id = id,
-        displayName = displayName,
+        displayName = person.displayName(email, id),
         email = email,
-        avatarUrl = person.avatarUrl
-            ?: person.profileImage
-            ?: person.image
-            ?: person.source,
+        avatarUrl = person.avatar(),
         subjectUserId = userId ?: id,
         isLinked = isLinked,
         dateOfBirth = person.dateOfBirth ?: person.alternateDateOfBirth,
         gender = person.gender,
-        phoneNumber = person.phone
-            ?: person.mobile
-            ?: person.phoneNumber
-            ?: person.mobileNumber,
+        phoneNumber = person.phoneNumber(),
         firstName = person.firstName,
         address = person.formattedAddress(),
         emergencyContacts = person.emergencyContacts
@@ -610,7 +639,10 @@ private fun relatedUserFromPerson(
     )
 }
 
-private fun accountFromDto(index: Int, account: AccountDto): Account {
+private fun accountFromDto(
+    index: Int,
+    account: AccountDto,
+): Account {
     val id = (account.accountId ?: account.id).textValue ?: "account-$index"
     val attributes = account.attributes
     return Account(
@@ -686,15 +718,31 @@ private fun ladderEntryFromDto(
     )
 }
 
-private fun LadderEntryResourceDto.fields(): LadderEntryDto =
-    attributes ?: LadderEntryDto(
-        position = position,
-        teamHashId = teamId,
-        teamName = teamName,
-    )
+private fun LadderEntryResourceDto.fields(): LadderEntryDto = attributes ?: LadderEntryDto(
+    position = position,
+    teamHashId = teamId,
+    teamName = teamName,
+)
 
 private val LadderEntryDto.teamIdentifier: String?
     get() = (teamId ?: teamHashId).textValue
+
+private fun FixtureDto.resolvedHomeName(): String? = homeTeamName ?: homeTeam?.name
+
+private fun FixtureDto.resolvedAwayName(): String? = awayTeamName ?: awayTeam?.name
+
+private fun FixtureDto.resolvedHomeTeamId(): String? =
+    (homeTeamId ?: homeTeamHashId ?: homeTeam?.teamId ?: homeTeam?.id).textValue
+
+private fun FixtureDto.resolvedAwayTeamId(): String? =
+    (awayTeamId ?: awayTeamHashId ?: awayTeam?.teamId ?: awayTeam?.id).textValue
+
+private fun FixtureDto.resolvedIdentifier(
+    index: Int,
+    homeName: String,
+    awayName: String,
+): String = (id ?: matchId).textValue
+    ?: "fixture-$index-$homeName-$awayName"
 
 private fun FixtureDto.toDto(
     index: Int,
@@ -703,26 +751,19 @@ private fun FixtureDto.toDto(
     userTeamId: String? = null,
     status: String? = null,
 ): Fixture? {
-    val resolvedHomeName = homeTeamName ?: homeTeam?.name ?: return null
-    val resolvedAwayName = awayTeamName ?: awayTeam?.name ?: return null
+    val resolvedHomeName = resolvedHomeName() ?: return null
+    val resolvedAwayName = resolvedAwayName() ?: return null
     val resolvedCompetitionName = this.competitionName ?: leagueName ?: competitionName
     return Fixture(
-        id = (id ?: matchId).textValue
-            ?: "fixture-$index-$resolvedHomeName-$resolvedAwayName",
+        id = resolvedIdentifier(index, resolvedHomeName, resolvedAwayName),
         kickoffEpochMillis = (kickoffAt ?: date).epochMillis ?: 0L,
-        homeTeamId = (homeTeamId
-            ?: homeTeamHashId
-            ?: homeTeam?.teamId
-            ?: homeTeam?.id).textValue,
+        homeTeamId = resolvedHomeTeamId(),
         homeTeamName = normalizedTeamName(
             name = resolvedHomeName,
             competitionName = resolvedCompetitionName,
             allowEmbeddedLeaguePrefix = this.competitionName == null,
         ),
-        awayTeamId = (awayTeamId
-            ?: awayTeamHashId
-            ?: awayTeam?.teamId
-            ?: awayTeam?.id).textValue,
+        awayTeamId = resolvedAwayTeamId(),
         awayTeamName = normalizedTeamName(
             name = resolvedAwayName,
             competitionName = resolvedCompetitionName,
@@ -740,10 +781,11 @@ private fun FixtureDto.toDto(
     )
 }
 
-private fun MatchResourceDto.toDomain(): Fixture =
-    attributes.toDomain(id)
+private fun MatchResourceDto.toDomain(): Fixture = attributes.toDomain(id)
 
-private fun MatchAttributesDto.toDomain(resourceId: JsonPrimitive): Fixture {
+private fun MatchAttributesDto.toDomain(
+    resourceId: JsonPrimitive,
+): Fixture {
     val resolvedCompetitionName = competitionName ?: leagueName
     return Fixture(
         id = resourceId.textValue
@@ -844,28 +886,30 @@ private fun RefereeAvailabilityResourceDto.toDomain(): RefereeAvailability? {
     )
 }
 
-private fun upcomingScheduleStart(currentEpochMillis: Long): String =
-    Instant.fromEpochMilliseconds(currentEpochMillis - ScheduleLookbackMillis).toString()
+private fun upcomingScheduleStart(
+    currentEpochMillis: Long,
+): String = Instant.fromEpochMilliseconds(currentEpochMillis - SCHEDULE_LOOKBACK_MILLIS).toString()
 
-private fun Fixture.involves(teamId: String): Boolean =
-    homeTeamId == teamId || awayTeamId == teamId || userTeamId == teamId
+private fun Fixture.involves(
+    teamId: String,
+): Boolean = homeTeamId == teamId || awayTeamId == teamId || userTeamId == teamId
 
-private fun String?.toFixtureStatus(): FixtureStatus =
-    when (orEmpty().lowercase()) {
-        "pending" -> FixtureStatus.Pending
-        "scheduled", "upcoming", "fixture" -> FixtureStatus.Scheduled
-        "live", "in_progress" -> FixtureStatus.Live
-        "completed", "complete", "final" -> FixtureStatus.Completed
-        "postponed" -> FixtureStatus.Postponed
-        "washout" -> FixtureStatus.Washout
-        "cancelled", "canceled" -> FixtureStatus.Cancelled
-        else -> FixtureStatus.Unknown
-    }
+private fun String?.toFixtureStatus(): FixtureStatus = when (orEmpty().lowercase()) {
+    "pending" -> FixtureStatus.Pending
+    "scheduled", "upcoming", "fixture" -> FixtureStatus.Scheduled
+    "live", "in_progress" -> FixtureStatus.Live
+    "completed", "complete", "final" -> FixtureStatus.Completed
+    "postponed" -> FixtureStatus.Postponed
+    "washout" -> FixtureStatus.Washout
+    "cancelled", "canceled" -> FixtureStatus.Cancelled
+    else -> FixtureStatus.Unknown
+}
 
 private val JsonPrimitive?.textValue: String?
     get() = this?.contentOrNull?.takeUnless { it.isBlank() || it == "null" }
 
-private const val ScheduleLookbackMillis = 24L * 60L * 60L * 1_000L
+private const val SCHEDULE_LOOKBACK_MILLIS = 24L * 60L * 60L * 1_000L
+private const val MAX_ERROR_BODY_LENGTH = 2_000
 
 private val JsonPrimitive?.epochMillis: Long?
     get() = this?.longOrNull?.let { raw ->

@@ -1,8 +1,8 @@
 package com.github.apkelly.drool.auth.data
 
 import com.github.apkelly.drool.auth.domain.repository.AuthRepository
-import com.github.apkelly.drool.domain.model.AuthCredentials
 import com.github.apkelly.drool.data.repository.SessionDataSource
+import com.github.apkelly.drool.domain.model.AuthCredentials
 
 class AuthRepositoryImpl(
     private val sessionDataSource: SessionDataSource,
@@ -11,8 +11,9 @@ class AuthRepositoryImpl(
 
     override suspend fun restoreSession() = sessionDataSource.restoreSession()
 
-    override suspend fun signIn(credentials: AuthCredentials) =
-        sessionDataSource.signIn(credentials)
+    override suspend fun signIn(
+        credentials: AuthCredentials,
+    ) = sessionDataSource.signIn(credentials)
 
     override suspend fun signOut() = sessionDataSource.signOut()
 }

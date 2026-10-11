@@ -8,10 +8,14 @@ import com.github.apkelly.drool.data.local.entity.MatchWeatherCacheEntity
 @Dao
 interface MatchWeatherCacheDao {
     @Query("SELECT * FROM MatchWeatherCacheEntity WHERE matchId = :matchId LIMIT 1")
-    suspend fun get(matchId: String): MatchWeatherCacheEntity?
+    suspend fun get(
+        matchId: String,
+    ): MatchWeatherCacheEntity?
 
     @Upsert
-    suspend fun upsert(cache: MatchWeatherCacheEntity)
+    suspend fun upsert(
+        cache: MatchWeatherCacheEntity,
+    )
 
     @Query("DELETE FROM MatchWeatherCacheEntity")
     suspend fun deleteAll()

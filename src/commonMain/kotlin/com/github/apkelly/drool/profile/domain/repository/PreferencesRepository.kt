@@ -1,11 +1,15 @@
 package com.github.apkelly.drool.profile.domain.repository
 
-import kotlinx.coroutines.flow.Flow
 import com.github.apkelly.drool.domain.model.ThemeMode
+import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {
     fun observeThemeMode(): Flow<ThemeMode>
-    suspend fun setThemeMode(mode: ThemeMode)
+    suspend fun setThemeMode(
+        mode: ThemeMode,
+    )
     fun observeObservabilityEnabled(): Flow<Boolean>
-    suspend fun setObservabilityEnabled(enabled: Boolean)
+    suspend fun setObservabilityEnabled(
+        enabled: Boolean,
+    )
 }

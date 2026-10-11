@@ -5,7 +5,10 @@ import com.github.apkelly.drool.domain.model.TeamHub
 
 sealed interface TeamHubUiState {
     data object Idle : TeamHubUiState
-    data class Loading(val profileId: String, val teamId: String) : TeamHubUiState
+    data class Loading(
+        val profileId: String,
+        val teamId: String,
+    ) : TeamHubUiState
     data class Content(
         val profileId: String,
         val teamId: String,
@@ -15,5 +18,8 @@ sealed interface TeamHubUiState {
         val isRefreshing: Boolean = false,
         val refreshFailure: RefreshFailure? = null,
     ) : TeamHubUiState
-    data class Failed(val profileId: String, val teamId: String) : TeamHubUiState
+    data class Failed(
+        val profileId: String,
+        val teamId: String,
+    ) : TeamHubUiState
 }

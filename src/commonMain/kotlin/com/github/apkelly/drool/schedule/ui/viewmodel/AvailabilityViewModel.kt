@@ -38,7 +38,10 @@ class AvailabilityViewModel(
     private var configuredAccountId: String? = null
     private var configurationVersion = 0
 
-    fun configureFamily(accountId: String, profileIds: List<String>) {
+    fun configureFamily(
+        accountId: String,
+        profileIds: List<String>,
+    ) {
         if (configuredAccountId != accountId) {
             configuredAccountId = accountId
             configurationVersion += 1
@@ -51,7 +54,9 @@ class AvailabilityViewModel(
         checkEligibility(profileIds)
     }
 
-    fun checkEligibility(profileIds: List<String>) {
+    fun checkEligibility(
+        profileIds: List<String>,
+    ) {
         profileIds.distinct().forEach { profileId ->
             if (!checkedProfileIds.add(profileId)) return@forEach
             val requestVersion = configurationVersion
@@ -65,6 +70,7 @@ class AvailabilityViewModel(
                             mutableRefereeProfileIds.update { it + profileId }
                         }
                     }
+
                     is AvailabilityResult.Failed -> {
                         if (configurationVersion == requestVersion) {
                             checkedProfileIds.remove(profileId)
@@ -75,7 +81,10 @@ class AvailabilityViewModel(
         }
     }
 
-    fun load(profileId: String, force: Boolean = false) {
+    fun load(
+        profileId: String,
+        force: Boolean = false,
+    ) {
         mutableActiveProfileId.value = profileId
         overviewCache[profileId]
             ?.takeUnless { force }
@@ -97,6 +106,7 @@ class AvailabilityViewModel(
                         mutableState.value = result.value.toReady()
                     }
                 }
+
                 is AvailabilityResult.Failed -> {
                     if (
                         configurationVersion == requestVersion &&
@@ -109,7 +119,10 @@ class AvailabilityViewModel(
         }
     }
 
-    fun create(profileId: String, draft: RefereeAvailabilityDraft) {
+    fun create(
+        profileId: String,
+        draft: RefereeAvailabilityDraft,
+    ) {
         val ready = mutableState.value as? AvailabilityUiState.Ready ?: return
         if (ready.isSaving) return
         mutableState.value = ready.copy(isSaving = true, failure = null)
@@ -123,6 +136,7 @@ class AvailabilityViewModel(
                         load(profileId, force = true)
                     }
                 }
+
                 is AvailabilityResult.Failed -> {
                     if (
                         configurationVersion == requestVersion &&
@@ -140,7 +154,10 @@ class AvailabilityViewModel(
         }
     }
 
-    fun delete(profileId: String, availabilityId: String) {
+    fun delete(
+        profileId: String,
+        availabilityId: String,
+    ) {
         val ready = mutableState.value as? AvailabilityUiState.Ready ?: return
         if (ready.deletingAvailabilityId != null) return
         mutableState.value = ready.copy(
@@ -161,6 +178,7 @@ class AvailabilityViewModel(
                         mutableState.value = ready.copy(availabilities = updated)
                     }
                 }
+
                 is AvailabilityResult.Failed -> {
                     if (
                         configurationVersion == requestVersion &&
@@ -179,9 +197,8 @@ class AvailabilityViewModel(
         }
     }
 
-    private fun RefereeAvailabilityOverview.toReady() =
-        AvailabilityUiState.Ready(
-            clubs = clubs,
-            availabilities = availabilities,
-        )
+    private fun RefereeAvailabilityOverview.toReady() = AvailabilityUiState.Ready(
+        clubs = clubs,
+        availabilities = availabilities,
+    )
 }

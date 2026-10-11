@@ -43,8 +43,12 @@ data class RefereeAvailabilityDraft(
 )
 
 sealed interface AvailabilityResult<out T> {
-    data class Success<T>(val value: T) : AvailabilityResult<T>
-    data class Failed(val reason: AvailabilityFailure) : AvailabilityResult<Nothing>
+    data class Success<T>(
+        val value: T,
+    ) : AvailabilityResult<T>
+    data class Failed(
+        val reason: AvailabilityFailure,
+    ) : AvailabilityResult<Nothing>
 }
 
 enum class AvailabilityFailure {

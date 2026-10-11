@@ -12,12 +12,17 @@ interface TeamHubCacheDao {
         SELECT * FROM TeamHubCacheEntity
         WHERE profileId = :profileId AND teamId = :teamId
         LIMIT 1
-        """
+        """,
     )
-    suspend fun get(profileId: String, teamId: String): TeamHubCacheEntity?
+    suspend fun get(
+        profileId: String,
+        teamId: String,
+    ): TeamHubCacheEntity?
 
     @Upsert
-    suspend fun upsert(cache: TeamHubCacheEntity)
+    suspend fun upsert(
+        cache: TeamHubCacheEntity,
+    )
 
     @Query("DELETE FROM TeamHubCacheEntity")
     suspend fun deleteAll()

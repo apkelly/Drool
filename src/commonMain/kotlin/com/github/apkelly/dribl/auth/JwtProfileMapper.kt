@@ -1,12 +1,14 @@
 package com.github.apkelly.dribl.auth
 
 import com.github.apkelly.dribl.api.driblJson
+import com.github.apkelly.dribl.model.Profile
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import com.github.apkelly.dribl.model.Profile
 
-internal fun profileFromBearerToken(token: String): Profile? {
+internal fun profileFromBearerToken(
+    token: String,
+): Profile? {
     val payload = token.split('.').takeIf { it.size == 3 }?.get(1) ?: return null
     val claims = runCatching {
         driblJson.parseToJsonElement(payload.decodeBase64Url().decodeToString()) as? JsonObject
@@ -50,7 +52,9 @@ internal fun profileFromBearerToken(token: String): Profile? {
     )
 }
 
-private fun JsonObject.claim(vararg keys: String): String? {
+private fun JsonObject.claim(
+    vararg keys: String,
+): String? {
     keys.forEach { key ->
         (this[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
             return it
@@ -78,12 +82,16 @@ private fun String.decodeBase64Url(): ByteArray {
             '_', '/' -> 63
             else -> throw IllegalArgumentException("Invalid Base64URL character")
         }
-        buffer = (buffer shl 6) or value
-        bits += 6
-        if (bits >= 8) {
-            bits -= 8
-            output += ((buffer shr bits) and 0xFF).toByte()
+        buffer = (buffer shl BASE64_BITS_PER_CHARACTER) or value
+        bits += BASE64_BITS_PER_CHARACTER
+        if (bits >= BITS_PER_BYTE) {
+            bits -= BITS_PER_BYTE
+            output += ((buffer shr bits) and BYTE_MASK).toByte()
         }
     }
     return output.toByteArray()
 }
+
+private const val BASE64_BITS_PER_CHARACTER = 6
+private const val BITS_PER_BYTE = 8
+private const val BYTE_MASK = 0xFF

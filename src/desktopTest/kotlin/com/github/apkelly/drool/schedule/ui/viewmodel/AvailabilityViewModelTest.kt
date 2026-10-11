@@ -87,7 +87,9 @@ class AvailabilityViewModelTest {
         )
     }
 
-    private fun TestScope.viewModel(repository: AvailabilityRepository) = AvailabilityViewModel(
+    private fun TestScope.viewModel(
+        repository: AvailabilityRepository,
+    ) = AvailabilityViewModel(
         getRefereeClubs = GetRefereeClubsUseCase(repository),
         getAvailability = GetRefereeAvailabilityUseCase(repository),
         createAvailability = CreateRefereeAvailabilityUseCase(repository),

@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.ui.preview
 
+import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.domain.model.Account
 import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.FamilyTeam
@@ -11,11 +12,10 @@ import com.github.apkelly.drool.domain.model.RelatedUser
 import com.github.apkelly.drool.domain.model.Team
 import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.domain.model.ThemeMode
-import com.github.apkelly.drool.ui.model.CollectionUiState
-import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
 import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
+import com.github.apkelly.drool.ui.model.CollectionUiState
 
 internal object TopLevelScreenPreviewData {
     private val child = RelatedUser(
@@ -38,7 +38,7 @@ internal object TopLevelScreenPreviewData {
                 name = "Marrickville FC",
                 subtitle = "Coach",
                 logoUrl = null,
-            )
+            ),
         ),
     )
 
@@ -135,7 +135,7 @@ internal object TopLevelScreenPreviewData {
                 ),
             ),
             isStale = false,
-        )
+        ),
     )
 
     val profileModel = ProfileUiModel(

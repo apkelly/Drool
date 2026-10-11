@@ -10,16 +10,15 @@ actual fun createPlatformHttpClient(
     logBodies: Boolean,
     logTag: String,
     loggingEnabled: Boolean,
-): HttpClient =
-    HttpClient(Darwin) {
-        install(ContentNegotiation) {
-            json(networkJson)
-        }
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30_000
-            connectTimeoutMillis = 30_000
-            socketTimeoutMillis = 30_000
-        }
+): HttpClient = HttpClient(Darwin) {
+    install(ContentNegotiation) {
+        json(networkJson)
     }
+    install(HttpTimeout) {
+        requestTimeoutMillis = HTTP_TIMEOUT_MILLIS
+        connectTimeoutMillis = HTTP_TIMEOUT_MILLIS
+        socketTimeoutMillis = HTTP_TIMEOUT_MILLIS
+    }
+}
 
 actual fun platformDefaultBearerToken(): String? = null

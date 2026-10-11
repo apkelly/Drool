@@ -4,7 +4,9 @@ import android.content.Context
 
 private lateinit var applicationContext: Context
 
-fun initializeAndroidStorage(context: Context) {
+fun initializeAndroidStorage(
+    context: Context,
+) {
     applicationContext = context.applicationContext
 }
 
@@ -15,8 +17,6 @@ internal fun requireAndroidApplicationContext(): Context {
     return applicationContext
 }
 
-actual fun createPlatformBearerTokenStore(): BearerTokenStore {
-    return createBearerTokenStore {
-        requireAndroidApplicationContext().filesDir.resolve(DataStoreFileName).absolutePath
-    }
+actual fun createPlatformBearerTokenStore(): BearerTokenStore = createBearerTokenStore {
+    requireAndroidApplicationContext().filesDir.resolve(DATA_STORE_FILE_NAME).absolutePath
 }

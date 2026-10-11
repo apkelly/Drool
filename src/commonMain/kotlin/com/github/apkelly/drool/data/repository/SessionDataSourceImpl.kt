@@ -1,5 +1,36 @@
 package com.github.apkelly.drool.data.repository
 
+import com.github.apkelly.dribl.api.AuthRemoteDataSource
+import com.github.apkelly.dribl.api.DriblHttpException
+import com.github.apkelly.dribl.api.DriblResponseException
+import com.github.apkelly.dribl.api.SportsRemoteDataSource
+import com.github.apkelly.dribl.auth.profileFromBearerToken
+import com.github.apkelly.drool.data.local.DroolDatabase
+import com.github.apkelly.drool.data.local.inTransaction
+import com.github.apkelly.drool.data.mapper.accountEmailUpdates
+import com.github.apkelly.drool.data.mapper.emailAddress
+import com.github.apkelly.drool.data.mapper.linkedIdentityUpdates
+import com.github.apkelly.drool.data.mapper.reconcileRelatedUsers
+import com.github.apkelly.drool.data.mapper.toCurrentProfile
+import com.github.apkelly.drool.data.mapper.toDomain
+import com.github.apkelly.drool.data.mapper.toDriblRequest
+import com.github.apkelly.drool.data.mapper.toEntity
+import com.github.apkelly.drool.data.mapper.toLinkedEntity
+import com.github.apkelly.drool.data.mapper.withIdentityFrom
+import com.github.apkelly.drool.data.repository.SessionDataSource
+import com.github.apkelly.drool.data.storage.BearerTokenStore
+import com.github.apkelly.drool.domain.model.Account
+import com.github.apkelly.drool.domain.model.AuthCredentials
+import com.github.apkelly.drool.domain.model.AuthenticatedSession
+import com.github.apkelly.drool.domain.model.AuthenticationException
+import com.github.apkelly.drool.domain.model.AuthenticationFailure
+import com.github.apkelly.drool.domain.model.LinkMemberException
+import com.github.apkelly.drool.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.domain.model.linkMemberFailureForHttpStatus
+import com.github.apkelly.drool.logging.DroolLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
@@ -7,37 +38,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
-import com.github.apkelly.drool.data.local.DroolDatabase
-import com.github.apkelly.drool.data.local.inTransaction
-import com.github.apkelly.drool.data.mapper.toDomain
-import com.github.apkelly.drool.data.mapper.toCurrentProfile
-import com.github.apkelly.drool.data.mapper.toEntity
-import com.github.apkelly.drool.data.mapper.toLinkedEntity
-import com.github.apkelly.drool.data.mapper.withIdentityFrom
-import com.github.apkelly.drool.data.mapper.linkedIdentityUpdates
-import com.github.apkelly.drool.data.mapper.accountEmailUpdates
-import com.github.apkelly.drool.data.mapper.emailAddress
-import com.github.apkelly.drool.data.mapper.reconcileRelatedUsers
-import com.github.apkelly.drool.data.mapper.toDriblRequest
-import com.github.apkelly.dribl.api.AuthRemoteDataSource
-import com.github.apkelly.dribl.api.DriblHttpException
-import com.github.apkelly.dribl.api.DriblResponseException
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
-import com.github.apkelly.dribl.auth.profileFromBearerToken
-import com.github.apkelly.drool.data.storage.BearerTokenStore
-import com.github.apkelly.drool.domain.model.AuthCredentials
-import com.github.apkelly.drool.domain.model.Account
-import com.github.apkelly.drool.domain.model.AuthenticatedSession
-import com.github.apkelly.drool.domain.model.AuthenticationException
-import com.github.apkelly.drool.domain.model.AuthenticationFailure
-import com.github.apkelly.drool.domain.model.Profile
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
-import com.github.apkelly.drool.domain.model.LinkMemberException
-import com.github.apkelly.drool.domain.model.LinkMemberFailure
-import com.github.apkelly.drool.domain.model.linkMemberFailureForHttpStatus
-import com.github.apkelly.drool.domain.model.RelatedUser
-import com.github.apkelly.drool.data.repository.SessionDataSource
-import com.github.apkelly.drool.logging.DroolLog
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SessionDataSourceImpl(
@@ -48,22 +48,21 @@ class SessionDataSourceImpl(
 ) : SessionDataSource {
     private val logger = DroolLog.withTag("SessionDataSource")
 
-    override fun observeProfile() =
-        database.profileDao().observeActive().flatMapLatest { profile ->
-            if (profile == null) {
-                flowOf(null)
-            } else {
-                combine(
-                    database.profileDao().observeRelatedUsers(profile.accountId),
-                    database.profileDao().observeAccounts(profile.accountId),
-                ) { users, accounts ->
-                    profile.toDomain(
-                        relatedUsers = users.map { it.toDomain() },
-                        accounts = accounts.map { it.toDomain() },
-                    )
-                }
+    override fun observeProfile() = database.profileDao().observeActive().flatMapLatest { profile ->
+        if (profile == null) {
+            flowOf(null)
+        } else {
+            combine(
+                database.profileDao().observeRelatedUsers(profile.accountId),
+                database.profileDao().observeAccounts(profile.accountId),
+            ) { users, accounts ->
+                profile.toDomain(
+                    relatedUsers = users.map { it.toDomain() },
+                    accounts = accounts.map { it.toDomain() },
+                )
             }
         }
+    }
 
     override suspend fun restoreSession(): AuthenticatedSession? {
         val token = store.getBearerToken() ?: return null
@@ -121,7 +120,7 @@ class SessionDataSourceImpl(
                 attachAssociations(profileDto),
             )
         } catch (error: DriblHttpException) {
-            if (error.statusCode == 401 || error.statusCode == 403) {
+            if (error.statusCode == HTTP_UNAUTHORIZED || error.statusCode == HTTP_FORBIDDEN) {
                 store.clearBearerToken()
                 null
             } else {
@@ -130,7 +129,9 @@ class SessionDataSourceImpl(
         }
     }
 
-    override suspend fun signIn(credentials: AuthCredentials): AuthenticatedSession {
+    override suspend fun signIn(
+        credentials: AuthCredentials,
+    ): AuthenticatedSession {
         try {
             val authSession = authApi.signIn(credentials.toDriblRequest()).toDomain()
             val token = authSession.bearerToken
@@ -168,19 +169,21 @@ class SessionDataSourceImpl(
             } else {
                 AuthenticationFailure.Unknown
             }
-            throw AuthenticationException(reason, error)
+            authenticationFailed(reason, error)
         } catch (error: IOException) {
-            throw AuthenticationException(AuthenticationFailure.Offline, error)
+            authenticationFailed(AuthenticationFailure.Offline, error)
         } catch (error: DriblResponseException) {
-            throw AuthenticationException(AuthenticationFailure.Unknown, error)
+            authenticationFailed(AuthenticationFailure.Unknown, error)
         } catch (error: SerializationException) {
-            throw AuthenticationException(AuthenticationFailure.Unknown, error)
-        } catch (error: Throwable) {
-            throw AuthenticationException(AuthenticationFailure.Unknown, error)
+            authenticationFailed(AuthenticationFailure.Unknown, error)
+        } catch (unexpected: Throwable) {
+            authenticationFailed(AuthenticationFailure.Unknown, unexpected)
         }
     }
 
-    private suspend fun resolveProfile(token: String): Profile {
+    private suspend fun resolveProfile(
+        token: String,
+    ): Profile {
         val tokenProfile = profileFromBearerToken(token)
         return if (tokenProfile == null) {
             sportsApi.fetchProfile(token).toDomain()
@@ -226,14 +229,16 @@ class SessionDataSourceImpl(
         }
     }
 
-    override suspend fun getLinkCandidates(): List<RelatedUser> =
-        linkMemberRequest {
-            val token = store.getBearerToken()
-                ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
-            sportsApi.fetchLinkCandidates(token).map { it.toDomain() }
-        }
+    override suspend fun getLinkCandidates(): List<RelatedUser> = linkMemberRequest {
+        val token = store.getBearerToken()
+            ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
+        sportsApi.fetchLinkCandidates(token).map { it.toDomain() }
+    }
 
-    override suspend fun verifyLinkedUser(candidateId: String, token: String) {
+    override suspend fun verifyLinkedUser(
+        candidateId: String,
+        token: String,
+    ) {
         linkMemberRequest(invalidTokenOnClientError = true) {
             val bearerToken = store.getBearerToken()
                 ?: throw LinkMemberException(LinkMemberFailure.SessionExpired)
@@ -323,15 +328,18 @@ class SessionDataSourceImpl(
         } catch (error: CancellationException) {
             throw error
         } catch (error: DriblHttpException) {
-            if (rejectUnauthorized && (error.statusCode == 401 || error.statusCode == 403)) {
+            if (
+                rejectUnauthorized &&
+                (error.statusCode == HTTP_UNAUTHORIZED || error.statusCode == HTTP_FORBIDDEN)
+            ) {
                 throw error
             }
             logger.w {
                 "Unable to refresh $name; preserving cached data (${error::class.simpleName})"
             }
-        } catch (error: Exception) {
+        } catch (unexpected: Exception) {
             logger.w {
-                "Unable to refresh $name; preserving cached data (${error::class.simpleName})"
+                "Unable to refresh $name; preserving cached data (${unexpected::class.simpleName})"
             }
         }
     }
@@ -339,28 +347,29 @@ class SessionDataSourceImpl(
     private suspend fun <T> linkMemberRequest(
         invalidTokenOnClientError: Boolean = false,
         block: suspend () -> T,
-    ): T =
-        try {
-            block()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: LinkMemberException) {
-            throw error
-        } catch (error: DriblHttpException) {
-            throw LinkMemberException(
-                reason = linkMemberFailureForHttpStatus(
-                    error.statusCode,
-                    invalidTokenOnClientError,
-                ),
-                cause = error,
-            )
-        } catch (error: IOException) {
-            throw LinkMemberException(LinkMemberFailure.Offline, error)
-        } catch (error: Exception) {
-            throw LinkMemberException(LinkMemberFailure.Unknown, error)
-        }
+    ): T = try {
+        block()
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: LinkMemberException) {
+        throw error
+    } catch (error: DriblHttpException) {
+        throw LinkMemberException(
+            reason = linkMemberFailureForHttpStatus(
+                error.statusCode,
+                invalidTokenOnClientError,
+            ),
+            cause = error,
+        )
+    } catch (error: IOException) {
+        throw LinkMemberException(LinkMemberFailure.Offline, error)
+    } catch (unexpected: Exception) {
+        throw LinkMemberException(LinkMemberFailure.Unknown, unexpected)
+    }
 
-    private suspend fun attachAssociations(profile: Profile): Profile {
+    private suspend fun attachAssociations(
+        profile: Profile,
+    ): Profile {
         val current = database.profileDao().getActive().toCurrentProfile(profile)
         return current.copy(
             relatedUsers = database.profileDao().getRelatedUsers(current.accountId)
@@ -383,10 +392,10 @@ class SessionDataSourceImpl(
                 database.profileDao().deleteRelatedUsers(profileDto.accountId)
                 database.profileDao().deleteAccounts(profileDto.accountId)
                 database.profileDao().upsertRelatedUsers(
-                    relatedUsers.map { it.toEntity(profileDto.accountId) }
+                    relatedUsers.map { it.toEntity(profileDto.accountId) },
                 )
                 database.profileDao().upsertAccounts(
-                    accounts.map { it.toEntity(profileDto.accountId) }
+                    accounts.map { it.toEntity(profileDto.accountId) },
                 )
             }
         }
@@ -410,13 +419,20 @@ class SessionDataSourceImpl(
         }
     }
 
-    private fun String.needsRepair(accountId: String): Boolean =
-        this == accountId || looksLikeEmail()
+    private fun String.needsRepair(
+        accountId: String,
+    ): Boolean = this == accountId || looksLikeEmail()
 
-    private fun String.looksLikeEmail(): Boolean =
-        contains('@')
+    private fun String.looksLikeEmail(): Boolean = contains('@')
+
+    private fun authenticationFailed(
+        reason: AuthenticationFailure,
+        cause: Throwable,
+    ): Nothing = throw AuthenticationException(reason, cause)
 
     private companion object {
+        const val HTTP_UNAUTHORIZED = 401
+        const val HTTP_FORBIDDEN = 403
         const val LINK_CANDIDATE_SCOPE = "link-candidate"
     }
 }

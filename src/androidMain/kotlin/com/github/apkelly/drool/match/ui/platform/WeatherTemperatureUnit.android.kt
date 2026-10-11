@@ -11,7 +11,7 @@ actual fun platformWeatherTemperatureUnit(): WeatherTemperatureUnit {
         .locales[0]
     return if (
         LocaleData.getMeasurementSystem(ULocale.forLocale(locale)) ==
-            LocaleData.MeasurementSystem.US
+        LocaleData.MeasurementSystem.US
     ) {
         WeatherTemperatureUnit.Fahrenheit
     } else {

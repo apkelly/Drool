@@ -1,14 +1,14 @@
 package com.github.apkelly.drool.match.data.weather
 
-import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import com.github.apkelly.drool.data.repository.TestDatabase
 import com.github.apkelly.drool.data.time.TimeProvider
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.FixtureStatus
 import com.github.apkelly.drool.domain.model.MatchWeather
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class MatchWeatherDataSourceImplTest {
     @Test
@@ -28,15 +28,15 @@ class MatchWeatherDataSourceImplTest {
             assertEquals(1, remote.calls)
 
             remote.weather = null
-            clock.now = DayMillis - 1
+            clock.now = DAY_MILLIS - 1
             assertEquals("Fine", repository.loadMatchWeather(fixture)?.condition)
             assertEquals(1, remote.calls)
 
-            clock.now = DayMillis
+            clock.now = DAY_MILLIS
             assertNull(repository.loadMatchWeather(fixture))
             assertEquals(2, remote.calls)
 
-            clock.now += DayMillis - 1
+            clock.now += DAY_MILLIS - 1
             assertNull(repository.loadMatchWeather(fixture))
             assertEquals(2, remote.calls)
         }
@@ -82,7 +82,7 @@ class MatchWeatherDataSourceImplTest {
     )
 
     private companion object {
-        const val DayMillis = 24L * 60L * 60L * 1_000L
+        const val DAY_MILLIS = 24L * 60L * 60L * 1_000L
     }
 }
 
@@ -101,6 +101,8 @@ private class FakeWeatherRemote : WeatherRemoteDataSource {
     }
 }
 
-private class MutableWeatherTimeProvider(var now: Long = 0L) : TimeProvider {
+private class MutableWeatherTimeProvider(
+    var now: Long = 0L,
+) : TimeProvider {
     override fun nowEpochMillis(): Long = now
 }

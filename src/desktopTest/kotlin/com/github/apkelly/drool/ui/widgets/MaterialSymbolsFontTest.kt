@@ -10,7 +10,7 @@ class MaterialSymbolsFontTest {
     @Test
     fun bundledFontContainsEveryUsedSymbol() {
         val file = File(
-            "src/commonMain/composeResources/font/material_symbols_outlined.ttf"
+            "src/commonMain/composeResources/font/material_symbols_outlined.ttf",
         )
         val font = Font.createFont(Font.TRUETYPE_FONT, file)
 

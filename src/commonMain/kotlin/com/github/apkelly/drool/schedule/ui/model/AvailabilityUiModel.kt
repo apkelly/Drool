@@ -22,5 +22,7 @@ sealed interface AvailabilityUiState {
         val failure: AvailabilityFailure? = null,
     ) : AvailabilityUiState
 
-    data class Failed(val reason: AvailabilityFailure) : AvailabilityUiState
+    data class Failed(
+        val reason: AvailabilityFailure,
+    ) : AvailabilityUiState
 }

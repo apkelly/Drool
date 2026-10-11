@@ -42,9 +42,9 @@ actual fun rememberLocationActionLauncher(): LocationActionLauncher {
                             Uri.parse(
                                 "https://www.google.com/maps/dir/" +
                                     "?api=1&destination=${Uri.encode(destination)}" +
-                                    "&travelmode=driving"
+                                    "&travelmode=driving",
                             ),
-                        )
+                        ),
                     )
                 }
             }
@@ -80,7 +80,7 @@ actual fun GoogleMapPreview(
                 map.clear()
                 map.uiSettings.setAllGesturesEnabled(false)
                 map.addMarker(MarkerOptions().position(position))
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f))
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(position, DEFAULT_MAP_ZOOM))
             }
         }
     }
@@ -97,5 +97,6 @@ private fun destination(
     latitude: Double?,
     longitude: Double?,
     address: String,
-): String =
-    if (latitude != null && longitude != null) "$latitude,$longitude" else address
+): String = if (latitude != null && longitude != null) "$latitude,$longitude" else address
+
+private const val DEFAULT_MAP_ZOOM = 15f

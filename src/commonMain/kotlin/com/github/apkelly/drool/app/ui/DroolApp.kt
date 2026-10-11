@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -26,46 +27,45 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclassesOfSealed
+import com.github.apkelly.drool.app.ui.navigation.AppRoute
+import com.github.apkelly.drool.app.ui.navigation.TopLevelDestination
+import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
+import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.auth.ui.ReconnectScreen
 import com.github.apkelly.drool.auth.ui.RegisterScreen
 import com.github.apkelly.drool.auth.ui.SignInScreen
 import com.github.apkelly.drool.auth.ui.WelcomeScreen
+import com.github.apkelly.drool.auth.ui.model.SessionUiState
 import com.github.apkelly.drool.discover.ui.ClubScreen
 import com.github.apkelly.drool.discover.ui.DiscoverScreen
+import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.home.ui.HomeScreen
+import com.github.apkelly.drool.home.ui.model.HomeUiModel
+import com.github.apkelly.drool.match.ui.MatchDetailsScreen
+import com.github.apkelly.drool.observability.AppScreen
 import com.github.apkelly.drool.profile.ui.ApiDiagnosticsScreen
 import com.github.apkelly.drool.profile.ui.LinkMemberScreen
 import com.github.apkelly.drool.profile.ui.PersonalInformationScreen
 import com.github.apkelly.drool.profile.ui.ProfileScreen
+import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.nav_discover
 import com.github.apkelly.drool.resources.nav_home
 import com.github.apkelly.drool.resources.nav_profile
 import com.github.apkelly.drool.resources.nav_schedule
-import com.github.apkelly.drool.auth.ui.model.AuthFailure
-import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
-import com.github.apkelly.drool.home.ui.model.HomeUiModel
-import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
-import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
-import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
-import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
-import com.github.apkelly.drool.auth.ui.model.SessionUiState
-import com.github.apkelly.drool.app.ui.navigation.AppRoute
-import com.github.apkelly.drool.app.ui.navigation.TopLevelDestination
-import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
-import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
-import com.github.apkelly.drool.schedule.ui.ScheduleScreen
 import com.github.apkelly.drool.schedule.ui.AvailabilityScreen
-import com.github.apkelly.drool.match.ui.MatchDetailsScreen
+import com.github.apkelly.drool.schedule.ui.ScheduleScreen
+import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
+import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
+import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
 import com.github.apkelly.drool.team.ui.TeamHubScreen
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.ui.widgets.SplashContent
-import com.github.apkelly.drool.observability.AppScreen
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclassesOfSealed
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -99,20 +99,23 @@ fun DroolApp(
         }
     }
     if (shouldShowInitialSplash(initialSplashFinished, sessionState)) {
-        SplashContent(onAnimationFinished = { initialSplashFinished = true })
+        SplashContent(onAnimationFinish = { initialSplashFinished = true })
         return
     }
     when (val state = sessionState) {
         SessionUiState.Bootstrapping -> Unit
+
         SessionUiState.ReconnectRequired -> ReconnectScreen(appViewModel::restore)
+
         SessionUiState.AuthenticationRequired,
         SessionUiState.Authenticating,
         is SessionUiState.AuthenticationFailed,
         -> AuthNavigation(
             sessionState = state,
             onSignIn = appViewModel::signIn,
-            onScreenViewed = appViewModel::trackScreen,
+            onScreenView = appViewModel::trackScreen,
         )
+
         is SessionUiState.Authenticated -> {
             MainNavigation(
                 profile = state.profile,
@@ -133,19 +136,20 @@ internal fun shouldShowInitialSplash(
 private fun AuthNavigation(
     sessionState: SessionUiState,
     onSignIn: (String, String) -> Unit,
-    onScreenViewed: (AppScreen) -> Unit,
+    onScreenView: (AppScreen) -> Unit,
 ) {
+    val currentOnScreenView by rememberUpdatedState(onScreenView)
     val backStack = rememberNavBackStack(
         navigationStateConfiguration,
         AppRoute.Welcome as NavKey,
     )
     LaunchedEffect(backStack.lastOrNull()) {
-        onScreenViewed(
+        currentOnScreenView(
             when (backStack.lastOrNull()) {
                 AppRoute.SignIn -> AppScreen.SignIn
                 AppRoute.Register -> AppScreen.Register
                 else -> AppScreen.Welcome
-            }
+            },
         )
     }
     NavDisplay(
@@ -174,7 +178,7 @@ private fun AuthNavigation(
                 RegisterScreen(
                     onBack = {
                         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-                    }
+                    },
                 )
             }
         },
@@ -260,23 +264,23 @@ private fun MainNavigation(
                             familyRefreshResults = familyRefreshResults,
                             fixtures = fixtures,
                         ),
-                        onProfileSelected = sportsViewModel::selectFamilyProfile,
+                        onProfileSelect = sportsViewModel::selectFamilyProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
                         onSignInAgain = appViewModel::signOut,
-                        onFixtureSelected = { fixture ->
+                        onFixtureSelect = { fixture ->
                             fixture.profileId?.let { profileId ->
                                 currentStack.add(
                                     AppRoute.MatchDetails(
                                         profileId = profileId,
                                         matchId = fixture.id,
-                                    )
+                                    ),
                                 )
                             }
                         },
                         onViewSchedule = {
                             selected = TopLevelDestination.Schedule
                         },
-                        onTeamSelected = { familyTeam ->
+                        onTeamSelect = { familyTeam ->
                             val team = familyTeam.team
                             currentStack.add(
                                 AppRoute.Team(
@@ -286,7 +290,7 @@ private fun MainNavigation(
                                     logoUrl = team.logoUrl,
                                     primaryColor = team.primaryColor,
                                     secondaryColor = team.secondaryColor,
-                                )
+                                ),
                             )
                         },
                     )
@@ -298,17 +302,17 @@ private fun MainNavigation(
                             familyProfiles = familyProfiles,
                             selectedProfileId = selectedProfileId,
                             canManageRefereeAvailability =
-                                selectedProfileId in refereeProfileIds,
+                            selectedProfileId in refereeProfileIds,
                         ),
-                        onProfileSelected = sportsViewModel::selectFamilyProfile,
+                        onProfileSelect = sportsViewModel::selectFamilyProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
-                        onFixtureSelected = { fixture ->
+                        onFixtureSelect = { fixture ->
                             fixture.profileId?.let { profileId ->
                                 currentStack.add(
                                     AppRoute.MatchDetails(
                                         profileId = profileId,
                                         matchId = fixture.id,
-                                    )
+                                    ),
                                 )
                             }
                         },
@@ -323,7 +327,7 @@ private fun MainNavigation(
                     DiscoverScreen(
                         model = DiscoverUiModel(clubs),
                         onRefresh = sportsViewModel::refreshClubs,
-                        onClubSelected = { club ->
+                        onClubSelect = { club ->
                             sportsViewModel.selectClub(club.id)
                             currentStack.add(AppRoute.Club(club.id))
                         },
@@ -342,8 +346,8 @@ private fun MainNavigation(
                                 }
                             },
                             onRefresh = sportsViewModel::refreshTeams,
-                            onFollowingChanged = sportsViewModel::setFollowing,
-                            onTeamSelected = { team ->
+                            onFollowingChange = sportsViewModel::setFollowing,
+                            onTeamSelect = { team ->
                                 currentStack.add(
                                     AppRoute.Team(
                                         profileId = profile.accountId,
@@ -352,7 +356,7 @@ private fun MainNavigation(
                                         logoUrl = team.logoUrl,
                                         primaryColor = team.primaryColor,
                                         secondaryColor = team.secondaryColor,
-                                    )
+                                    ),
                                 )
                             },
                         )
@@ -374,12 +378,12 @@ private fun MainNavigation(
                         },
                         onLoad = sportsViewModel::loadTeam,
                         onRefresh = sportsViewModel::refreshTeam,
-                        onMatchSelected = { fixture ->
+                        onMatchSelect = { fixture ->
                             currentStack.add(
                                 AppRoute.MatchDetails(
                                     profileId = route.profileId,
                                     matchId = fixture.id,
-                                )
+                                ),
                             )
                         },
                     )
@@ -395,14 +399,14 @@ private fun MainNavigation(
                             }
                         },
                         onLoad = sportsViewModel::loadMatch,
-                        onTeamSelected = { teamId, teamName, logoUrl ->
+                        onTeamSelect = { teamId, teamName, logoUrl ->
                             currentStack.add(
                                 AppRoute.Team(
                                     profileId = route.profileId,
                                     teamId = teamId,
                                     teamName = teamName,
                                     logoUrl = logoUrl,
-                                )
+                                ),
                             )
                         },
                     )
@@ -414,15 +418,15 @@ private fun MainNavigation(
                             themeMode = themeMode,
                             observabilityEnabled = observabilityEnabled,
                         ),
-                        onThemeChanged = appViewModel::updateTheme,
-                        onObservabilityChanged = appViewModel::updateObservability,
+                        onThemeChange = appViewModel::updateTheme,
+                        onObservabilityChange = appViewModel::updateObservability,
                         onOpenApiDiagnostics = {
                             currentStack.add(AppRoute.ApiDiagnostics)
                         },
                         onAddMember = {
                             currentStack.add(AppRoute.LinkMember)
                         },
-                        onRelatedUserSelected = { user ->
+                        onRelatedUserSelect = { user ->
                             currentStack.add(AppRoute.PersonalInformation(user.subjectUserId))
                         },
                         onSignOut = appViewModel::signOut,
@@ -446,7 +450,7 @@ private fun MainNavigation(
                                 ) {
                                     {
                                         currentStack.add(
-                                            AppRoute.Availability(route.userId)
+                                            AppRoute.Availability(route.userId),
                                         )
                                     }
                                 } else {
@@ -497,7 +501,7 @@ private fun MainNavigation(
                         },
                         onLoad = appViewModel::loadLinkCandidates,
                         onVerify = appViewModel::verifyLinkedUser,
-                        onLinked = appViewModel::restore,
+                        onLink = appViewModel::restore,
                     )
                 }
                 entry<AppRoute.ApiDiagnostics> {

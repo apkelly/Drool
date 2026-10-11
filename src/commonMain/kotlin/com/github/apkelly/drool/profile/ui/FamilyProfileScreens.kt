@@ -28,25 +28,27 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.domain.model.EmergencyContact
 import com.github.apkelly.drool.domain.model.LinkMemberFailure
 import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.resources.Res
-import com.github.apkelly.drool.resources.availability_action
 import com.github.apkelly.drool.resources.action_cancel
 import com.github.apkelly.drool.resources.action_retry
+import com.github.apkelly.drool.resources.availability_action
 import com.github.apkelly.drool.resources.content_profile_image
 import com.github.apkelly.drool.resources.personal_address
+import com.github.apkelly.drool.resources.personal_contact_call
+import com.github.apkelly.drool.resources.personal_contact_email
 import com.github.apkelly.drool.resources.personal_date_of_birth
 import com.github.apkelly.drool.resources.personal_email
 import com.github.apkelly.drool.resources.personal_emergency_contacts
-import com.github.apkelly.drool.resources.personal_contact_call
-import com.github.apkelly.drool.resources.personal_contact_email
 import com.github.apkelly.drool.resources.personal_full_name
 import com.github.apkelly.drool.resources.personal_gender
 import com.github.apkelly.drool.resources.personal_not_provided
@@ -59,12 +61,11 @@ import com.github.apkelly.drool.resources.profile_link_failed
 import com.github.apkelly.drool.resources.profile_link_member
 import com.github.apkelly.drool.resources.profile_link_session_expired
 import com.github.apkelly.drool.resources.profile_link_verify
-import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.ui.platform.rememberContactActionLauncher
-import com.github.apkelly.drool.ui.widgets.RemoteImage
 import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
+import com.github.apkelly.drool.ui.widgets.RemoteImage
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -73,9 +74,11 @@ import org.jetbrains.compose.resources.stringResource
 fun PersonalInformationScreen(
     user: RelatedUser,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     onOpenAvailability: (() -> Unit)? = null,
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.personal_title)) },
@@ -132,7 +135,9 @@ fun PersonalInformationScreen(
 }
 
 @Composable
-private fun EmergencyContactsField(contacts: List<EmergencyContact>) {
+private fun EmergencyContactsField(
+    contacts: List<EmergencyContact>,
+) {
     val actionLauncher = rememberContactActionLauncher()
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
@@ -151,7 +156,7 @@ private fun EmergencyContactsField(contacts: List<EmergencyContact>) {
                     Text(contact.name, modifier = Modifier.weight(1f))
                     contact.phoneNumber?.takeIf(String::isNotBlank)?.let { phoneNumber ->
                         IconButton(
-                            onClick = { actionLauncher.call(phoneNumber) }
+                            onClick = { actionLauncher.call(phoneNumber) },
                         ) {
                             MaterialSymbolIcon(
                                 MaterialSymbol.Phone,
@@ -180,7 +185,10 @@ private fun EmergencyContactsField(contacts: List<EmergencyContact>) {
 }
 
 @Composable
-private fun PersonalField(label: StringResource, value: String?) {
+private fun PersonalField(
+    label: StringResource,
+    value: String?,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = stringResource(label),
@@ -198,18 +206,22 @@ fun LinkMemberScreen(
     onBack: () -> Unit,
     onLoad: () -> Unit,
     onVerify: (String, String) -> Unit,
-    onLinked: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLink: () -> Unit,
 ) {
+    val currentOnLoad by rememberUpdatedState(onLoad)
+    val currentOnLink by rememberUpdatedState(onLink)
     var selected by remember { mutableStateOf<RelatedUser?>(null) }
     var token by remember(selected) { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        if (state == LinkMemberUiState.Idle) onLoad()
+        if (state == LinkMemberUiState.Idle) currentOnLoad()
     }
     LaunchedEffect(state) {
-        if (state == LinkMemberUiState.Linked) onLinked()
+        if (state == LinkMemberUiState.Linked) currentOnLink()
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.profile_link_member)) },
@@ -227,7 +239,8 @@ fun LinkMemberScreen(
         ) {
             when (state) {
                 LinkMemberUiState.Idle,
-                LinkMemberUiState.Loading -> CircularProgressIndicator()
+                LinkMemberUiState.Loading,
+                -> CircularProgressIndicator()
 
                 is LinkMemberUiState.Failed -> {
                     Text(
@@ -236,7 +249,7 @@ fun LinkMemberScreen(
                                 Res.string.profile_link_session_expired
                             } else {
                                 Res.string.profile_link_failed
-                            }
+                            },
                         ),
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -293,7 +306,9 @@ fun LinkMemberScreen(
                     Text(stringResource(Res.string.profile_link_code_body))
                     OutlinedTextField(
                         value = token,
-                        onValueChange = { token = it.filter(Char::isDigit).take(6) },
+                        onValueChange = {
+                            token = it.filter(Char::isDigit).take(MEMBER_TOKEN_LENGTH)
+                        },
                         label = { Text(stringResource(Res.string.profile_link_code)) },
                         singleLine = true,
                     )
@@ -302,7 +317,7 @@ fun LinkMemberScreen(
             confirmButton = {
                 Button(
                     onClick = { onVerify(candidate.id, token) },
-                    enabled = token.length == 6 &&
+                    enabled = token.length == MEMBER_TOKEN_LENGTH &&
                         (state as? LinkMemberUiState.Ready)?.verifyingCandidateId == null,
                 ) {
                     Text(stringResource(Res.string.profile_link_verify))
@@ -316,3 +331,5 @@ fun LinkMemberScreen(
         )
     }
 }
+
+private const val MEMBER_TOKEN_LENGTH = 6

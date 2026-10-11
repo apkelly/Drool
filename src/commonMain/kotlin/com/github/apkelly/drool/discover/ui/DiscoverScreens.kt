@@ -5,11 +5,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +22,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.domain.model.Club
 import com.github.apkelly.drool.domain.model.Team
 import com.github.apkelly.drool.domain.model.TeamRelationship
@@ -36,25 +37,25 @@ import com.github.apkelly.drool.resources.discover_empty
 import com.github.apkelly.drool.resources.discover_search
 import com.github.apkelly.drool.resources.discover_title
 import com.github.apkelly.drool.ui.model.CollectionUiState
-import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.ui.preview.TopLevelScreenPreviewData
 import com.github.apkelly.drool.ui.theme.DroolTheme
 import com.github.apkelly.drool.ui.widgets.CacheStatus
 import com.github.apkelly.drool.ui.widgets.ClubCard
-import com.github.apkelly.drool.ui.widgets.RefreshAction
-import com.github.apkelly.drool.ui.widgets.TeamCard
 import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
+import com.github.apkelly.drool.ui.widgets.RefreshAction
+import com.github.apkelly.drool.ui.widgets.TeamCard
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.lazy.items as lazyItems
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverScreen(
     model: DiscoverUiModel,
     onRefresh: () -> Unit,
-    onClubSelected: (Club) -> Unit,
+    modifier: Modifier = Modifier,
+    onClubSelect: (Club) -> Unit,
 ) {
     val state = model.clubs
     var query by remember { mutableStateOf("") }
@@ -62,6 +63,7 @@ fun DiscoverScreen(
         state.items.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
     }
     androidx.compose.material3.Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.discover_title)) },
@@ -113,7 +115,7 @@ fun DiscoverScreen(
                     }
                 } else {
                     items(filtered, key = { it.id }) { club ->
-                        ClubCard(club = club, onClick = { onClubSelected(club) })
+                        ClubCard(club = club, onClick = { onClubSelect(club) })
                     }
                 }
             }
@@ -133,7 +135,7 @@ private fun DiscoverScreenPreview() {
         DiscoverScreen(
             model = TopLevelScreenPreviewData.discover,
             onRefresh = {},
-            onClubSelected = {},
+            onClubSelect = {},
         )
     }
 }
@@ -146,10 +148,12 @@ fun ClubScreen(
     relationships: Map<String, TeamRelationship>,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
-    onFollowingChanged: (String, Boolean) -> Unit,
-    onTeamSelected: (Team) -> Unit,
+    onFollowingChange: (String, Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    onTeamSelect: (Team) -> Unit,
 ) {
     androidx.compose.material3.Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(club.name) },
@@ -198,10 +202,10 @@ fun ClubScreen(
                         TeamCard(
                             team = team,
                             relationship = relationships[team.id] ?: TeamRelationship.None,
-                            onFollowingChanged = { following ->
-                                onFollowingChanged(team.id, following)
+                            onFollowingChange = { following ->
+                                onFollowingChange(team.id, following)
                             },
-                            onClick = { onTeamSelected(team) },
+                            onClick = { onTeamSelect(team) },
                         )
                     }
                 }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,39 +14,35 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.LadderEntry
 import com.github.apkelly.drool.resources.Res
@@ -60,32 +55,7 @@ import com.github.apkelly.drool.resources.ladder_lost
 import com.github.apkelly.drool.resources.ladder_played
 import com.github.apkelly.drool.resources.ladder_points
 import com.github.apkelly.drool.resources.ladder_won
-import com.github.apkelly.drool.resources.match_details_title
-import com.github.apkelly.drool.resources.match_directions
-import com.github.apkelly.drool.resources.match_kick_off
-import com.github.apkelly.drool.resources.match_load_failed
-import com.github.apkelly.drool.resources.match_round
-import com.github.apkelly.drool.resources.match_round_unknown
 import com.github.apkelly.drool.resources.match_score
-import com.github.apkelly.drool.resources.match_status
-import com.github.apkelly.drool.resources.match_status_cancelled
-import com.github.apkelly.drool.resources.match_status_completed
-import com.github.apkelly.drool.resources.match_status_live
-import com.github.apkelly.drool.resources.match_status_pending
-import com.github.apkelly.drool.resources.match_status_postponed
-import com.github.apkelly.drool.resources.match_status_scheduled
-import com.github.apkelly.drool.resources.match_status_unknown
-import com.github.apkelly.drool.resources.match_status_washout
-import com.github.apkelly.drool.resources.match_venue
-import com.github.apkelly.drool.resources.match_weather
-import com.github.apkelly.drool.resources.match_weather_humidity
-import com.github.apkelly.drool.resources.match_weather_loading
-import com.github.apkelly.drool.resources.match_weather_rain
-import com.github.apkelly.drool.resources.match_weather_sunscreen
-import com.github.apkelly.drool.resources.match_weather_temperature
-import com.github.apkelly.drool.resources.match_weather_unavailable
-import com.github.apkelly.drool.resources.match_weather_uv
-import com.github.apkelly.drool.resources.match_weather_washout
 import com.github.apkelly.drool.resources.team_ladders
 import com.github.apkelly.drool.resources.team_load_failed
 import com.github.apkelly.drool.resources.team_matches
@@ -93,18 +63,13 @@ import com.github.apkelly.drool.resources.team_no_ladder
 import com.github.apkelly.drool.resources.team_no_matches
 import com.github.apkelly.drool.resources.team_no_results
 import com.github.apkelly.drool.resources.team_results
-import com.github.apkelly.drool.ui.format.formatFixtureDateTime
-import com.github.apkelly.drool.ui.format.formatFixtureDate
-import com.github.apkelly.drool.ui.format.formatFixtureDay
-import com.github.apkelly.drool.ui.format.formatFixtureTime
-import com.github.apkelly.drool.ui.format.displayTeamNames
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
-import com.github.apkelly.drool.ui.platform.GoogleMapPreview
-import com.github.apkelly.drool.ui.platform.rememberLocationActionLauncher
-import com.github.apkelly.drool.ui.widgets.RemoteImage
+import com.github.apkelly.drool.ui.format.displayTeamNames
+import com.github.apkelly.drool.ui.format.formatFixtureDateTime
+import com.github.apkelly.drool.ui.widgets.CacheStatus
 import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
-import com.github.apkelly.drool.ui.widgets.CacheStatus
+import com.github.apkelly.drool.ui.widgets.RemoteImage
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,14 +85,16 @@ fun TeamHubScreen(
     onBack: () -> Unit,
     onLoad: (String, String) -> Unit,
     onRefresh: (String, String) -> Unit,
-    onMatchSelected: (Fixture) -> Unit,
+    modifier: Modifier = Modifier,
+    onMatchSelect: (Fixture) -> Unit,
 ) {
-    LaunchedEffect(profileId, teamId) { onLoad(profileId, teamId) }
+    val currentOnLoad by rememberUpdatedState(onLoad)
+    LaunchedEffect(profileId, teamId) { currentOnLoad(profileId, teamId) }
     val brand = teamColor(primaryColor, MaterialTheme.colorScheme.primary)
     val accent = teamColor(secondaryColor, MaterialTheme.colorScheme.secondary)
     val headerContentColor = if (brand.luminance() > 0.5f) Color.Black else Color.White
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-        rememberTopAppBarState()
+        rememberTopAppBarState(),
     )
     var selectedTab by remember(teamId) { mutableIntStateOf(0) }
     val content = (state as? TeamHubUiState.Content)
@@ -135,7 +102,7 @@ fun TeamHubScreen(
     val current = content?.hub
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -195,17 +162,21 @@ fun TeamHubScreen(
                             message = stringResource(Res.string.team_load_failed),
                             onRetry = { onLoad(profileId, teamId) },
                         )
+
                     current == null -> LoadingContent()
+
                     selectedTab == 0 -> FixtureList(
                         fixtures = current.matches,
                         emptyMessage = stringResource(Res.string.team_no_matches),
-                        onSelected = onMatchSelected,
+                        onSelect = onMatchSelect,
                     )
+
                     selectedTab == 1 -> FixtureList(
                         fixtures = current.results,
                         emptyMessage = stringResource(Res.string.team_no_results),
-                        onSelected = onMatchSelected,
+                        onSelect = onMatchSelect,
                     )
+
                     else -> LadderList(
                         name = current.ladderName,
                         entries = current.ladder,
@@ -245,7 +216,7 @@ private fun TeamToolbarTitle(
             if (expanded) {
                 Spacer(Modifier.height(6.dp))
                 Spacer(
-                    Modifier.width(80.dp).height(4.dp).background(secondaryColor)
+                    Modifier.width(80.dp).height(4.dp).background(secondaryColor),
                 )
             }
         }
@@ -256,7 +227,7 @@ private fun TeamToolbarTitle(
 private fun FixtureList(
     fixtures: List<Fixture>,
     emptyMessage: String,
-    onSelected: (Fixture) -> Unit,
+    onSelect: (Fixture) -> Unit,
 ) {
     if (fixtures.isEmpty()) {
         EmptyContent(emptyMessage)
@@ -269,7 +240,7 @@ private fun FixtureList(
         items(fixtures, key = { it.id }) { fixture ->
             val teamNames = fixture.displayTeamNames()
             Card(
-                modifier = Modifier.fillMaxWidth().clickable { onSelected(fixture) },
+                modifier = Modifier.fillMaxWidth().clickable { onSelect(fixture) },
             ) {
                 Column(
                     Modifier.fillMaxWidth().padding(16.dp),
@@ -353,13 +324,19 @@ private fun LadderHeader() {
 }
 
 @Composable
-private fun LadderRow(entry: LadderEntry, highlighted: Boolean) {
+private fun LadderRow(
+    entry: LadderEntry,
+    highlighted: Boolean,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (highlighted) MaterialTheme.colorScheme.primaryContainer
-                else Color.Transparent
+                if (highlighted) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    Color.Transparent
+                },
             )
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -407,7 +384,9 @@ private fun LoadingContent() {
 }
 
 @Composable
-private fun EmptyContent(message: String) {
+private fun EmptyContent(
+    message: String,
+) {
     Column(
         Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -418,7 +397,10 @@ private fun EmptyContent(message: String) {
 }
 
 @Composable
-private fun LoadFailure(message: String, onRetry: () -> Unit) {
+private fun LoadFailure(
+    message: String,
+    onRetry: () -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -430,12 +412,19 @@ private fun LoadFailure(message: String, onRetry: () -> Unit) {
     }
 }
 
-private fun teamColor(value: String?, fallback: Color): Color {
+private fun teamColor(
+    value: String?,
+    fallback: Color,
+): Color {
     val hex = value?.trim()?.removePrefix("#") ?: return fallback
     val parsed = hex.toLongOrNull(16) ?: return fallback
     return when (hex.length) {
-        6 -> Color((0xFF000000L or parsed).toInt())
-        8 -> Color(parsed.toInt())
+        RGB_HEX_LENGTH -> Color((OPAQUE_ALPHA_MASK or parsed).toInt())
+        ARGB_HEX_LENGTH -> Color(parsed.toInt())
         else -> fallback
     }
 }
+
+private const val RGB_HEX_LENGTH = 6
+private const val ARGB_HEX_LENGTH = 8
+private const val OPAQUE_ALPHA_MASK = 0xFF000000L

@@ -3,9 +3,9 @@ package com.github.apkelly.drool.desktop
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import java.awt.Dimension
 import com.github.apkelly.drool.App
 import com.github.apkelly.drool.di.initDroolKoin
+import java.awt.Dimension
 
 fun main() {
     System.setProperty("apple.awt.application.name", "Drool")

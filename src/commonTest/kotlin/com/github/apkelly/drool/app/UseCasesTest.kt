@@ -1,5 +1,60 @@
 package com.github.apkelly.drool.app
 
+import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
+import com.github.apkelly.drool.auth.data.AuthRepositoryImpl
+import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
+import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
+import com.github.apkelly.drool.data.repository.SessionDataSource
+import com.github.apkelly.drool.data.repository.SportsDataSource
+import com.github.apkelly.drool.discover.data.DiscoverRepositoryImpl
+import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamRelationshipsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
+import com.github.apkelly.drool.domain.model.AuthCredentials
+import com.github.apkelly.drool.domain.model.AuthenticatedSession
+import com.github.apkelly.drool.domain.model.CachedData
+import com.github.apkelly.drool.domain.model.Club
+import com.github.apkelly.drool.domain.model.FamilyClub
+import com.github.apkelly.drool.domain.model.FamilyProfile
+import com.github.apkelly.drool.domain.model.FamilyTeam
+import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.FixtureStatus
+import com.github.apkelly.drool.domain.model.MatchWeather
+import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.domain.model.RefreshResult
+import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.domain.model.Team
+import com.github.apkelly.drool.domain.model.TeamHub
+import com.github.apkelly.drool.domain.model.TeamRelationship
+import com.github.apkelly.drool.domain.model.ThemeMode
+import com.github.apkelly.drool.home.data.HomeRepositoryImpl
+import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
+import com.github.apkelly.drool.match.data.MatchRepositoryImpl
+import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
+import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
+import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
+import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
+import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
+import com.github.apkelly.drool.team.data.TeamRepositoryImpl
+import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -9,50 +64,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import com.github.apkelly.drool.domain.model.AuthCredentials
-import com.github.apkelly.drool.domain.model.AuthenticatedSession
-import com.github.apkelly.drool.domain.model.CachedData
-import com.github.apkelly.drool.domain.model.Club
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.FamilyProfile
-import com.github.apkelly.drool.domain.model.FamilyTeam
-import com.github.apkelly.drool.domain.model.FamilyClub
-import com.github.apkelly.drool.domain.model.Profile
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
-import com.github.apkelly.drool.domain.model.RelatedUser
-import com.github.apkelly.drool.domain.model.RefreshResult
-import com.github.apkelly.drool.domain.model.Team
-import com.github.apkelly.drool.domain.model.TeamRelationship
-import com.github.apkelly.drool.domain.model.TeamHub
-import com.github.apkelly.drool.domain.model.FixtureStatus
-import com.github.apkelly.drool.domain.model.MatchWeather
-import com.github.apkelly.drool.domain.model.ThemeMode
-import com.github.apkelly.drool.auth.domain.repository.AuthRepository
-import com.github.apkelly.drool.auth.domain.usecase.*
-import com.github.apkelly.drool.auth.data.AuthRepositoryImpl
-import com.github.apkelly.drool.data.repository.SessionDataSource
-import com.github.apkelly.drool.data.repository.SportsDataSource
-import com.github.apkelly.drool.discover.data.DiscoverRepositoryImpl
-import com.github.apkelly.drool.discover.domain.repository.DiscoverRepository
-import com.github.apkelly.drool.discover.domain.usecase.*
-import com.github.apkelly.drool.home.domain.repository.HomeRepository
-import com.github.apkelly.drool.home.domain.usecase.*
-import com.github.apkelly.drool.home.data.HomeRepositoryImpl
-import com.github.apkelly.drool.match.data.MatchRepositoryImpl
-import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
-import com.github.apkelly.drool.match.domain.repository.MatchRepository
-import com.github.apkelly.drool.match.domain.usecase.*
-import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
-import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
-import com.github.apkelly.drool.profile.domain.usecase.*
-import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
-import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
-import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
-import com.github.apkelly.drool.schedule.domain.usecase.*
-import com.github.apkelly.drool.team.domain.repository.TeamRepository
-import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
-import com.github.apkelly.drool.team.data.TeamRepositoryImpl
-import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -83,7 +94,7 @@ class UseCasesTest {
             dataSource.lastProfileRefresh,
         )
         dataSource.linkCandidates = listOf(
-            RelatedUser("candidate", "Ethan", null, null)
+            RelatedUser("candidate", "Ethan", null, null),
         )
         assertEquals(dataSource.linkCandidates, GetLinkCandidatesUseCase(profileRepository)())
         VerifyLinkedUserUseCase(profileRepository)("candidate", "123456")
@@ -93,7 +104,7 @@ class UseCasesTest {
     @Test
     fun sessionRestoreCanReturnNull() = runTest {
         assertNull(
-            RestoreSessionUseCase(AuthRepositoryImpl(FakeSessionDataSource()))()
+            RestoreSessionUseCase(AuthRepositoryImpl(FakeSessionDataSource()))(),
         )
     }
 
@@ -120,6 +131,8 @@ class UseCasesTest {
         assertEquals(dataSource.clubs, ObserveClubsUseCase(discover)())
         assertEquals(dataSource.teams, ObserveTeamsUseCase(discover)("club"))
         assertEquals("club", dataSource.lastClubId)
+        assertEquals(dataSource.teams, ObserveTeamsUseCase(discover)())
+        assertEquals(null, dataSource.lastClubId)
         assertEquals(dataSource.fixtures, ObserveFixturesUseCase(schedule)())
         assertEquals(dataSource.familyFixtures, ObserveFixturesUseCase(schedule)(setOf("1")))
         assertEquals(setOf("1"), dataSource.lastProfileIds)
@@ -140,6 +153,8 @@ class UseCasesTest {
         val match = MatchRepositoryImpl(dataSource, weatherDataSource)
         assertEquals(RefreshResult.Updated, RefreshClubsUseCase(discover)(false))
         assertEquals(false, dataSource.lastForce)
+        assertEquals(RefreshResult.Updated, RefreshClubsUseCase(discover)())
+        assertEquals(true, dataSource.lastForce)
         val profiles = listOf(FamilyProfile("1", "Alex", null, true))
         assertEquals(
             mapOf("1" to RefreshResult.Updated),
@@ -154,8 +169,12 @@ class UseCasesTest {
         assertEquals(RefreshResult.Updated, RefreshTeamsUseCase(discover)(clubId = "club"))
         assertEquals(true, dataSource.lastForce)
         assertEquals("club", dataSource.lastRefreshClubId)
+        assertEquals(RefreshResult.Updated, RefreshTeamsUseCase(discover)())
+        assertEquals(null, dataSource.lastRefreshClubId)
         assertEquals(RefreshResult.Updated, RefreshFixturesUseCase(schedule)(false))
         assertEquals(false, dataSource.lastForce)
+        assertEquals(RefreshResult.Updated, RefreshFixturesUseCase(schedule)())
+        assertEquals(true, dataSource.lastForce)
 
         SetTeamFollowingUseCase(discover)("team", true)
         assertEquals("team" to true, dataSource.lastFollow)
@@ -242,7 +261,9 @@ private class FakeMatchWeatherDataSource : MatchWeatherDataSource {
     val weather = MatchWeather("Sunny", 16.0, 24.0, 55, 10, 0.0, 6)
     var lastFixture: Fixture? = null
 
-    override suspend fun loadMatchWeather(fixture: Fixture): MatchWeather {
+    override suspend fun loadMatchWeather(
+        fixture: Fixture,
+    ): MatchWeather {
         lastFixture = fixture
         return weather
     }
@@ -260,7 +281,9 @@ private class FakeSessionDataSource : SessionDataSource {
 
     override fun observeProfile(): Flow<Profile?> = profile
     override suspend fun restoreSession() = restoreResult
-    override suspend fun signIn(credentials: AuthCredentials): AuthenticatedSession {
+    override suspend fun signIn(
+        credentials: AuthCredentials,
+    ): AuthenticatedSession {
         lastCredentials = credentials
         return signInResult
     }
@@ -269,13 +292,19 @@ private class FakeSessionDataSource : SessionDataSource {
         signOutCount += 1
     }
 
-    override suspend fun refreshProfileEndpoint(endpoint: ProfileApiEndpoint, email: String) {
+    override suspend fun refreshProfileEndpoint(
+        endpoint: ProfileApiEndpoint,
+        email: String,
+    ) {
         lastProfileRefresh = endpoint to email
     }
 
     override suspend fun getLinkCandidates(): List<RelatedUser> = linkCandidates
 
-    override suspend fun verifyLinkedUser(candidateId: String, token: String) {
+    override suspend fun verifyLinkedUser(
+        candidateId: String,
+        token: String,
+    ) {
         lastLinkVerification = candidateId to token
     }
 }
@@ -284,11 +313,15 @@ private class FakePreferencesRepository : PreferencesRepository {
     val theme = MutableStateFlow(ThemeMode.System)
     val observabilityEnabled = MutableStateFlow(false)
     override fun observeThemeMode(): Flow<ThemeMode> = theme
-    override suspend fun setThemeMode(mode: ThemeMode) {
+    override suspend fun setThemeMode(
+        mode: ThemeMode,
+    ) {
         theme.value = mode
     }
     override fun observeObservabilityEnabled(): Flow<Boolean> = observabilityEnabled
-    override suspend fun setObservabilityEnabled(enabled: Boolean) {
+    override suspend fun setObservabilityEnabled(
+        enabled: Boolean,
+    ) {
         observabilityEnabled.value = enabled
     }
 }
@@ -328,39 +361,54 @@ private class FakeSportsDataSource : SportsDataSource {
     )
 
     override fun observeClubs(): Flow<CachedData<List<Club>>> = clubs
-    override fun observeTeams(clubId: String?): Flow<CachedData<List<Team>>> {
+    override fun observeTeams(
+        clubId: String?,
+    ): Flow<CachedData<List<Team>>> {
         lastClubId = clubId
         return teams
     }
 
     override fun observeFixtures(): Flow<CachedData<List<Fixture>>> = fixtures
-    override fun observeFamilyFixtures(profileIds: Set<String>): Flow<List<Fixture>> {
+    override fun observeFamilyFixtures(
+        profileIds: Set<String>,
+    ): Flow<List<Fixture>> {
         lastProfileIds = profileIds
         return familyFixtures
     }
 
-    override fun observeFamilyTeams(profileIds: Set<String>): Flow<List<FamilyTeam>> {
+    override fun observeFamilyTeams(
+        profileIds: Set<String>,
+    ): Flow<List<FamilyTeam>> {
         lastProfileIds = profileIds
         return familyTeams
     }
 
-    override fun observeFamilyClubs(profileIds: Set<String>): Flow<List<FamilyClub>> {
+    override fun observeFamilyClubs(
+        profileIds: Set<String>,
+    ): Flow<List<FamilyClub>> {
         lastProfileIds = profileIds
         return familyClubs
     }
     override fun observeTeamRelationships(): Flow<Map<String, TeamRelationship>> = relationships
-    override suspend fun refreshClubs(force: Boolean): RefreshResult {
+    override suspend fun refreshClubs(
+        force: Boolean,
+    ): RefreshResult {
         lastForce = force
         return RefreshResult.Updated
     }
 
-    override suspend fun refreshTeams(force: Boolean, clubId: String?): RefreshResult {
+    override suspend fun refreshTeams(
+        force: Boolean,
+        clubId: String?,
+    ): RefreshResult {
         lastForce = force
         lastRefreshClubId = clubId
         return RefreshResult.Updated
     }
 
-    override suspend fun refreshFixtures(force: Boolean): RefreshResult {
+    override suspend fun refreshFixtures(
+        force: Boolean,
+    ): RefreshResult {
         lastForce = force
         return RefreshResult.Updated
     }
@@ -374,7 +422,10 @@ private class FakeSportsDataSource : SportsDataSource {
         return profiles.associate { it.id to RefreshResult.Updated }
     }
 
-    override suspend fun setFollowing(teamId: String, following: Boolean) {
+    override suspend fun setFollowing(
+        teamId: String,
+        following: Boolean,
+    ) {
         lastFollow = teamId to following
     }
 
@@ -389,10 +440,12 @@ private class FakeSportsDataSource : SportsDataSource {
         return CachedData(teamHub, lastUpdatedEpochMillis = 0L, isStale = false)
     }
 
-    override suspend fun loadMatchDetails(profileId: String, matchId: String): Fixture {
+    override suspend fun loadMatchDetails(
+        profileId: String,
+        matchId: String,
+    ): Fixture {
         lastMatchDetails = profileId to matchId
         matchDetailsCalls += 1
         return matchDetails.copy(id = matchId)
     }
-
 }

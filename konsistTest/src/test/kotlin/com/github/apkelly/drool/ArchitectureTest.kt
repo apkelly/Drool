@@ -14,10 +14,10 @@ class ArchitectureTest {
     @Test
     fun `Dribl code does not depend on Drool`() {
         productionScope.files
-            .withPackage("$DriblPackage..")
+            .withPackage("$DRIBL_PACKAGE..")
             .assertFalse { file ->
                 file.imports.any { import ->
-                    import.name.isInPackage(DroolPackage)
+                    import.name.isInPackage(DROOL_PACKAGE)
                 }
             }
     }
@@ -26,12 +26,12 @@ class ArchitectureTest {
     fun `feature domain does not depend on data or UI`() {
         featureNames.forEach { feature ->
             productionScope.files
-                .withPackage("$DroolPackage.$feature.domain..")
+                .withPackage("$DROOL_PACKAGE.$feature.domain..")
                 .assertFalse { file ->
                     file.imports.any { import ->
-                        import.name.isInPackage("$DroolPackage.$feature.data") ||
-                            import.name.isInPackage("$DroolPackage.$feature.ui") ||
-                            import.name.isInPackage("$DroolPackage.data")
+                        import.name.isInPackage("$DROOL_PACKAGE.$feature.data") ||
+                            import.name.isInPackage("$DROOL_PACKAGE.$feature.ui") ||
+                            import.name.isInPackage("$DROOL_PACKAGE.data")
                     }
                 }
         }
@@ -41,12 +41,12 @@ class ArchitectureTest {
     fun `feature UI does not depend on data or Dribl`() {
         featureNames.forEach { feature ->
             productionScope.files
-                .withPackage("$DroolPackage.$feature.ui..")
+                .withPackage("$DROOL_PACKAGE.$feature.ui..")
                 .assertFalse { file ->
                     file.imports.any { import ->
-                        import.name.isInPackage("$DroolPackage.$feature.data") ||
-                            import.name.isInPackage("$DroolPackage.data") ||
-                            import.name.isInPackage(DriblPackage)
+                        import.name.isInPackage("$DROOL_PACKAGE.$feature.data") ||
+                            import.name.isInPackage("$DROOL_PACKAGE.data") ||
+                            import.name.isInPackage(DRIBL_PACKAGE)
                     }
                 }
         }
@@ -57,10 +57,10 @@ class ArchitectureTest {
         featureNames.forEach { feature ->
             val otherFeaturePackages = featureNames
                 .filterNot { it == feature }
-                .map { "$DroolPackage.$it" }
+                .map { "$DROOL_PACKAGE.$it" }
 
             productionScope.files
-                .withPackage("$DroolPackage.$feature..")
+                .withPackage("$DROOL_PACKAGE.$feature..")
                 .assertFalse { file ->
                     file.imports.any { import ->
                         otherFeaturePackages.any { packageName ->
@@ -78,7 +78,7 @@ class ArchitectureTest {
             .withNameEndingWith("UseCase")
             .assertTrue { declaration ->
                 featureNames.any { feature ->
-                    declaration.resideInPackage("$DroolPackage.$feature.domain.usecase..")
+                    declaration.resideInPackage("$DROOL_PACKAGE.$feature.domain.usecase..")
                 }
             }
     }
@@ -90,7 +90,7 @@ class ArchitectureTest {
             .withNameEndingWith("Repository")
             .assertTrue { declaration ->
                 featureNames.any { feature ->
-                    declaration.resideInPackage("$DroolPackage.$feature.domain.repository..")
+                    declaration.resideInPackage("$DROOL_PACKAGE.$feature.domain.repository..")
                 }
             }
     }
@@ -102,7 +102,7 @@ class ArchitectureTest {
             .withNameEndingWith("RepositoryImpl")
             .assertTrue { declaration ->
                 featureNames.any { feature ->
-                    declaration.resideInPackage("$DroolPackage.$feature.data..")
+                    declaration.resideInPackage("$DROOL_PACKAGE.$feature.data..")
                 }
             }
     }
@@ -114,17 +114,18 @@ class ArchitectureTest {
             .withNameEndingWith("UiModel")
             .assertTrue { declaration ->
                 featureNames.any { feature ->
-                    declaration.resideInPackage("$DroolPackage.$feature.ui.model..")
+                    declaration.resideInPackage("$DROOL_PACKAGE.$feature.ui.model..")
                 }
             }
     }
 
-    private fun String.isInPackage(packageName: String): Boolean =
-        this == packageName || startsWith("$packageName.")
+    private fun String.isInPackage(
+        packageName: String,
+    ): Boolean = this == packageName || startsWith("$packageName.")
 
     private companion object {
-        const val DriblPackage = "com.github.apkelly.dribl"
-        const val DroolPackage = "com.github.apkelly.drool"
+        const val DRIBL_PACKAGE = "com.github.apkelly.dribl"
+        const val DROOL_PACKAGE = "com.github.apkelly.drool"
 
         val featureNames = listOf(
             "auth",
@@ -138,10 +139,9 @@ class ArchitectureTest {
 
         val productionScope = Konsist.scopeFromDirectory(productionSourceDirectory())
 
-        private fun productionSourceDirectory(): String =
-            listOf(
-                "src/commonMain/kotlin",
-                "../src/commonMain/kotlin",
-            ).first { File(it).isDirectory }
+        private fun productionSourceDirectory(): String = listOf(
+            "src/commonMain/kotlin",
+            "../src/commonMain/kotlin",
+        ).first { File(it).isDirectory }
     }
 }

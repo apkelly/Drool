@@ -14,9 +14,16 @@ internal fun normalizedTeamName(
     }
     if (!allowEmbeddedLeaguePrefix) return trimmedName
 
-    val nameWords = nonWhitespace.findAll(trimmedName).toList()
-    val leagueWords = nonWhitespace.findAll(competition).map { it.value }.toList()
-    if (leagueWords.size < MinimumEmbeddedLeagueWords) return trimmedName
+    return embeddedLeagueSuffix(trimmedName, competition) ?: trimmedName
+}
+
+private fun embeddedLeagueSuffix(
+    teamName: String,
+    competitionName: String,
+): String? {
+    val nameWords = nonWhitespace.findAll(teamName).toList()
+    val leagueWords = nonWhitespace.findAll(competitionName).map { it.value }.toList()
+    if (leagueWords.size < MINIMUM_EMBEDDED_LEAGUE_WORDS) return null
     nameWords.forEachIndexed { startIndex, nameWord ->
         if (!nameWord.value.equals(leagueWords.first(), ignoreCase = true)) {
             return@forEachIndexed
@@ -33,17 +40,20 @@ internal fun normalizedTeamName(
             matchedWords += 1
         }
         if (
-            matchedWords >= MinimumEmbeddedLeagueWords &&
+            matchedWords >= MINIMUM_EMBEDDED_LEAGUE_WORDS &&
             startIndex + matchedWords < nameWords.size
         ) {
             val suffixStart = nameWords[startIndex + matchedWords].range.first
-            return trimmedName.substring(suffixStart).trim()
+            return teamName.substring(suffixStart).trim()
         }
     }
-    return trimmedName
+    return null
 }
 
-private fun matchingPrefixEnd(name: String, prefix: String): Int? {
+private fun matchingPrefixEnd(
+    name: String,
+    prefix: String,
+): Int? {
     var nameIndex = 0
     var competitionIndex = 0
     while (competitionIndex < prefix.length) {
@@ -78,9 +88,8 @@ private fun matchingPrefixEnd(name: String, prefix: String): Int? {
     return nameIndex.takeIf { it < name.length }
 }
 
-private fun Char.isTeamNameSeparator(): Boolean =
-    isWhitespace() || this == '-' || this == ':' || this == '–' ||
-        this == '—' || this == '|' || this == '/'
+private fun Char.isTeamNameSeparator(): Boolean = isWhitespace() || this == '-' || this == ':' || this == '–' ||
+    this == '—' || this == '|' || this == '/'
 
 private val nonWhitespace = Regex("""\S+""")
-private const val MinimumEmbeddedLeagueWords = 2
+private const val MINIMUM_EMBEDDED_LEAGUE_WORDS = 2

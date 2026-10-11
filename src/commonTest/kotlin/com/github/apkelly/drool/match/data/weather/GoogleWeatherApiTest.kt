@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.match.data.weather
 
+import com.github.apkelly.drool.data.remote.networkJson
 import com.github.apkelly.drool.match.ui.platform.WeatherTemperatureUnit
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -12,7 +13,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import com.github.apkelly.drool.data.remote.networkJson
 
 class GoogleWeatherApiTest {
     @Test
@@ -70,18 +70,19 @@ class GoogleWeatherApiTest {
         assertNull(weather)
     }
 
-    private fun weatherClient(response: (io.ktor.client.request.HttpRequestData) -> String) =
-        HttpClient(MockEngine) {
-            install(ContentNegotiation) { json(networkJson) }
-            engine {
-                addHandler { request ->
-                    respond(
-                        content = response(request),
-                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                    )
-                }
+    private fun weatherClient(
+        response: (io.ktor.client.request.HttpRequestData) -> String,
+    ) = HttpClient(MockEngine) {
+        install(ContentNegotiation) { json(networkJson) }
+        engine {
+            addHandler { request ->
+                respond(
+                    content = response(request),
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
             }
         }
+    }
 
     private companion object {
         val forecastResponse = """

@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.match.data.weather
 
+import com.github.apkelly.drool.domain.model.MatchWeather
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -9,11 +10,10 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import io.ktor.serialization.JsonConvertException
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlin.time.Instant
-import com.github.apkelly.drool.domain.model.MatchWeather
 
 class GoogleWeatherApi(
     private val client: HttpClient,
@@ -32,8 +32,8 @@ class GoogleWeatherApi(
             parameter("key", apiKey)
             parameter("location.latitude", latitude)
             parameter("location.longitude", longitude)
-            parameter("days", ForecastDays)
-            parameter("pageSize", ForecastDays)
+            parameter("days", FORECAST_DAYS)
+            parameter("pageSize", FORECAST_DAYS)
             parameter("unitsSystem", "METRIC")
         }.requireWeatherBody<ForecastDaysResponse>(url)
         val kickoff = Instant.fromEpochMilliseconds(kickoffEpochMillis)
@@ -42,16 +42,24 @@ class GoogleWeatherApi(
             ?.toMatchWeather(kickoff)
     }
 
-    private suspend inline fun <reified T> HttpResponse.requireWeatherBody(url: String): T {
-        if (!status.isSuccess()) {
-            throw WeatherHttpException(status.value, url, bodyAsText())
-        }
+    private suspend inline fun <reified T> HttpResponse.requireWeatherBody(
+        url: String,
+    ): T {
+        requireWeatherSuccess(url)
         return try {
             body()
         } catch (error: JsonConvertException) {
             throw WeatherResponseException(url, error)
         } catch (error: SerializationException) {
             throw WeatherResponseException(url, error)
+        }
+    }
+
+    private suspend fun HttpResponse.requireWeatherSuccess(
+        url: String,
+    ) {
+        if (!status.isSuccess()) {
+            throw WeatherHttpException(status.value, url, bodyAsText())
         }
     }
 
@@ -67,7 +75,7 @@ class GoogleWeatherApi(
     ) : IllegalStateException("Response from $url did not match the weather contract", cause)
 
     private companion object {
-        const val ForecastDays = 10
+        const val FORECAST_DAYS = 10
     }
 }
 
@@ -84,7 +92,9 @@ private data class ForecastDayDto(
     val maxTemperature: TemperatureDto,
     val minTemperature: TemperatureDto,
 ) {
-    fun toMatchWeather(kickoff: Instant): MatchWeather {
+    fun toMatchWeather(
+        kickoff: Instant,
+    ): MatchWeather {
         val matchPeriod = listOfNotNull(daytimeForecast, nighttimeForecast)
             .firstOrNull { kickoff in it.interval }
             ?: daytimeForecast
@@ -123,8 +133,9 @@ private data class ForecastIntervalDto(
     val endTime: String,
 )
 
-private operator fun ForecastIntervalDto.contains(instant: Instant): Boolean =
-    instant >= Instant.parse(startTime) && instant < Instant.parse(endTime)
+private operator fun ForecastIntervalDto.contains(
+    instant: Instant,
+): Boolean = instant >= Instant.parse(startTime) && instant < Instant.parse(endTime)
 
 @Serializable
 private data class WeatherConditionDto(

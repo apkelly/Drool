@@ -1,4 +1,5 @@
 import java.util.Properties
+import dev.detekt.gradle.Detekt
 import org.gradle.api.tasks.JavaExec
 
 plugins {
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose)
+    alias(libs.plugins.detekt)
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.ksp)
@@ -139,11 +141,45 @@ kotlin {
 }
 
 dependencies {
+    detektPlugins(libs.detekt.compose)
+    detektPlugins(libs.detekt.ktlint)
     add("androidRuntimeClasspath", libs.compose.ui.tooling)
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspDesktop", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+}
+
+val detektSources = files(
+    "src/commonMain/kotlin",
+    "src/commonTest/kotlin",
+    "src/androidMain/kotlin",
+    "src/desktopMain/kotlin",
+    "src/desktopTest/kotlin",
+    "src/iosMain/kotlin",
+    "androidApp/src/main/kotlin",
+    "konsistTest/src/test/kotlin",
+)
+
+detekt {
+    enableCompilerPlugin.set(false)
+    source.setFrom(detektSources)
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    buildUponDefaultConfig.set(true)
+    parallel.set(true)
+    basePath.set(rootDir)
+}
+
+tasks.withType<Detekt>().configureEach {
+    exclude("**/build/**")
+    exclude("**/generated/**")
+}
+
+val detektFormat by tasks.registering(Detekt::class) {
+    description = "Formats Kotlin sources with Detekt and ktlint."
+    setSource(detektSources)
+    autoCorrect.set(true)
+    ignoreFailures.set(true)
 }
 
 room {

@@ -1,5 +1,13 @@
 package com.github.apkelly.dribl.api
 
+import com.github.apkelly.dribl.api.driblJson
+import com.github.apkelly.dribl.model.AuthApiRequest
+import com.github.apkelly.dribl.model.AvailabilityPeriod
+import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.dribl.model.EmergencyContact
+import com.github.apkelly.dribl.model.FixtureRole
+import com.github.apkelly.dribl.model.FixtureStatus
+import com.github.apkelly.dribl.model.normalizedTeamName
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -8,18 +16,10 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import com.github.apkelly.dribl.model.AuthApiRequest
-import com.github.apkelly.dribl.model.normalizedTeamName
-import com.github.apkelly.dribl.api.driblJson
-import com.github.apkelly.dribl.model.EmergencyContact
-import com.github.apkelly.dribl.model.FixtureStatus
-import com.github.apkelly.dribl.model.FixtureRole
-import com.github.apkelly.dribl.model.AvailabilityPeriod
-import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -197,7 +197,7 @@ class DriblApiTest {
                 }
                 """.trimIndent(),
                 expectedMethod = HttpMethod.Get,
-            )
+            ),
         )
 
         val response = api.fetchFixtures("token")
@@ -266,7 +266,7 @@ class DriblApiTest {
                 }
                 """.trimIndent(),
                 expectedMethod = HttpMethod.Get,
-            )
+            ),
         )
 
         val fixtures = api.fetchFixtures("token").associateBy { it.id }
@@ -298,7 +298,7 @@ class DriblApiTest {
                 }
                 """.trimIndent(),
                 expectedMethod = HttpMethod.Get,
-            )
+            ),
         )
 
         val profile = api.fetchProfile("token")
@@ -314,7 +314,7 @@ class DriblApiTest {
             jsonClient(
                 """{"profile":{"name":"Unknown"}}""",
                 expectedMethod = HttpMethod.Get,
-            )
+            ),
         )
 
         assertFailsWith<DriblResponseException> {
@@ -360,7 +360,7 @@ class DriblApiTest {
                 }
                 """.trimIndent(),
                 expectedMethod = HttpMethod.Post,
-            )
+            ),
         )
 
         val session = api.signIn(
@@ -371,7 +371,7 @@ class DriblApiTest {
                 passwordField = "password",
                 username = "alex@example.com",
                 password = "password",
-            )
+            ),
         )
 
         assertEquals("secret", session.bearerToken)
@@ -417,6 +417,7 @@ class DriblApiTest {
                             }
                             """.trimIndent()
                         }
+
                         "/api/access/accounts" ->
                             """
                             {
@@ -431,6 +432,7 @@ class DriblApiTest {
                               }]
                             }
                             """.trimIndent()
+
                         "/api/linked-users" ->
                             """
                             {
@@ -459,6 +461,7 @@ class DriblApiTest {
                               ]
                             }
                             """.trimIndent()
+
                         else -> error("Unexpected request path ${request.url.encodedPath}")
                     }
                     respond(
@@ -513,6 +516,7 @@ class DriblApiTest {
                     val body = when (request.url.encodedPath) {
                         "/api/auth/impersonate/29167" ->
                             """{"status":200,"token":"child-token"}"""
+
                         "/api/access/shortcut" ->
                             """
                             {
@@ -556,6 +560,7 @@ class DriblApiTest {
                               ]
                             }
                             """.trimIndent()
+
                         "/api/universal/member-cards" ->
                             """
                             {
@@ -569,6 +574,7 @@ class DriblApiTest {
                               }]
                             }
                             """.trimIndent()
+
                         else -> error("Unexpected request ${request.url}")
                     }
                     respond(
@@ -635,6 +641,7 @@ class DriblApiTest {
                               }
                             }
                             """.trimIndent()
+
                         "/api/user-contacts/" ->
                             """
                             {
@@ -659,6 +666,7 @@ class DriblApiTest {
                               ]
                             }
                             """.trimIndent()
+
                         else -> error("Unexpected request ${request.url}")
                     }
                     respond(
@@ -690,7 +698,7 @@ class DriblApiTest {
                     name = "Andrew Kelly",
                     phoneNumber = "0400 111 111",
                     email = "andrew@example.com",
-                )
+                ),
             ),
             contacts,
         )
@@ -725,10 +733,13 @@ class DriblApiTest {
                                "away_team_id":"y","away_team_name":"Y"}}
                             ]}
                             """.trimIndent()
+
                         "/api/universal/ladders" ->
                             """{"data":[{"id":"ladder-a","name":"Other"},{"id":"ladder-b","name":"Under 13 Mixed White Mixed"}]}"""
+
                         "/api/universal/ladders/ladder-a" ->
                             """{"ladder_entries":[{"attributes":{"team_hash_id":"other","team_name":"Other","position":1}}]}"""
+
                         "/api/universal/ladders/ladder-b" ->
                             """
                             {"ladder_entries":[
@@ -746,6 +757,7 @@ class DriblApiTest {
                                ]}}
                             ]}
                             """.trimIndent()
+
                         "/api/universal/matches/match" ->
                             """
                             {"data":{"type":"matches","id":"match","attributes":{
@@ -759,6 +771,7 @@ class DriblApiTest {
                               "home_team_logo":"home.png","away_team_logo":"away.png",
                               "league_name":"Under 13 Mixed White Mixed","field_name":"Main Field"}}}
                             """.trimIndent()
+
                         else -> error("Unexpected request ${request.url}")
                     }
                     respond(
@@ -802,11 +815,15 @@ class DriblApiTest {
         )
         assertEquals("/api/universal/ladders?", requests[1])
         assertEquals(
-            "/api/universal/ladders/ladder-a?require_pools=true&require_form=true&require_adjustments=true&require_championship=true",
+            "/api/universal/ladders/ladder-a" +
+                "?require_pools=true&require_form=true&require_adjustments=true" +
+                "&require_championship=true",
             requests[2],
         )
         assertEquals(
-            "/api/universal/ladders/ladder-b?require_pools=true&require_form=true&require_adjustments=true&require_championship=true",
+            "/api/universal/ladders/ladder-b" +
+                "?require_pools=true&require_form=true&require_adjustments=true" +
+                "&require_championship=true",
             requests[3],
         )
         assertEquals(
@@ -1063,20 +1080,19 @@ class DriblApiTest {
     private fun jsonClient(
         body: String,
         expectedMethod: HttpMethod? = null,
-    ): HttpClient =
-        HttpClient(MockEngine) {
-            install(ContentNegotiation) {
-                json(driblJson)
-            }
-            engine {
-                addHandler { request ->
-                    expectedMethod?.let { assertEquals(it, request.method) }
-                    respond(
-                        content = body,
-                        status = HttpStatusCode.OK,
-                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                    )
-                }
+    ): HttpClient = HttpClient(MockEngine) {
+        install(ContentNegotiation) {
+            json(driblJson)
+        }
+        engine {
+            addHandler { request ->
+                expectedMethod?.let { assertEquals(it, request.method) }
+                respond(
+                    content = body,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
             }
         }
+    }
 }

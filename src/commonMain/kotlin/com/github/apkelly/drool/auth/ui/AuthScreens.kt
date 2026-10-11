@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.github.apkelly.drool.auth.ui.model.AuthFailure
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.action_back
 import com.github.apkelly.drool.resources.action_create_account
@@ -49,11 +50,10 @@ import com.github.apkelly.drool.resources.auth_reconnect_body
 import com.github.apkelly.drool.resources.auth_reconnect_title
 import com.github.apkelly.drool.resources.auth_sign_in_body
 import com.github.apkelly.drool.resources.auth_sign_in_title
-import com.github.apkelly.drool.resources.auth_username
 import com.github.apkelly.drool.resources.auth_unknown
+import com.github.apkelly.drool.resources.auth_username
 import com.github.apkelly.drool.resources.welcome_body
 import com.github.apkelly.drool.resources.welcome_title
-import com.github.apkelly.drool.auth.ui.model.AuthFailure
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
@@ -61,9 +61,10 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun WelcomeScreen(
     onSignIn: () -> Unit,
+    modifier: Modifier = Modifier,
     onCreateAccount: () -> Unit,
 ) {
-    CenteredAuthColumn {
+    CenteredAuthColumn(modifier = modifier) {
         MaterialSymbolIcon(
             symbol = MaterialSymbol.SportsSoccer,
             contentDescription = null,
@@ -93,13 +94,14 @@ fun SignInScreen(
     loading: Boolean,
     failure: AuthFailure?,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     onSignIn: (String, String) -> Unit,
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    CenteredAuthColumn {
+    CenteredAuthColumn(modifier = modifier) {
         Text(
             stringResource(Res.string.auth_sign_in_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -141,7 +143,7 @@ fun SignInScreen(
                                 Res.string.auth_password_hide
                             } else {
                                 Res.string.auth_password_show
-                            }
+                            },
                         ),
                     )
                 }
@@ -185,8 +187,11 @@ fun SignInScreen(
 }
 
 @Composable
-fun RegisterScreen(onBack: () -> Unit) {
-    CenteredAuthColumn {
+fun RegisterScreen(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    CenteredAuthColumn(modifier = modifier) {
         Text(
             stringResource(Res.string.auth_create_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -199,8 +204,11 @@ fun RegisterScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun ReconnectScreen(onRetry: () -> Unit) {
-    CenteredAuthColumn {
+fun ReconnectScreen(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    CenteredAuthColumn(modifier = modifier) {
         Text(
             stringResource(Res.string.auth_reconnect_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -213,9 +221,12 @@ fun ReconnectScreen(onRetry: () -> Unit) {
 }
 
 @Composable
-private fun CenteredAuthColumn(content: @Composable ColumnScope.() -> Unit) {
+private fun CenteredAuthColumn(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

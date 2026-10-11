@@ -53,7 +53,7 @@ class DriblTokenRenewalTest {
                 }
             }
         }.withAutomaticDriblTokenRenewal(
-            DriblTokenRenewer(renewalClient, store)
+            DriblTokenRenewer(renewalClient, store),
         )
 
         val response = sportsClient.get("https://api.dribl.com/api/test") {
@@ -93,7 +93,7 @@ class DriblTokenRenewalTest {
                 }
             }
         }.withAutomaticDriblTokenRenewal(
-            DriblTokenRenewer(renewalClient, store)
+            DriblTokenRenewer(renewalClient, store),
         )
 
         val response = sportsClient.get("https://api.dribl.com/api/test") {
@@ -140,7 +140,7 @@ class DriblTokenRenewalTest {
                 }
             }
         }.withAutomaticDriblTokenRenewal(
-            DriblTokenRenewer(renewalClient, store)
+            DriblTokenRenewer(renewalClient, store),
         )
 
         repeat(2) {
@@ -193,7 +193,7 @@ class DriblTokenRenewalTest {
                 }
             }
         }.withAutomaticDriblTokenRenewal(
-            DriblTokenRenewer(renewalClient, store)
+            DriblTokenRenewer(renewalClient, store),
         )
 
         val statuses = List(2) {
@@ -216,15 +216,18 @@ class DriblTokenRenewalTest {
     }
 }
 
-private fun jwt(marker: String): String =
-    "header.${marker.padEnd(32, 'x')}.signature"
+private fun jwt(
+    marker: String,
+): String = "header.${marker.padEnd(32, 'x')}.signature"
 
 private class TestDriblTokenStore(
     private var token: String?,
 ) : DriblTokenStore {
     override suspend fun getBearerToken(): String? = token
 
-    override suspend fun saveBearerToken(token: String) {
+    override suspend fun saveBearerToken(
+        token: String,
+    ) {
         this.token = token
     }
 }

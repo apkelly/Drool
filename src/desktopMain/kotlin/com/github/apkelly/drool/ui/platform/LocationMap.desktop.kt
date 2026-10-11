@@ -14,36 +14,35 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
-import java.awt.Desktop
-import java.net.URI
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.match_google_maps
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import org.jetbrains.compose.resources.stringResource
+import java.awt.Desktop
+import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
-actual fun rememberLocationActionLauncher(): LocationActionLauncher =
-    remember {
-        object : LocationActionLauncher {
-            override fun navigate(
-                latitude: Double?,
-                longitude: Double?,
-                address: String,
-            ) {
-                val destination = destination(latitude, longitude, address)
-                Desktop.getDesktop().browse(
-                    URI(
-                        "https://www.google.com/maps/dir/" +
-                            "?api=1&destination=${destination.urlQueryValue()}" +
-                            "&travelmode=driving"
-                    )
-                )
-            }
+actual fun rememberLocationActionLauncher(): LocationActionLauncher = remember {
+    object : LocationActionLauncher {
+        override fun navigate(
+            latitude: Double?,
+            longitude: Double?,
+            address: String,
+        ) {
+            val destination = destination(latitude, longitude, address)
+            Desktop.getDesktop().browse(
+                URI(
+                    "https://www.google.com/maps/dir/" +
+                        "?api=1&destination=${destination.urlQueryValue()}" +
+                        "&travelmode=driving",
+                ),
+            )
         }
     }
+}
 
 @Composable
 actual fun GoogleMapPreview(
@@ -54,9 +53,9 @@ actual fun GoogleMapPreview(
     modifier: Modifier,
 ) {
     val apiKey = remember {
-        System.getProperty(DesktopStaticMapsApiKey)
+        System.getProperty(DESKTOP_STATIC_MAPS_API_KEY)
             ?.takeIf { it.isNotBlank() }
-            ?: System.getenv(DesktopStaticMapsApiKey)?.takeIf { it.isNotBlank() }
+            ?: System.getenv(DESKTOP_STATIC_MAPS_API_KEY)?.takeIf { it.isNotBlank() }
     }
     val mapUrl = remember(latitude, longitude, address, apiKey) {
         apiKey?.let {
@@ -96,11 +95,9 @@ private fun destination(
     latitude: Double?,
     longitude: Double?,
     address: String,
-): String =
-    if (latitude != null && longitude != null) "$latitude,$longitude" else address
+): String = if (latitude != null && longitude != null) "$latitude,$longitude" else address
 
-private fun String.urlQueryValue(): String =
-    URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+private fun String.urlQueryValue(): String = URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
 
 internal fun staticMapUrl(
     latitude: Double?,
@@ -119,4 +116,4 @@ internal fun staticMapUrl(
         "&key=${apiKey.urlQueryValue()}"
 }
 
-private const val DesktopStaticMapsApiKey = "GOOGLE_MAPS_STATIC_API_KEY"
+private const val DESKTOP_STATIC_MAPS_API_KEY = "GOOGLE_MAPS_STATIC_API_KEY"

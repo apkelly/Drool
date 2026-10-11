@@ -14,41 +14,43 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.domain.model.Fixture
 import com.github.apkelly.drool.domain.model.ThemeMode
 import com.github.apkelly.drool.resources.Res
 import com.github.apkelly.drool.resources.availability_action
+import com.github.apkelly.drool.resources.schedule_description
 import com.github.apkelly.drool.resources.schedule_empty
 import com.github.apkelly.drool.resources.schedule_empty_body
-import com.github.apkelly.drool.resources.schedule_description
 import com.github.apkelly.drool.resources.schedule_title
 import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
+import com.github.apkelly.drool.ui.format.formatFixtureDateHeading
 import com.github.apkelly.drool.ui.preview.TopLevelScreenPreviewData
 import com.github.apkelly.drool.ui.theme.DroolTheme
 import com.github.apkelly.drool.ui.widgets.CacheStatus
-import com.github.apkelly.drool.ui.widgets.FixtureCard
 import com.github.apkelly.drool.ui.widgets.FamilyProfileSelector
+import com.github.apkelly.drool.ui.widgets.FixtureCard
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.ui.widgets.RefreshAction
-import com.github.apkelly.drool.ui.format.formatFixtureDateHeading
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     model: ScheduleUiModel,
-    onProfileSelected: (String?) -> Unit,
+    onProfileSelect: (String?) -> Unit,
     onRefresh: () -> Unit,
-    onFixtureSelected: (Fixture) -> Unit,
+    onFixtureSelect: (Fixture) -> Unit,
+    modifier: Modifier = Modifier,
     onOpenAvailability: () -> Unit,
 ) {
     val state = model.fixtures
     val familyProfiles = model.familyProfiles
     val selectedProfileId = model.selectedProfileId
     androidx.compose.material3.Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.schedule_title)) },
@@ -77,7 +79,7 @@ fun ScheduleScreen(
                     FamilyProfileSelector(
                         profiles = familyProfiles,
                         selectedProfileId = selectedProfileId,
-                        onSelected = onProfileSelected,
+                        onSelect = onProfileSelect,
                     )
                 }
                 if (model.canManageRefereeAvailability) {
@@ -132,11 +134,10 @@ fun ScheduleScreen(
                                     } else {
                                         null
                                     },
-                                    onClick = { onFixtureSelected(fixture) },
+                                    onClick = { onFixtureSelect(fixture) },
                                 )
+                            }
                         }
-                    }
-
                 }
             }
         }
@@ -154,9 +155,9 @@ private fun ScheduleScreenPreview() {
     DroolTheme(mode = ThemeMode.Light) {
         ScheduleScreen(
             model = TopLevelScreenPreviewData.schedule,
-            onProfileSelected = {},
+            onProfileSelect = {},
             onRefresh = {},
-            onFixtureSelected = {},
+            onFixtureSelect = {},
             onOpenAvailability = {},
         )
     }

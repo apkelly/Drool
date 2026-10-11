@@ -6,23 +6,27 @@ import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 
 @Composable
-actual fun rememberContactActionLauncher(): ContactActionLauncher =
-    remember {
-        object : ContactActionLauncher {
-            override fun call(phoneNumber: String) {
-                open("tel:${phoneNumber.phoneUriValue()}")
-            }
+actual fun rememberContactActionLauncher(): ContactActionLauncher = remember {
+    object : ContactActionLauncher {
+        override fun call(
+            phoneNumber: String,
+        ) {
+            open("tel:${phoneNumber.phoneUriValue()}")
+        }
 
-            override fun email(emailAddress: String) {
-                open("mailto:$emailAddress")
-            }
+        override fun email(
+            emailAddress: String,
+        ) {
+            open("mailto:$emailAddress")
+        }
 
-            private fun open(uri: String) {
-                val url = NSURL.URLWithString(uri) ?: return
-                UIApplication.sharedApplication.openURL(url)
-            }
+        private fun open(
+            uri: String,
+        ) {
+            val url = NSURL.URLWithString(uri) ?: return
+            UIApplication.sharedApplication.openURL(url)
         }
     }
+}
 
-private fun String.phoneUriValue(): String =
-    filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
+private fun String.phoneUriValue(): String = filter { it.isDigit() || it == '+' || it == '*' || it == '#' }

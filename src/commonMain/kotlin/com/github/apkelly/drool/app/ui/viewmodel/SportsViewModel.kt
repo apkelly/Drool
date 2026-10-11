@@ -1,5 +1,38 @@
 package com.github.apkelly.drool.app.ui.viewmodel
 
+import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamRelationshipsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
+import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
+import com.github.apkelly.drool.domain.model.Club
+import com.github.apkelly.drool.domain.model.FamilyClub
+import com.github.apkelly.drool.domain.model.FamilyProfile
+import com.github.apkelly.drool.domain.model.FamilyTeam
+import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.domain.model.RefreshFailure
+import com.github.apkelly.drool.domain.model.RefreshResult
+import com.github.apkelly.drool.domain.model.Team
+import com.github.apkelly.drool.domain.model.TeamRelationship
+import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
+import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
+import com.github.apkelly.drool.logging.DroolLog
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
+import com.github.apkelly.drool.observability.AnalyticsEvent
+import com.github.apkelly.drool.observability.NoOpObservability
+import com.github.apkelly.drool.observability.Observability
+import com.github.apkelly.drool.observability.RefreshArea
+import com.github.apkelly.drool.observability.RefreshOutcome
+import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
+import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
+import com.github.apkelly.drool.team.ui.model.TeamHubUiState
+import com.github.apkelly.drool.ui.model.CollectionUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,41 +49,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import com.github.apkelly.drool.domain.model.Club
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.FamilyProfile
-import com.github.apkelly.drool.domain.model.FamilyTeam
-import com.github.apkelly.drool.domain.model.FamilyClub
-import com.github.apkelly.drool.domain.model.Profile
-import com.github.apkelly.drool.domain.model.RefreshFailure
-import com.github.apkelly.drool.domain.model.RefreshResult
-import com.github.apkelly.drool.domain.model.Team
-import com.github.apkelly.drool.domain.model.TeamRelationship
-import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
-import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
-import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamRelationshipsUseCase
-import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
-import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
-import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
-import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
-import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
-import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
-import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
-import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
-import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
-import com.github.apkelly.drool.logging.DroolLog
-import com.github.apkelly.drool.ui.model.CollectionUiState
-import com.github.apkelly.drool.team.ui.model.TeamHubUiState
-import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
-import com.github.apkelly.drool.observability.AnalyticsEvent
-import com.github.apkelly.drool.observability.NoOpObservability
-import com.github.apkelly.drool.observability.Observability
-import com.github.apkelly.drool.observability.RefreshArea
-import com.github.apkelly.drool.observability.RefreshOutcome
 
-private data class MatchCacheKey(val profileId: String, val matchId: String)
+private data class MatchCacheKey(
+    val profileId: String,
+    val matchId: String,
+)
 
 private fun <K, V> Map<K, V>.withCachedEntries(
     entries: Map<K, V>,
@@ -189,7 +192,9 @@ class SportsViewModel(
         observeRelationships()
             .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
-    fun selectClub(clubId: String?) {
+    fun selectClub(
+        clubId: String?,
+    ) {
         val changed = selectedClubId.value != clubId
         selectedClubId.value = clubId
         if (changed && clubId != null) {
@@ -197,7 +202,9 @@ class SportsViewModel(
         }
     }
 
-    fun configureFamily(profile: Profile) {
+    fun configureFamily(
+        profile: Profile,
+    ) {
         if (cacheOwnerAccountId != profile.accountId) {
             cacheOwnerAccountId = profile.accountId
             matchCache.value = emptyMap()
@@ -215,21 +222,28 @@ class SportsViewModel(
         }
     }
 
-    fun selectFamilyProfile(profileId: String?) {
+    fun selectFamilyProfile(
+        profileId: String?,
+    ) {
         mutableSelectedProfileId.value = profileId
     }
 
-    fun refreshAll(force: Boolean = false) {
+    fun refreshAll(
+        force: Boolean = false,
+    ) {
         refreshClubs(force)
         refreshFixtures(force)
     }
 
-    fun refreshClubs(force: Boolean = true) =
-        refresh(RefreshArea.Clubs, clubsRefreshing, clubsFailure) {
-            refreshClubsUseCase(force)
-        }
+    fun refreshClubs(
+        force: Boolean = true,
+    ) = refresh(RefreshArea.Clubs, clubsRefreshing, clubsFailure) {
+        refreshClubsUseCase(force)
+    }
 
-    fun refreshTeams(force: Boolean = true) {
+    fun refreshTeams(
+        force: Boolean = true,
+    ) {
         val clubId = selectedClubId.value ?: return
         scope.launch {
             teamsRefreshMutex.withLock {
@@ -249,7 +263,9 @@ class SportsViewModel(
         }
     }
 
-    fun refreshFixtures(force: Boolean = true) {
+    fun refreshFixtures(
+        force: Boolean = true,
+    ) {
         scope.launch {
             fixturesRefreshMutex.withLock {
                 fixturesRefreshing.value = true
@@ -281,17 +297,28 @@ class SportsViewModel(
         }
     }
 
-    fun setFollowing(teamId: String, following: Boolean) {
+    fun setFollowing(
+        teamId: String,
+        following: Boolean,
+    ) {
         scope.launch { setTeamFollowing(teamId, following) }
     }
 
-    fun loadTeam(profileId: String, teamId: String) =
-        requestTeam(profileId, teamId, force = false)
+    fun loadTeam(
+        profileId: String,
+        teamId: String,
+    ) = requestTeam(profileId, teamId, force = false)
 
-    fun refreshTeam(profileId: String, teamId: String) =
-        requestTeam(profileId, teamId, force = true)
+    fun refreshTeam(
+        profileId: String,
+        teamId: String,
+    ) = requestTeam(profileId, teamId, force = true)
 
-    private fun requestTeam(profileId: String, teamId: String, force: Boolean) {
+    private fun requestTeam(
+        profileId: String,
+        teamId: String,
+        force: Boolean,
+    ) {
         val existing = (mutableTeamHubState.value as? TeamHubUiState.Content)
             ?.takeIf { it.profileId == profileId && it.teamId == teamId }
         if (mutableTeamHubState.value == TeamHubUiState.Loading(profileId, teamId) ||
@@ -329,8 +356,8 @@ class SportsViewModel(
                 }
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
-            } catch (error: Exception) {
-                logger.w { "Unable to load team hub (${error::class.simpleName})" }
+            } catch (unexpected: Exception) {
+                logger.w { "Unable to load team hub (${unexpected::class.simpleName})" }
                 if (mutableTeamHubState.value == request) {
                     mutableTeamHubState.value = existing?.copy(
                         isRefreshing = false,
@@ -341,7 +368,10 @@ class SportsViewModel(
         }
     }
 
-    fun loadMatch(profileId: String, matchId: String) {
+    fun loadMatch(
+        profileId: String,
+        matchId: String,
+    ) {
         val key = MatchCacheKey(profileId, matchId)
         if (key in resolvedMatchDetails.value &&
             (mutableMatchDetailsState.value as? MatchDetailsUiState.Content)
@@ -370,8 +400,8 @@ class SportsViewModel(
                 fixture
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
-            } catch (error: Exception) {
-                logger.w { "Unable to load match details (${error::class.simpleName})" }
+            } catch (unexpected: Exception) {
+                logger.w { "Unable to load match details (${unexpected::class.simpleName})" }
                 if (cached == null) {
                     mutableMatchDetailsState.value =
                         MatchDetailsUiState.Failed(profileId, matchId)
@@ -389,8 +419,8 @@ class SportsViewModel(
                 loadMatchWeather(fixture)
             } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
-            } catch (error: Exception) {
-                logger.w { "Unable to load match weather (${error::class.simpleName})" }
+            } catch (unexpected: Exception) {
+                logger.w { "Unable to load match weather (${unexpected::class.simpleName})" }
                 null
             }
             val current = mutableMatchDetailsState.value as? MatchDetailsUiState.Content
@@ -424,7 +454,10 @@ class SportsViewModel(
         }
     }
 
-    private fun trackRefresh(area: RefreshArea, result: RefreshResult) {
+    private fun trackRefresh(
+        area: RefreshArea,
+        result: RefreshResult,
+    ) {
         observability.log(
             AnalyticsEvent.RefreshCompleted(
                 area = area,
@@ -433,7 +466,7 @@ class SportsViewModel(
                     RefreshResult.NotModified -> RefreshOutcome.NotModified
                     is RefreshResult.Failed -> RefreshOutcome.Failed
                 },
-            )
+            ),
         )
     }
 

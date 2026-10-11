@@ -1,37 +1,18 @@
 package com.github.apkelly.drool.app.ui.viewmodel
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
+import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
+import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
+import com.github.apkelly.drool.auth.ui.model.AuthFailure
+import com.github.apkelly.drool.auth.ui.model.SessionUiState
 import com.github.apkelly.drool.domain.model.AuthCredentials
 import com.github.apkelly.drool.domain.model.AuthenticationException
 import com.github.apkelly.drool.domain.model.AuthenticationFailure
-import com.github.apkelly.drool.domain.model.ThemeMode
-import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
-import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
-import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
-import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
-import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
-import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
-import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
-import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
-import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
-import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
-import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.domain.model.LinkMemberException
+import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.domain.model.ThemeMode
 import com.github.apkelly.drool.logging.DroolLog
-import com.github.apkelly.drool.auth.ui.model.AuthFailure
-import com.github.apkelly.drool.auth.ui.model.SessionUiState
-import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.observability.AnalyticsEvent
 import com.github.apkelly.drool.observability.AppScreen
 import com.github.apkelly.drool.observability.NoOpObservability
@@ -39,6 +20,25 @@ import com.github.apkelly.drool.observability.NonFatalOperation
 import com.github.apkelly.drool.observability.Observability
 import com.github.apkelly.drool.observability.SignInOutcome
 import com.github.apkelly.drool.observability.ThemeSelection
+import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.RefreshProfileEndpointUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
+import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
+import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class AppViewModel(
     private val observeProfile: ObserveProfileUseCase,
@@ -88,22 +88,25 @@ class AppViewModel(
                 }
             } catch (error: CancellationException) {
                 throw error
-            } catch (error: Exception) {
+            } catch (unexpected: Exception) {
                 logger.w { "Session restoration failed" }
-                observability.recordNonFatal(error, NonFatalOperation.RestoreSession)
+                observability.recordNonFatal(unexpected, NonFatalOperation.RestoreSession)
                 SessionUiState.ReconnectRequired
             }
             updateSessionState(state)
         }
     }
 
-    fun signIn(username: String, password: String) {
+    fun signIn(
+        username: String,
+        password: String,
+    ) {
         if (username.isBlank() || password.isBlank()) {
             observability.log(
-                AnalyticsEvent.SignInCompleted(SignInOutcome.MissingFields)
+                AnalyticsEvent.SignInCompleted(SignInOutcome.MissingFields),
             )
             updateSessionState(
-                SessionUiState.AuthenticationFailed(AuthFailure.MissingFields)
+                SessionUiState.AuthenticationFailed(AuthFailure.MissingFields),
             )
             return
         }
@@ -117,16 +120,16 @@ class AppViewModel(
                         path = "/auth/signin",
                         username = username.trim(),
                         password = password,
-                    )
+                    ),
                 )
                 if (session.profile == null) {
                     observability.log(
-                        AnalyticsEvent.SignInCompleted(SignInOutcome.ReconnectRequired)
+                        AnalyticsEvent.SignInCompleted(SignInOutcome.ReconnectRequired),
                     )
                     SessionUiState.ReconnectRequired
                 } else {
                     observability.log(
-                        AnalyticsEvent.SignInCompleted(SignInOutcome.Success)
+                        AnalyticsEvent.SignInCompleted(SignInOutcome.Success),
                     )
                     SessionUiState.Authenticated(session.profile)
                 }
@@ -139,24 +142,26 @@ class AppViewModel(
                         when (error.reason) {
                             AuthenticationFailure.InvalidCredentials ->
                                 SignInOutcome.InvalidCredentials
+
                             AuthenticationFailure.Offline -> SignInOutcome.Offline
+
                             AuthenticationFailure.Unknown -> SignInOutcome.UnknownFailure
-                        }
-                    )
+                        },
+                    ),
                 )
                 SessionUiState.AuthenticationFailed(
                     when (error.reason) {
                         AuthenticationFailure.InvalidCredentials -> AuthFailure.InvalidCredentials
                         AuthenticationFailure.Offline -> AuthFailure.Offline
                         AuthenticationFailure.Unknown -> AuthFailure.Unknown
-                    }
+                    },
                 )
-            } catch (error: Exception) {
+            } catch (unexpected: Exception) {
                 logger.e { "Unexpected authentication failure" }
                 observability.log(
-                    AnalyticsEvent.SignInCompleted(SignInOutcome.UnknownFailure)
+                    AnalyticsEvent.SignInCompleted(SignInOutcome.UnknownFailure),
                 )
-                observability.recordNonFatal(error, NonFatalOperation.SignIn)
+                observability.recordNonFatal(unexpected, NonFatalOperation.SignIn)
                 SessionUiState.AuthenticationFailed(AuthFailure.Unknown)
             }
             updateSessionState(state)
@@ -171,7 +176,9 @@ class AppViewModel(
         }
     }
 
-    fun refreshRelatedUsers(email: String) {
+    fun refreshRelatedUsers(
+        email: String,
+    ) {
         scope.launch {
             refreshProfileEndpoint(ProfileApiEndpoint.RelatedUsers, email.trim())
         }
@@ -190,35 +197,40 @@ class AppViewModel(
     }
 
     fun loadLinkCandidates() {
-            mutableLinkMemberState.value = LinkMemberUiState.Loading
-            scope.launch {
-                mutableLinkMemberState.value = try {
-                    LinkMemberUiState.Ready(getLinkCandidates())
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: LinkMemberException) {
-                    LinkMemberUiState.Failed(error.reason)
-                }
-            }
-        }
-
-    fun verifyLinkedUser(candidateId: String, token: String) {
-            val current = mutableLinkMemberState.value as? LinkMemberUiState.Ready ?: return
-            if (token.length != LINK_TOKEN_LENGTH || !token.all(Char::isDigit)) return
-            mutableLinkMemberState.value = current.copy(verifyingCandidateId = candidateId)
-            scope.launch {
-                mutableLinkMemberState.value = try {
-                    verifyLinkedUserUseCase(candidateId, token)
-                    LinkMemberUiState.Linked
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: LinkMemberException) {
-                    LinkMemberUiState.Failed(error.reason)
+        mutableLinkMemberState.value = LinkMemberUiState.Loading
+        scope.launch {
+            mutableLinkMemberState.value = try {
+                LinkMemberUiState.Ready(getLinkCandidates())
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: LinkMemberException) {
+                LinkMemberUiState.Failed(error.reason)
             }
         }
     }
 
-    fun updateTheme(mode: ThemeMode) {
+    fun verifyLinkedUser(
+        candidateId: String,
+        token: String,
+    ) {
+        val current = mutableLinkMemberState.value as? LinkMemberUiState.Ready ?: return
+        if (token.length != LINK_TOKEN_LENGTH || !token.all(Char::isDigit)) return
+        mutableLinkMemberState.value = current.copy(verifyingCandidateId = candidateId)
+        scope.launch {
+            mutableLinkMemberState.value = try {
+                verifyLinkedUserUseCase(candidateId, token)
+                LinkMemberUiState.Linked
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: LinkMemberException) {
+                LinkMemberUiState.Failed(error.reason)
+            }
+        }
+    }
+
+    fun updateTheme(
+        mode: ThemeMode,
+    ) {
         scope.launch {
             setThemeMode(mode)
             observability.log(
@@ -227,21 +239,27 @@ class AppViewModel(
                         ThemeMode.System -> ThemeSelection.System
                         ThemeMode.Light -> ThemeSelection.Light
                         ThemeMode.Dark -> ThemeSelection.Dark
-                    }
-                )
+                    },
+                ),
             )
         }
     }
 
-    fun updateObservability(enabled: Boolean) {
+    fun updateObservability(
+        enabled: Boolean,
+    ) {
         scope.launch { setObservabilityEnabled(enabled) }
     }
 
-    fun trackScreen(screen: AppScreen) {
+    fun trackScreen(
+        screen: AppScreen,
+    ) {
         observability.log(AnalyticsEvent.ScreenViewed(screen))
     }
 
-    private fun updateSessionState(state: SessionUiState) {
+    private fun updateSessionState(
+        state: SessionUiState,
+    ) {
         mutableSessionState.value = state
         profileObservationJob?.cancel()
         profileObservationJob = null

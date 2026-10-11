@@ -23,7 +23,7 @@ data class Profile(
                             displayName = it.displayName,
                             avatarUrl = it.avatarUrl,
                             isPrimary = false,
-                        )
+                        ),
                     )
                 }
         }

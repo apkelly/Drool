@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,8 +40,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +54,6 @@ import com.github.apkelly.drool.resources.action_back
 import com.github.apkelly.drool.resources.action_cancel
 import com.github.apkelly.drool.resources.action_confirm
 import com.github.apkelly.drool.resources.action_retry
-import com.github.apkelly.drool.resources.availability_action
 import com.github.apkelly.drool.resources.availability_add
 import com.github.apkelly.drool.resources.availability_club
 import com.github.apkelly.drool.resources.availability_delete
@@ -74,10 +75,10 @@ import com.github.apkelly.drool.resources.availability_start_date
 import com.github.apkelly.drool.resources.availability_start_time
 import com.github.apkelly.drool.resources.availability_title
 import com.github.apkelly.drool.resources.availability_weekly
+import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailability
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityDraft
 import com.github.apkelly.drool.schedule.domain.model.RefereeClub
-import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiState
 import com.github.apkelly.drool.ui.format.formatFixtureDate
@@ -87,17 +88,20 @@ import com.github.apkelly.drool.ui.theme.DroolTheme
 import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
-import kotlin.time.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Clock
 
-private const val DayMillis = 24L * 60L * 60L * 1_000L
+private const val DAY_MILLIS = 24L * 60L * 60L * 1_000L
+private const val DAYS_PER_WEEK = 7
+private const val HOURS_PER_HALF_DAY = 12
+private const val MAX_AVAILABILITY_MONTHS = 6
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,8 +112,11 @@ fun AvailabilityScreen(
     onRefresh: () -> Unit,
     onCreate: (RefereeAvailabilityDraft) -> Unit,
     onDelete: (String) -> Unit,
+    modifier: Modifier = Modifier,
     onClearFailure: () -> Unit,
 ) {
+    val currentOnLoad by rememberUpdatedState(onLoad)
+    val currentOnClearFailure by rememberUpdatedState(onClearFailure)
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddDialog by remember(model.profileId) { mutableStateOf(false) }
     var pendingDelete by remember(model.profileId) {
@@ -118,16 +125,17 @@ fun AvailabilityScreen(
     val ready = model.state as? AvailabilityUiState.Ready
     val failureMessage = stringResource(Res.string.availability_save_failed)
     LaunchedEffect(model.profileId) {
-        onLoad()
+        currentOnLoad()
     }
     LaunchedEffect(ready?.failure) {
         if (ready?.failure != null) {
             snackbarHostState.showSnackbar(failureMessage)
-            onClearFailure()
+            currentOnClearFailure()
         }
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -347,11 +355,11 @@ private fun AddAvailabilityDialog(
     var clubMenuExpanded by remember { mutableStateOf(false) }
     var recurrenceMenuExpanded by remember { mutableStateOf(false) }
     var startDateMillis by remember { mutableStateOf(today) }
-    var endDateMillis by remember { mutableStateOf(today + 7 * DayMillis) }
-    var startHour by remember { mutableStateOf(18) }
-    var startMinute by remember { mutableStateOf(0) }
-    var endHour by remember { mutableStateOf(19) }
-    var endMinute by remember { mutableStateOf(0) }
+    var endDateMillis by remember { mutableStateOf(today + DAYS_PER_WEEK * DAY_MILLIS) }
+    var startHour by remember { mutableIntStateOf(18) }
+    var startMinute by remember { mutableIntStateOf(0) }
+    var endHour by remember { mutableIntStateOf(19) }
+    var endMinute by remember { mutableIntStateOf(0) }
     var recurrence by remember {
         mutableStateOf(AvailabilityRecurrence.SingleDay)
     }
@@ -471,7 +479,7 @@ private fun AddAvailabilityDialog(
                                 recurrence = recurrence,
                                 clubId = club.id,
                                 timeZone = club.timeZone,
-                            )
+                            ),
                         )
                     }
                 },
@@ -508,7 +516,7 @@ private fun AddAvailabilityDialog(
                                 if (target == DateTarget.Start) {
                                     startDateMillis = selected
                                     if (endDateMillis < selected) {
-                                        endDateMillis = selected + 7 * DayMillis
+                                        endDateMillis = selected + DAYS_PER_WEEK * DAY_MILLIS
                                     }
                                 } else {
                                     endDateMillis = selected
@@ -591,34 +599,43 @@ private fun PickerButton(
     }
 }
 
-private fun clockTime(hour: Int, minute: Int, uses24HourClock: Boolean): String {
+private fun clockTime(
+    hour: Int,
+    minute: Int,
+    uses24HourClock: Boolean,
+): String {
     val minuteText = minute.toString().padStart(2, '0')
     return if (uses24HourClock) {
         "${hour.toString().padStart(2, '0')}:$minuteText"
     } else {
-        "${(hour % 12).takeUnless { it == 0 } ?: 12}:$minuteText " +
-            if (hour < 12) "AM" else "PM"
+        "${(hour % HOURS_PER_HALF_DAY).takeUnless { it == 0 } ?: HOURS_PER_HALF_DAY}:$minuteText " +
+            if (hour < HOURS_PER_HALF_DAY) "AM" else "PM"
     }
 }
 
 @Composable
-private fun recurrenceLabel(recurrence: AvailabilityRecurrence): String =
-    stringResource(
-        when (recurrence) {
-            AvailabilityRecurrence.SingleDay ->
-                Res.string.availability_does_not_repeat
-            AvailabilityRecurrence.Weekly -> Res.string.availability_weekly
-            AvailabilityRecurrence.Fortnightly -> Res.string.availability_fortnightly
-            AvailabilityRecurrence.Monthly -> Res.string.availability_monthly
-        }
-    )
+private fun recurrenceLabel(
+    recurrence: AvailabilityRecurrence,
+): String = stringResource(
+    when (recurrence) {
+        AvailabilityRecurrence.SingleDay ->
+            Res.string.availability_does_not_repeat
+
+        AvailabilityRecurrence.Weekly -> Res.string.availability_weekly
+
+        AvailabilityRecurrence.Fortnightly -> Res.string.availability_fortnightly
+
+        AvailabilityRecurrence.Monthly -> Res.string.availability_monthly
+    },
+)
 
 private class DatesBetween(
     private val minimumUtcMillis: Long,
     private val maximumUtcMillis: Long,
 ) : SelectableDates {
-    override fun isSelectableDate(utcTimeMillis: Long): Boolean =
-        utcTimeMillis in minimumUtcMillis..maximumUtcMillis
+    override fun isSelectableDate(
+        utcTimeMillis: Long,
+    ): Boolean = utcTimeMillis in minimumUtcMillis..maximumUtcMillis
 }
 
 private data class DatePickerLimits(
@@ -630,13 +647,16 @@ private fun currentDatePickerLimits(): DatePickerLimits {
     val currentDate = Clock.System.now()
         .toLocalDateTime(TimeZone.currentSystemDefault())
         .date
-    fun pickerMillis(date: kotlinx.datetime.LocalDate): Long =
-        LocalDateTime(date, LocalTime(0, 0))
-            .toInstant(TimeZone.UTC)
-            .toEpochMilliseconds()
+    fun pickerMillis(
+        date: kotlinx.datetime.LocalDate,
+    ): Long = LocalDateTime(date, LocalTime(0, 0))
+        .toInstant(TimeZone.UTC)
+        .toEpochMilliseconds()
     return DatePickerLimits(
         minimumUtcMillis = pickerMillis(currentDate),
-        maximumUtcMillis = pickerMillis(currentDate.plus(6, DateTimeUnit.MONTH)),
+        maximumUtcMillis = pickerMillis(
+            currentDate.plus(MAX_AVAILABILITY_MONTHS, DateTimeUnit.MONTH),
+        ),
     )
 }
 
@@ -660,7 +680,7 @@ private fun AvailabilityScreenPreview() {
                             name = "Marrickville Referees",
                             logoUrl = null,
                             timeZone = "Australia/Sydney",
-                        )
+                        ),
                     ),
                     availabilities = listOf(
                         RefereeAvailability(
@@ -672,7 +692,7 @@ private fun AvailabilityScreenPreview() {
                             clubName = "Marrickville Referees",
                             recurrence = AvailabilityRecurrence.Weekly,
                             recurrenceEndEpochMillis = 1_798_952_400_000,
-                        )
+                        ),
                     ),
                 ),
             ),

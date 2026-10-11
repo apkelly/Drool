@@ -1,0 +1,114 @@
+config:
+  validation: true
+  warningsAsErrors: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    allowedExceptionNameRegex: "_|(ignore|expected|unexpected).*"
+
+complexity:
+  CyclomaticComplexMethod:
+    excludes:
+      - "**/ui/**"
+    ignoreNestingFunctions: true
+    ignoreSimpleWhenEntries: true
+  LargeClass:
+    excludes:
+      - "**/*Test.kt"
+  LongMethod:
+    allowedLines: 80
+    excludes:
+      - "**/*Test.kt"
+      - "**/ui/**"
+  TooManyFunctions:
+    allowedFunctionsPerClass: 30
+    allowedFunctionsPerFile: 35
+    allowedFunctionsPerInterface: 25
+    ignoreOverridden: true
+
+naming:
+  FunctionNaming:
+    functionPattern: "[a-zA-Z][a-zA-Z0-9]*"
+
+style:
+  MagicNumber:
+    excludes:
+      - "**/*Test.kt"
+    ignoreEnums: true
+    ignoreRanges: true
+  ReturnCount:
+    max: 5
+
+ktlint:
+  active: true
+  autoCorrect: true
+  code_style: intellij_idea
+  ClassSignature:
+    active: true
+    forceMultilineWhenParameterCountGreaterOrEqualThan: "1"
+  FunctionSignature:
+    active: true
+    forceMultilineWhenParameterCountGreaterOrEqualThan: 1
+
+Compose:
+  active: true
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  ComposableParamOrder:
+    active: true
+  CompositionLocalAllowlist:
+    active: true
+  CompositionLocalNaming:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ContentTrailingLambda:
+    active: true
+  DefaultsVisibility:
+    active: true
+  LambdaParameterEventTrailing:
+    active: false
+  LambdaParameterInRestartableEffect:
+    active: true
+  Material2:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierComposed:
+    active: true
+  ModifierMissing:
+    active: true
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleEmitters:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  ParameterNaming:
+    active: true
+  PreviewAnnotationNaming:
+    active: true
+  PreviewPublic:
+    active: true
+  RememberContentMissing:
+    active: true
+  RememberMissing:
+    active: true
+  ViewModelForwarding:
+    active: true
+    excludes:
+      - "**/app/ui/DroolApp.kt"
+  ViewModelInjection:
+    active: true
