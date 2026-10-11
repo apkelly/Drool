@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.schedule.domain.usecase
 
-import com.github.apkelly.drool.domain.model.FamilyProfile
+import com.github.apkelly.drool.common.domain.model.FamilyProfile
 import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 
 class ObserveFixturesUseCase(

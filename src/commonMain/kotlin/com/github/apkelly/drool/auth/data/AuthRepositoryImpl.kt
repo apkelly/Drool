@@ -1,8 +1,8 @@
 package com.github.apkelly.drool.auth.data
 
 import com.github.apkelly.drool.auth.domain.repository.AuthRepository
-import com.github.apkelly.drool.data.repository.SessionDataSource
-import com.github.apkelly.drool.domain.model.AuthCredentials
+import com.github.apkelly.drool.common.data.repository.SessionDataSource
+import com.github.apkelly.drool.common.domain.model.AuthCredentials
 
 class AuthRepositoryImpl(
     private val sessionDataSource: SessionDataSource,

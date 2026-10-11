@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.team.ui.model
 
-import com.github.apkelly.drool.domain.model.RefreshFailure
-import com.github.apkelly.drool.domain.model.TeamHub
+import com.github.apkelly.drool.common.domain.model.RefreshFailure
+import com.github.apkelly.drool.common.domain.model.TeamHub
 
 sealed interface TeamHubUiState {
     data object Idle : TeamHubUiState

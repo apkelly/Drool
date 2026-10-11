@@ -1,10 +1,10 @@
 package com.github.apkelly.drool.match.data.weather
 
-import com.github.apkelly.drool.data.local.DroolDatabase
-import com.github.apkelly.drool.data.local.entity.MatchWeatherCacheEntity
-import com.github.apkelly.drool.data.time.TimeProvider
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.MatchWeather
+import com.github.apkelly.drool.common.data.local.DroolDatabase
+import com.github.apkelly.drool.common.data.local.entity.MatchWeatherCacheEntity
+import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.MatchWeather
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 

@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.team.data
 
-import com.github.apkelly.drool.data.repository.SportsDataSource
+import com.github.apkelly.drool.common.data.repository.SportsDataSource
 import com.github.apkelly.drool.team.domain.repository.TeamRepository
 
 class TeamRepositoryImpl(

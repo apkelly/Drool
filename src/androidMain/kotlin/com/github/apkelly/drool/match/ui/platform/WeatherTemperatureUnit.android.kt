@@ -2,7 +2,7 @@ package com.github.apkelly.drool.match.ui.platform
 
 import android.icu.util.LocaleData
 import android.icu.util.ULocale
-import com.github.apkelly.drool.data.storage.requireAndroidApplicationContext
+import com.github.apkelly.drool.common.data.storage.requireAndroidApplicationContext
 
 actual fun platformWeatherTemperatureUnit(): WeatherTemperatureUnit {
     val locale = requireAndroidApplicationContext()

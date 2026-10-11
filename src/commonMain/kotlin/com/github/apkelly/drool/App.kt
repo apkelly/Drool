@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import com.github.apkelly.drool.app.ui.DroolApp
 import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
-import com.github.apkelly.drool.di.initDroolKoin
+import com.github.apkelly.drool.common.di.initDroolKoin
+import com.github.apkelly.drool.common.ui.theme.DroolTheme
 import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
-import com.github.apkelly.drool.ui.theme.DroolTheme
 
 @Composable
 fun App(

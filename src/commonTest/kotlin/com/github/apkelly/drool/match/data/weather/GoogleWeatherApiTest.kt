@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.match.data.weather
 
-import com.github.apkelly.drool.data.remote.networkJson
+import com.github.apkelly.drool.common.data.remote.networkJson
 import com.github.apkelly.drool.match.ui.platform.WeatherTemperatureUnit
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

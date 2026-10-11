@@ -1,7 +1,7 @@
 package com.github.apkelly.drool
 
 import androidx.compose.ui.window.ComposeUIViewController
-import com.github.apkelly.drool.di.initDroolKoin
+import com.github.apkelly.drool.common.di.initDroolKoin
 import platform.UIKit.UIViewController
 
 fun MainViewController(): UIViewController {

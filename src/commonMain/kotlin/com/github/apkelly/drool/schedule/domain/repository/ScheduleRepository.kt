@@ -1,9 +1,9 @@
 package com.github.apkelly.drool.schedule.domain.repository
 
-import com.github.apkelly.drool.domain.model.CachedData
-import com.github.apkelly.drool.domain.model.FamilyProfile
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.RefreshResult
+import com.github.apkelly.drool.common.domain.model.CachedData
+import com.github.apkelly.drool.common.domain.model.FamilyProfile
+import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.RefreshResult
 import kotlinx.coroutines.flow.Flow
 
 interface ScheduleRepository {

@@ -19,15 +19,13 @@ The original app's `okhttp/4.12.0` user-agent is sent for API compatibility. Ker
 - `com.github.apkelly.drool.auth`, `.home`, `.schedule`, `.discover`,
   `.profile`, `.team`, and `.match`: vertical feature packages. Each feature
   owns its `data`, `domain`, and `ui` packages.
-- `com.github.apkelly.drool.data`: shared Room, DataStore, HTTP, mapping, and
-  time infrastructure used by multiple feature data layers.
-- `com.github.apkelly.drool.domain`: Drool-owned domain models shared across
-  features. Explicit data-layer mappers convert Dribl models into these models.
-- `com.github.apkelly.drool.ui`: reusable formatting, platform adapters,
-  theming, previews, and widgets shared by feature UIs.
+- `com.github.apkelly.drool.common`: cross-feature infrastructure. Its `data`
+  package owns shared Room, DataStore, HTTP, mapping, and time infrastructure;
+  `domain` owns shared Drool models; `ui` owns reusable formatting, platform
+  adapters, theming, previews, widgets, and resources; and `di`, `logging`, and
+  `observability` provide application-wide services.
 - `com.github.apkelly.drool.app`: application navigation and cross-feature UI
   orchestration.
-- `com.github.apkelly.drool.di`: Koin modules and the composition graph.
 
 Feature UI depends only on feature domain use cases and shared domain models.
 It never imports or calls a feature data layer directly.

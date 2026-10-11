@@ -2,7 +2,7 @@ package com.github.apkelly.drool.match.data.weather
 
 import android.content.pm.PackageManager
 import android.os.Build
-import com.github.apkelly.drool.data.storage.requireAndroidApplicationContext
+import com.github.apkelly.drool.common.data.storage.requireAndroidApplicationContext
 import java.security.MessageDigest
 
 actual fun platformWeatherApiKey(): String? {

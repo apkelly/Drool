@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.match.ui.model
 
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.MatchWeather
+import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.MatchWeather
 
 sealed interface MatchDetailsUiState {
     data object Idle : MatchDetailsUiState

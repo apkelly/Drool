@@ -49,45 +49,45 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.github.apkelly.drool.resources.Res
-import com.github.apkelly.drool.resources.action_back
-import com.github.apkelly.drool.resources.action_cancel
-import com.github.apkelly.drool.resources.action_confirm
-import com.github.apkelly.drool.resources.action_retry
-import com.github.apkelly.drool.resources.availability_add
-import com.github.apkelly.drool.resources.availability_club
-import com.github.apkelly.drool.resources.availability_delete
-import com.github.apkelly.drool.resources.availability_delete_body
-import com.github.apkelly.drool.resources.availability_delete_title
-import com.github.apkelly.drool.resources.availability_description
-import com.github.apkelly.drool.resources.availability_does_not_repeat
-import com.github.apkelly.drool.resources.availability_empty
-import com.github.apkelly.drool.resources.availability_end_time
-import com.github.apkelly.drool.resources.availability_fortnightly
-import com.github.apkelly.drool.resources.availability_load_failed
-import com.github.apkelly.drool.resources.availability_monthly
-import com.github.apkelly.drool.resources.availability_no_clubs
-import com.github.apkelly.drool.resources.availability_repeat_end_date
-import com.github.apkelly.drool.resources.availability_repeats
-import com.github.apkelly.drool.resources.availability_save
-import com.github.apkelly.drool.resources.availability_save_failed
-import com.github.apkelly.drool.resources.availability_start_date
-import com.github.apkelly.drool.resources.availability_start_time
-import com.github.apkelly.drool.resources.availability_title
-import com.github.apkelly.drool.resources.availability_weekly
+import com.github.apkelly.drool.common.resources.Res
+import com.github.apkelly.drool.common.resources.action_back
+import com.github.apkelly.drool.common.resources.action_cancel
+import com.github.apkelly.drool.common.resources.action_confirm
+import com.github.apkelly.drool.common.resources.action_retry
+import com.github.apkelly.drool.common.resources.availability_add
+import com.github.apkelly.drool.common.resources.availability_club
+import com.github.apkelly.drool.common.resources.availability_delete
+import com.github.apkelly.drool.common.resources.availability_delete_body
+import com.github.apkelly.drool.common.resources.availability_delete_title
+import com.github.apkelly.drool.common.resources.availability_description
+import com.github.apkelly.drool.common.resources.availability_does_not_repeat
+import com.github.apkelly.drool.common.resources.availability_empty
+import com.github.apkelly.drool.common.resources.availability_end_time
+import com.github.apkelly.drool.common.resources.availability_fortnightly
+import com.github.apkelly.drool.common.resources.availability_load_failed
+import com.github.apkelly.drool.common.resources.availability_monthly
+import com.github.apkelly.drool.common.resources.availability_no_clubs
+import com.github.apkelly.drool.common.resources.availability_repeat_end_date
+import com.github.apkelly.drool.common.resources.availability_repeats
+import com.github.apkelly.drool.common.resources.availability_save
+import com.github.apkelly.drool.common.resources.availability_save_failed
+import com.github.apkelly.drool.common.resources.availability_start_date
+import com.github.apkelly.drool.common.resources.availability_start_time
+import com.github.apkelly.drool.common.resources.availability_title
+import com.github.apkelly.drool.common.resources.availability_weekly
+import com.github.apkelly.drool.common.ui.format.formatFixtureDate
+import com.github.apkelly.drool.common.ui.format.formatFixtureTime
+import com.github.apkelly.drool.common.ui.format.platformUses24HourClock
+import com.github.apkelly.drool.common.ui.theme.DroolTheme
+import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
+import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailability
 import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityDraft
 import com.github.apkelly.drool.schedule.domain.model.RefereeClub
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiState
-import com.github.apkelly.drool.ui.format.formatFixtureDate
-import com.github.apkelly.drool.ui.format.formatFixtureTime
-import com.github.apkelly.drool.ui.format.platformUses24HourClock
-import com.github.apkelly.drool.ui.theme.DroolTheme
-import com.github.apkelly.drool.ui.widgets.MaterialBackIcon
-import com.github.apkelly.drool.ui.widgets.MaterialSymbol
-import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -668,7 +668,7 @@ private fun currentDatePickerLimits(): DatePickerLimits {
 )
 @Composable
 private fun AvailabilityScreenPreview() {
-    DroolTheme(mode = com.github.apkelly.drool.domain.model.ThemeMode.Light) {
+    DroolTheme(mode = com.github.apkelly.drool.common.domain.model.ThemeMode.Light) {
         AvailabilityScreen(
             model = AvailabilityUiModel(
                 profileId = "ethan",

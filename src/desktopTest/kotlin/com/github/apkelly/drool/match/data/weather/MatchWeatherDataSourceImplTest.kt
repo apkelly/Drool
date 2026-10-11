@@ -1,10 +1,10 @@
 package com.github.apkelly.drool.match.data.weather
 
-import com.github.apkelly.drool.data.repository.TestDatabase
-import com.github.apkelly.drool.data.time.TimeProvider
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.FixtureStatus
-import com.github.apkelly.drool.domain.model.MatchWeather
+import com.github.apkelly.drool.common.data.repository.TestDatabase
+import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.FixtureStatus
+import com.github.apkelly.drool.common.domain.model.MatchWeather
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

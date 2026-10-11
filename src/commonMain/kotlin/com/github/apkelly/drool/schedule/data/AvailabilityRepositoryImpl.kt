@@ -6,7 +6,7 @@ import com.github.apkelly.dribl.api.DriblTokenStore
 import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.model.AvailabilityPeriod
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
-import com.github.apkelly.drool.data.time.TimeProvider
+import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult

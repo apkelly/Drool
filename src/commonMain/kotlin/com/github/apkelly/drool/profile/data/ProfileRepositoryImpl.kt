@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.profile.data
 
-import com.github.apkelly.drool.data.repository.SessionDataSource
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.common.data.repository.SessionDataSource
+import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 
 class ProfileRepositoryImpl(

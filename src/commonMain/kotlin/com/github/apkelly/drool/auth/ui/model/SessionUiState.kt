@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.auth.ui.model
 
-import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.Profile
 
 sealed interface SessionUiState {
     data object Bootstrapping : SessionUiState

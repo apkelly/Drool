@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.profile.domain.repository
 
-import com.github.apkelly.drool.domain.model.ThemeMode
+import com.github.apkelly.drool.common.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {

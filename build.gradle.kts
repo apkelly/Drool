@@ -212,7 +212,7 @@ tasks.named("check") {
 
 compose.resources {
     publicResClass = true
-    packageOfResClass = "com.github.apkelly.drool.resources"
+    packageOfResClass = "com.github.apkelly.drool.common.resources"
 }
 
 kover {
@@ -220,7 +220,7 @@ kover {
         filters {
             includes {
                 classes(
-                    "com.github.apkelly.drool.data.repository.*",
+                    "com.github.apkelly.drool.common.data.repository.*",
                     "com.github.apkelly.drool.*.domain.usecase.*",
                     "com.github.apkelly.drool.*.data.*RepositoryImpl",
                 )

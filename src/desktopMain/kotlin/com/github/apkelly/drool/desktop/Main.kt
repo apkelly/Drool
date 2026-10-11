@@ -4,7 +4,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.github.apkelly.drool.App
-import com.github.apkelly.drool.di.initDroolKoin
+import com.github.apkelly.drool.common.di.initDroolKoin
 import java.awt.Dimension
 
 fun main() {

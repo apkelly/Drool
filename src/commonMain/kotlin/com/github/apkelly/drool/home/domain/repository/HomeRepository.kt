@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.home.domain.repository
 
-import com.github.apkelly.drool.domain.model.FamilyClub
-import com.github.apkelly.drool.domain.model.FamilyTeam
+import com.github.apkelly.drool.common.domain.model.FamilyClub
+import com.github.apkelly.drool.common.domain.model.FamilyTeam
 import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {

@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.app.ui
 
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
-import com.github.apkelly.drool.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.Profile
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

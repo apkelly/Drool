@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.profile.domain.repository
 
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
-import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.common.domain.model.RelatedUser
 
 interface ProfileRepository {
     suspend fun refreshProfileEndpoint(

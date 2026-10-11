@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.profile.data
 
-import com.github.apkelly.drool.data.storage.BearerTokenStore
-import com.github.apkelly.drool.domain.model.ThemeMode
+import com.github.apkelly.drool.common.data.storage.BearerTokenStore
+import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 
 class PreferencesRepositoryImpl(

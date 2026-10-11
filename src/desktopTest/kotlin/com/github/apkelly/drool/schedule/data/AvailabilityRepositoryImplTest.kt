@@ -4,9 +4,9 @@ import com.github.apkelly.dribl.api.DriblHttpException
 import com.github.apkelly.dribl.model.AvailabilityPeriod
 import com.github.apkelly.dribl.model.RefereeAvailability
 import com.github.apkelly.dribl.model.RefereeClub
-import com.github.apkelly.drool.data.repository.FakeSportsRemote
-import com.github.apkelly.drool.data.repository.TestTokenStore
-import com.github.apkelly.drool.data.time.TimeProvider
+import com.github.apkelly.drool.common.data.repository.FakeSportsRemote
+import com.github.apkelly.drool.common.data.repository.TestTokenStore
+import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult

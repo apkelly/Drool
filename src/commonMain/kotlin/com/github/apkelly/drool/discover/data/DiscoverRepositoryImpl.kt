@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.discover.data
 
-import com.github.apkelly.drool.data.repository.SportsDataSource
+import com.github.apkelly.drool.common.data.repository.SportsDataSource
 import com.github.apkelly.drool.discover.domain.repository.DiscoverRepository
 
 class DiscoverRepositoryImpl(

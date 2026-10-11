@@ -1,38 +1,38 @@
 package com.github.apkelly.drool.app.ui.viewmodel
 
+import com.github.apkelly.drool.common.domain.model.Club
+import com.github.apkelly.drool.common.domain.model.FamilyClub
+import com.github.apkelly.drool.common.domain.model.FamilyProfile
+import com.github.apkelly.drool.common.domain.model.FamilyTeam
+import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.RefreshFailure
+import com.github.apkelly.drool.common.domain.model.RefreshResult
+import com.github.apkelly.drool.common.domain.model.Team
+import com.github.apkelly.drool.common.domain.model.TeamRelationship
+import com.github.apkelly.drool.common.logging.DroolLog
+import com.github.apkelly.drool.common.observability.AnalyticsEvent
+import com.github.apkelly.drool.common.observability.NoOpObservability
+import com.github.apkelly.drool.common.observability.Observability
+import com.github.apkelly.drool.common.observability.RefreshArea
+import com.github.apkelly.drool.common.observability.RefreshOutcome
+import com.github.apkelly.drool.common.ui.model.CollectionUiState
 import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamRelationshipsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
-import com.github.apkelly.drool.domain.model.Club
-import com.github.apkelly.drool.domain.model.FamilyClub
-import com.github.apkelly.drool.domain.model.FamilyProfile
-import com.github.apkelly.drool.domain.model.FamilyTeam
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.Profile
-import com.github.apkelly.drool.domain.model.RefreshFailure
-import com.github.apkelly.drool.domain.model.RefreshResult
-import com.github.apkelly.drool.domain.model.Team
-import com.github.apkelly.drool.domain.model.TeamRelationship
 import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyClubsUseCase
 import com.github.apkelly.drool.home.domain.usecase.ObserveFamilyTeamsUseCase
-import com.github.apkelly.drool.logging.DroolLog
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
-import com.github.apkelly.drool.observability.AnalyticsEvent
-import com.github.apkelly.drool.observability.NoOpObservability
-import com.github.apkelly.drool.observability.Observability
-import com.github.apkelly.drool.observability.RefreshArea
-import com.github.apkelly.drool.observability.RefreshOutcome
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFamilyProfilesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
-import com.github.apkelly.drool.ui.model.CollectionUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -146,7 +146,7 @@ class SportsViewModel(
                 observeFixtures()
             } else {
                 observeFixtures(profiles.map { it.id }.toSet()).map { fixtures ->
-                    com.github.apkelly.drool.domain.model.CachedData(
+                    com.github.apkelly.drool.common.domain.model.CachedData(
                         value = fixtures.filter {
                             selected == null || it.profileId == selected
                         },
@@ -474,7 +474,7 @@ class SportsViewModel(
         const val MATCH_CACHE_SIZE = 256
 
         fun <T> collectionState(
-            data: com.github.apkelly.drool.domain.model.CachedData<List<T>>,
+            data: com.github.apkelly.drool.common.domain.model.CachedData<List<T>>,
             refreshing: Boolean,
             failure: RefreshFailure?,
         ) = CollectionUiState(

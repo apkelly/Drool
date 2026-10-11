@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.match.data
 
-import com.github.apkelly.drool.data.repository.SportsDataSource
-import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.common.data.repository.SportsDataSource
+import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
 

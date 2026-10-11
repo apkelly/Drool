@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.match.domain.usecase
 
-import com.github.apkelly.drool.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
 
 class LoadMatchDetailsUseCase(

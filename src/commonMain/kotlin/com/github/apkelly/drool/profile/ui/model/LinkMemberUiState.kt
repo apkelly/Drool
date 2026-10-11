@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.profile.ui.model
 
-import com.github.apkelly.drool.domain.model.LinkMemberFailure
-import com.github.apkelly.drool.domain.model.RelatedUser
+import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.common.domain.model.RelatedUser
 
 sealed interface LinkMemberUiState {
     data object Idle : LinkMemberUiState

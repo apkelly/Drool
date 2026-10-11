@@ -31,7 +31,7 @@ class ArchitectureTest {
                     file.imports.any { import ->
                         import.name.isInPackage("$DROOL_PACKAGE.$feature.data") ||
                             import.name.isInPackage("$DROOL_PACKAGE.$feature.ui") ||
-                            import.name.isInPackage("$DROOL_PACKAGE.data")
+                            import.name.isInPackage("$DROOL_PACKAGE.common.data")
                     }
                 }
         }
@@ -45,7 +45,7 @@ class ArchitectureTest {
                 .assertFalse { file ->
                     file.imports.any { import ->
                         import.name.isInPackage("$DROOL_PACKAGE.$feature.data") ||
-                            import.name.isInPackage("$DROOL_PACKAGE.data") ||
+                            import.name.isInPackage("$DROOL_PACKAGE.common.data") ||
                             import.name.isInPackage(DRIBL_PACKAGE)
                     }
                 }

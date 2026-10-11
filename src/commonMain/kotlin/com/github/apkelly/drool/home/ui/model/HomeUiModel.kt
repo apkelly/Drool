@@ -1,11 +1,11 @@
 package com.github.apkelly.drool.home.ui.model
 
-import com.github.apkelly.drool.domain.model.FamilyProfile
-import com.github.apkelly.drool.domain.model.FamilyTeam
-import com.github.apkelly.drool.domain.model.Fixture
-import com.github.apkelly.drool.domain.model.Profile
-import com.github.apkelly.drool.domain.model.RefreshResult
-import com.github.apkelly.drool.ui.model.CollectionUiState
+import com.github.apkelly.drool.common.domain.model.FamilyProfile
+import com.github.apkelly.drool.common.domain.model.FamilyTeam
+import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.RefreshResult
+import com.github.apkelly.drool.common.ui.model.CollectionUiState
 
 data class HomeUiModel(
     val profile: Profile,

@@ -12,14 +12,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.apkelly.drool.resources.Res
-import com.github.apkelly.drool.resources.action_back
-import com.github.apkelly.drool.resources.api_diagnostics_clubs
-import com.github.apkelly.drool.resources.api_diagnostics_description
-import com.github.apkelly.drool.resources.api_diagnostics_linked_users
-import com.github.apkelly.drool.resources.api_diagnostics_schedule
-import com.github.apkelly.drool.resources.api_diagnostics_teams
-import com.github.apkelly.drool.resources.api_diagnostics_title
+import com.github.apkelly.drool.common.resources.Res
+import com.github.apkelly.drool.common.resources.action_back
+import com.github.apkelly.drool.common.resources.api_diagnostics_clubs
+import com.github.apkelly.drool.common.resources.api_diagnostics_description
+import com.github.apkelly.drool.common.resources.api_diagnostics_linked_users
+import com.github.apkelly.drool.common.resources.api_diagnostics_schedule
+import com.github.apkelly.drool.common.resources.api_diagnostics_teams
+import com.github.apkelly.drool.common.resources.api_diagnostics_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

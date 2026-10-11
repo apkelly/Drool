@@ -1,10 +1,10 @@
 package com.github.apkelly.drool.discover.domain.repository
 
-import com.github.apkelly.drool.domain.model.CachedData
-import com.github.apkelly.drool.domain.model.Club
-import com.github.apkelly.drool.domain.model.RefreshResult
-import com.github.apkelly.drool.domain.model.Team
-import com.github.apkelly.drool.domain.model.TeamRelationship
+import com.github.apkelly.drool.common.domain.model.CachedData
+import com.github.apkelly.drool.common.domain.model.Club
+import com.github.apkelly.drool.common.domain.model.RefreshResult
+import com.github.apkelly.drool.common.domain.model.Team
+import com.github.apkelly.drool.common.domain.model.TeamRelationship
 import kotlinx.coroutines.flow.Flow
 
 interface DiscoverRepository {

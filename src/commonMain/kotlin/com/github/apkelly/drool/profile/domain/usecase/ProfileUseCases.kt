@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.profile.domain.usecase
 
-import com.github.apkelly.drool.domain.model.ProfileApiEndpoint
+import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 
 class RefreshProfileEndpointUseCase(

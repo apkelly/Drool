@@ -1,6 +1,6 @@
 package com.github.apkelly.drool.match.data.weather
 
-import com.github.apkelly.drool.domain.model.MatchWeather
+import com.github.apkelly.drool.common.domain.model.MatchWeather
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

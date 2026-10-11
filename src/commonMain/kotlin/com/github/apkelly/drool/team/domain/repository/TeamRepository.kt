@@ -1,7 +1,7 @@
 package com.github.apkelly.drool.team.domain.repository
 
-import com.github.apkelly.drool.domain.model.CachedData
-import com.github.apkelly.drool.domain.model.TeamHub
+import com.github.apkelly.drool.common.domain.model.CachedData
+import com.github.apkelly.drool.common.domain.model.TeamHub
 
 interface TeamRepository {
     suspend fun loadTeamHub(

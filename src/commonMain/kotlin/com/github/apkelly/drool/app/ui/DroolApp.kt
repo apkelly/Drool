@@ -36,32 +36,32 @@ import com.github.apkelly.drool.auth.ui.RegisterScreen
 import com.github.apkelly.drool.auth.ui.SignInScreen
 import com.github.apkelly.drool.auth.ui.WelcomeScreen
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
+import com.github.apkelly.drool.common.observability.AppScreen
+import com.github.apkelly.drool.common.resources.Res
+import com.github.apkelly.drool.common.resources.nav_discover
+import com.github.apkelly.drool.common.resources.nav_home
+import com.github.apkelly.drool.common.resources.nav_profile
+import com.github.apkelly.drool.common.resources.nav_schedule
+import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
+import com.github.apkelly.drool.common.ui.widgets.SplashContent
 import com.github.apkelly.drool.discover.ui.ClubScreen
 import com.github.apkelly.drool.discover.ui.DiscoverScreen
 import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
 import com.github.apkelly.drool.home.ui.HomeScreen
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import com.github.apkelly.drool.match.ui.MatchDetailsScreen
-import com.github.apkelly.drool.observability.AppScreen
 import com.github.apkelly.drool.profile.ui.ApiDiagnosticsScreen
 import com.github.apkelly.drool.profile.ui.LinkMemberScreen
 import com.github.apkelly.drool.profile.ui.PersonalInformationScreen
 import com.github.apkelly.drool.profile.ui.ProfileScreen
 import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
-import com.github.apkelly.drool.resources.Res
-import com.github.apkelly.drool.resources.nav_discover
-import com.github.apkelly.drool.resources.nav_home
-import com.github.apkelly.drool.resources.nav_profile
-import com.github.apkelly.drool.resources.nav_schedule
 import com.github.apkelly.drool.schedule.ui.AvailabilityScreen
 import com.github.apkelly.drool.schedule.ui.ScheduleScreen
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
 import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
 import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
 import com.github.apkelly.drool.team.ui.TeamHubScreen
-import com.github.apkelly.drool.ui.widgets.MaterialSymbol
-import com.github.apkelly.drool.ui.widgets.MaterialSymbolIcon
-import com.github.apkelly.drool.ui.widgets.SplashContent
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -187,7 +187,7 @@ private fun AuthNavigation(
 
 @Composable
 private fun MainNavigation(
-    profile: com.github.apkelly.drool.domain.model.Profile,
+    profile: com.github.apkelly.drool.common.domain.model.Profile,
     appViewModel: AppViewModel,
     sportsViewModel: SportsViewModel,
     availabilityViewModel: AvailabilityViewModel,
