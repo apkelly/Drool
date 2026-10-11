@@ -157,6 +157,14 @@ Run desktop/common tests:
 ./gradlew desktopTest
 ```
 
+Verify package and clean-architecture boundaries:
+
+```bash
+./gradlew :konsistTest:test
+```
+
+These checks also run as part of the root `check` task.
+
 Verify the mandatory 100% line and branch coverage gate for use cases and repository implementations:
 
 ```bash

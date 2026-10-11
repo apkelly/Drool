@@ -15,6 +15,7 @@ google-maps = "20.0.0"
 google-services = "4.5.0"
 kermit = "2.2.0"
 koin = "4.2.2"
+konsist = "0.18.1"
 kotlin = "2.4.20"
 kotlinx-serialization-json = "1.11.0"
 kover = "0.9.11"
@@ -47,6 +48,7 @@ firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 google-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "google-maps" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

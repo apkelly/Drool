@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "drool"
 include(":androidApp")
+include(":konsistTest")

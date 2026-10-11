@@ -169,6 +169,10 @@ tasks.withType<JavaExec>().configureEach {
     }
 }
 
+tasks.named("check") {
+    dependsOn(":konsistTest:test")
+}
+
 compose.resources {
     publicResClass = true
     packageOfResClass = "com.github.apkelly.drool.resources"
