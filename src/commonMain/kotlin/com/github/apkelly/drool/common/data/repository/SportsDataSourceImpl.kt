@@ -468,6 +468,13 @@ class SportsDataSourceImpl(
     }
 }
 
+/**
+ * Keeps fixtures that should still appear in an upcoming schedule.
+ *
+ * Live fixtures remain visible even after their nominal kickoff, while terminal fixtures are
+ * removed. Fixtures with an unknown non-terminal status receive a grace period because Dribl can
+ * update status after kickoff and removing them immediately would make active matches disappear.
+ */
 internal fun List<Fixture>.upcomingAt(
     nowEpochMillis: Long,
 ): List<Fixture> = filter { fixture ->

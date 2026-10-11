@@ -7,12 +7,27 @@ data class FixtureTeamNames(
     val away: String,
 )
 
+/**
+ * Returns concise home and away names for displaying this fixture.
+ *
+ * Dribl commonly prefixes both names with their competition or league name. Screens already
+ * provide that context, so repeating it makes the actual team distinction harder to scan.
+ * Prefixes are removed only when both teams share them and the words also occur in the fixture
+ * context; otherwise the original names are preserved.
+ */
 fun Fixture.displayTeamNames(): FixtureTeamNames = displayTeamNames(
     homeName = homeTeamName,
     awayName = awayTeamName,
     namingContexts = listOfNotNull(competitionName, leagueName),
 )
 
+/**
+ * Removes redundant shared leading words from a pair of team names.
+ *
+ * [namingContexts] acts as an allowlist so coincidentally shared words that distinguish teams are
+ * not discarded. If stripping the context would empty either name, both original names are
+ * returned to keep the fixture understandable.
+ */
 internal fun displayTeamNames(
     homeName: String,
     awayName: String,

@@ -359,6 +359,12 @@ private fun TeamRelationship.labelResource() = when (this) {
     TeamRelationship.Coaching -> Res.string.team_relationship_coach
 }
 
+/**
+ * Parses an API-provided RGB or ARGB hexadecimal color.
+ *
+ * Invalid branding values return `null` so callers can retain accessible theme defaults. Six
+ * digit RGB values are made fully opaque because Compose colors include an explicit alpha channel.
+ */
 internal fun String?.toColorOrNull(): Color? {
     val value = this?.removePrefix("#") ?: return null
     if (value.length != RGB_HEX_LENGTH && value.length != ARGB_HEX_LENGTH) return null

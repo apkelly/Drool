@@ -32,6 +32,12 @@ data class FamilyProfile(
     val isPrimary: Boolean,
 )
 
+/**
+ * Finds the profile representing the signed-in user.
+ *
+ * Family endpoints can return the primary profile in any position, so callers must use the
+ * explicit marker rather than assuming the first profile belongs to the account owner.
+ */
 fun List<FamilyProfile>.primaryProfileId(): String? = firstOrNull(FamilyProfile::isPrimary)?.id
 
 data class Account(
@@ -48,6 +54,13 @@ enum class LinkMemberFailure {
     Unknown,
 }
 
+/**
+ * Converts the linked-member endpoint's HTTP status into a user-facing failure category.
+ *
+ * Authentication failures always expire the current session. Other client errors represent an
+ * invalid link token only for endpoint operations where the server uses the 4xx range for token
+ * validation; [invalidTokenOnClientError] keeps that endpoint-specific contract explicit.
+ */
 fun linkMemberFailureForHttpStatus(
     statusCode: Int,
     invalidTokenOnClientError: Boolean,

@@ -144,6 +144,13 @@ fun RelatedUser.toLinkedEntity(
     ownerAccountId: String,
 ): RelatedUserEntity = toEntity(ownerAccountId).copy(isLinked = true)
 
+/**
+ * Combines family profiles and linked-user records into one stable cached identity list.
+ *
+ * Dribl exposes these identities through separate endpoints and may assign different IDs before
+ * linking. Matching therefore falls back conservatively from ID to unique email to unique
+ * normalized name. Linked data wins when present, while richer family-profile fields fill gaps.
+ */
 fun reconcileRelatedUsers(
     relatedUsers: List<RelatedUserEntity>,
     linkedUsers: List<RelatedUserEntity>,
@@ -185,6 +192,12 @@ fun reconcileRelatedUsers(
 
 private fun String.normalizedPersonName(): String = trim().lowercase().split(Regex("\\s+")).joinToString(" ")
 
+/**
+ * Enriches the cached account owner with identity data returned by family-profile endpoints.
+ *
+ * Authentication responses can contain only a placeholder name or omit an avatar, so this keeps
+ * the current profile useful without replacing values when no unambiguous identity is available.
+ */
 fun ProfileEntity.withIdentityFrom(
     users: List<RelatedUser>,
     email: String,
@@ -201,6 +214,12 @@ fun ProfileEntity.withIdentityFrom(
     )
 }
 
+/**
+ * Applies the single non-guardian linked identity to the cached account owner.
+ *
+ * A unique non-guardian is the only safe signal that the linked-member response describes the
+ * signed-in person. Ambiguous responses deliberately leave the existing profile unchanged.
+ */
 fun ProfileEntity.withLinkedIdentity(
     users: List<RelatedUser>,
 ): ProfileEntity {
@@ -255,6 +274,13 @@ fun RelatedUserEntity.toDomain() = RelatedUser(
     emergencyContacts = emergencyContactsJson.decodeEmergencyContacts(),
 )
 
+/**
+ * Produces the emergency-contact JSON persisted for a related user.
+ *
+ * Contacts arrive from two Dribl endpoints, so valid entries are combined and deduplicated. When
+ * neither endpoint supplies usable details, the existing cached contacts are retained to prevent
+ * a partial refresh from erasing previously available safety information.
+ */
 fun mergeEmergencyContacts(
     personalInformationContacts: List<EmergencyContact>,
     contactEndpointContacts: List<EmergencyContact>,

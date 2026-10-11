@@ -6,6 +6,12 @@ private val sensitiveJsonValue = Regex(
         """"(?:\\.|[^"\\])*"""",
 )
 
+/**
+ * Replaces credential-like JSON string values before an HTTP message reaches application logs.
+ *
+ * Field names and JSON structure remain visible for diagnostics, while passwords, tokens,
+ * authorization values, cookies, and client secrets are never written in plaintext.
+ */
 internal fun redactSensitiveHttpLogMessage(
     message: String,
 ): String = sensitiveJsonValue.replace(message) { match ->
