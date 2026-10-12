@@ -52,7 +52,7 @@ kotlin {
     android {
         namespace = "com.github.apkelly.drool.shared"
         compileSdk = 37
-        minSdk = 24
+        minSdk = 26
         withHostTest {}
         androidResources {
             enable = true
