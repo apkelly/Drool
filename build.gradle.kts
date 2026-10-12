@@ -114,8 +114,8 @@ kotlin {
         getByName("androidMain") {
             dependencies {
                 implementation(libs.androidx.work.runtime)
+                implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.okhttp)
-                implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.okhttp.logging)
                 implementation(libs.google.maps)
                 implementation(project.dependencies.platform(libs.firebase.bom))
@@ -128,6 +128,7 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.okhttp.logging)
             }
         }
