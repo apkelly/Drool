@@ -1,12 +1,13 @@
 package com.github.apkelly.drool.common.data.repository
 
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.local.DroolDatabase
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
+import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.discover.data.DiscoverRepositoryImpl
 import com.github.apkelly.drool.home.data.HomeRepositoryImpl
 import com.github.apkelly.drool.match.data.MatchRepositoryImpl
@@ -97,4 +98,22 @@ internal class TestSportsRepositories(
     suspend fun loadMatchWeather(
         fixture: Fixture,
     ) = match.loadMatchWeather(fixture)
+
+    suspend fun loadMatchSheet(
+        profileId: String,
+        fixture: Fixture,
+    ) = match.loadMatchSheet(profileId, fixture)
+
+    suspend fun updateMemberAvailability(
+        profileId: String,
+        memberId: String,
+        available: Boolean,
+    ) = match.updateMemberAvailability(profileId, memberId, available)
+
+    suspend fun updateTeamSheetStatus(
+        profileId: String,
+        matchSheetId: String,
+        teamId: String,
+        action: TeamSheetAction,
+    ) = match.updateTeamSheetStatus(profileId, matchSheetId, teamId, action)
 }

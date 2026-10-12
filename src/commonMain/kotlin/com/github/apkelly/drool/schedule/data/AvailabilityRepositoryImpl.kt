@@ -3,10 +3,10 @@ package com.github.apkelly.drool.schedule.data
 import com.github.apkelly.dribl.api.DriblHttpException
 import com.github.apkelly.dribl.api.DriblResponseException
 import com.github.apkelly.dribl.api.DriblTokenStore
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
-import com.github.apkelly.dribl.model.AvailabilityPeriod
-import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
+import com.github.apkelly.dribl.dto.CreateRefereeAvailabilityRequest
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.AvailabilityPeriod
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.operation.cancellationSafeResult
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
@@ -101,7 +101,7 @@ class AvailabilityRepositoryImpl(
     }
 }
 
-private fun com.github.apkelly.dribl.model.RefereeClub.toDomain() =
+private fun com.github.apkelly.drool.common.domain.model.RefereeClub.toDomain() =
     com.github.apkelly.drool.schedule.domain.model.RefereeClub(
         id = id,
         name = name,
@@ -109,7 +109,7 @@ private fun com.github.apkelly.dribl.model.RefereeClub.toDomain() =
         timeZone = timeZone,
     )
 
-private fun com.github.apkelly.dribl.model.RefereeAvailability.toDomain(
+private fun com.github.apkelly.drool.common.domain.model.RefereeAvailability.toDomain(
     profileId: String,
 ) = com.github.apkelly.drool.schedule.domain.model.RefereeAvailability(
     id = id,

@@ -1,6 +1,5 @@
 package com.github.apkelly.drool.schedule.data
 
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.local.DroolDatabase
 import com.github.apkelly.drool.common.data.local.entity.ClubRelationshipEntity
 import com.github.apkelly.drool.common.data.local.entity.TeamRelationshipEntity
@@ -9,10 +8,11 @@ import com.github.apkelly.drool.common.data.mapper.mergeEmergencyContacts
 import com.github.apkelly.drool.common.data.mapper.toDomain
 import com.github.apkelly.drool.common.data.mapper.toEntity
 import com.github.apkelly.drool.common.data.mapper.toLinkedEntity
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.repository.isStale
 import com.github.apkelly.drool.common.data.repository.markUpdated
+import com.github.apkelly.drool.common.data.repository.recentAndUpcomingAt
 import com.github.apkelly.drool.common.data.repository.refreshResult
-import com.github.apkelly.drool.common.data.repository.upcomingAt
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.CachedData
@@ -49,7 +49,7 @@ class ScheduleRepositoryImpl(
                 ) { fixtures, metadata ->
                     CachedData(
                         value = fixtures.map { it.toDomain() }
-                            .upcomingAt(timeProvider.nowEpochMillis()),
+                            .recentAndUpcomingAt(timeProvider.nowEpochMillis()),
                         lastUpdatedEpochMillis = metadata?.updatedAtEpochMillis,
                         isStale = metadata.isStale(
                             timeProvider.nowEpochMillis(),
@@ -66,7 +66,7 @@ class ScheduleRepositoryImpl(
         .observeForAccounts(profileIds.toList())
         .map { fixtures ->
             fixtures.map { it.toDomain() }
-                .upcomingAt(timeProvider.nowEpochMillis())
+                .recentAndUpcomingAt(timeProvider.nowEpochMillis())
         }
 
     override suspend fun refreshFixtures(
@@ -87,7 +87,7 @@ class ScheduleRepositoryImpl(
 
         return refreshResult(existingCount > 0) {
             val fixtures = (
-                api.fetchFixtures(token, accountId).map { it.toDomain() } +
+                api.fetchFixtures(token, accountId) +
                     loadRefereeFixtures(token, accountId)
                 ).distinctBy { it.id to it.role }
             database.inTransaction {
@@ -132,13 +132,12 @@ class ScheduleRepositoryImpl(
                         api.createProfileSession(rootToken, profile.id)
                     }
                     if (refreshSports) {
-                        val teams = api.fetchProfileTeams(token).map { it.toDomain() }
+                        val teams = api.fetchProfileTeams(token)
                         val fixtures = (
-                            api.fetchFixtures(token, profile.subjectUserId)
-                                .map { it.toDomain() } +
+                            api.fetchFixtures(token, profile.subjectUserId) +
                                 loadRefereeFixtures(token, profile.subjectUserId)
                             ).distinctBy { it.id to it.role }
-                        val clubs = api.fetchProfileClubs(token).map { it.toDomain() }
+                        val clubs = api.fetchProfileClubs(token)
                         database.inTransaction {
                             database.fixtureDao().deleteForAccount(profile.id)
                             database.fixtureDao().upsertAll(
@@ -216,7 +215,7 @@ class ScheduleRepositoryImpl(
         userId: String,
     ): List<Fixture> {
         if (api.fetchActiveRefereeClubs(bearerToken).isEmpty()) return emptyList()
-        return api.fetchRefereeFixtures(bearerToken, userId).map { it.toDomain() }
+        return api.fetchRefereeFixtures(bearerToken, userId)
     }
 
     private suspend fun hydratePersonalInformation(
@@ -224,10 +223,10 @@ class ScheduleRepositoryImpl(
         profileId: String,
         bearerToken: String,
     ) {
-        val personal = api.fetchPersonalInformation(bearerToken, profileId).toDomain()
+        val personal = api.fetchPersonalInformation(bearerToken, profileId)
         val personalEntity = personal.toLinkedEntity(rootAccountId)
         val contactEndpointContacts =
-            api.fetchEmergencyContacts(bearerToken).map { it.toDomain() }
+            api.fetchEmergencyContacts(bearerToken)
         val existing = database.profileDao().getRelatedUser(rootAccountId, profileId)
             ?: return
         val emergencyContacts = mergeEmergencyContacts(

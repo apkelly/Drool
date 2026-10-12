@@ -1468,30 +1468,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/matchsheet-members":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    get:
-      operationId: get_matchsheet_members
-      tags: ["Matchsheets"]
-      summary: "Discovered read endpoint for matchsheet members"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationHeader"
-      responses:
-        "200":
-          description: Successful response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericResponse"
-        "401":
-          description: Unauthorized or expired authentication
-        default:
-          description: Error response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
   "/matchsheet-members-sync":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
     post:
@@ -1529,30 +1505,6 @@ paths:
       operationId: get_matchsheet_members_slash
       tags: ["Matchsheets"]
       summary: "Discovered read endpoint for matchsheet members"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationHeader"
-      responses:
-        "200":
-          description: Successful response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericResponse"
-        "401":
-          description: Unauthorized or expired authentication
-        default:
-          description: Error response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  "/matchsheet-officials":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    get:
-      operationId: get_matchsheet_officials
-      tags: ["Matchsheets"]
-      summary: "Discovered read endpoint for matchsheet officials"
       x-method-inference: "inferred as read/list endpoint from resource-style path"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
@@ -1627,30 +1579,6 @@ paths:
       operationId: get_matchsheet_penalties_slash
       tags: ["Matchsheets"]
       summary: "Discovered read endpoint for matchsheet penalties"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationHeader"
-      responses:
-        "200":
-          description: Successful response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericResponse"
-        "401":
-          description: Unauthorized or expired authentication
-        default:
-          description: Error response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  "/matchsheet-referees":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    get:
-      operationId: get_matchsheet_referees
-      tags: ["Matchsheets"]
-      summary: "Discovered read endpoint for matchsheet referees"
       x-method-inference: "inferred as read/list endpoint from resource-style path"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
@@ -1816,30 +1744,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  "/matchsheet-team-submissions":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    get:
-      operationId: get_matchsheet_team_submissions
-      tags: ["Matchsheets"]
-      summary: "Discovered read endpoint for matchsheet team submissions"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationHeader"
-      responses:
-        "200":
-          description: Successful response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericResponse"
-        "401":
-          description: Unauthorized or expired authentication
-        default:
-          description: Error response; schema not recovered from APK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
   "/matchsheet-team-submissions/":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
     x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
@@ -1946,7 +1850,10 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   "/matchsheets/":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    x-note: >-
+      Recovered literal ends with a slash. GET
+      /api/universal/matchsheets/{matchsheetId} returned 400 Endpoint not found
+      in authorized traffic on 2026-10-13 and must not be used by new clients.
     get:
       operationId: get_matchsheets_slash
       tags: ["Matchsheets"]
@@ -3480,6 +3387,143 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/matchsheet-members":
+    x-discovered-source: "Recovered client call and authorized request trace"
+    get:
+      operationId: get_matchsheet_members
+      tags: ["Matchsheets"]
+      summary: List one team's match-sheet members
+      parameters:
+        - name: matchsheet_id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: team_id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Match-sheet members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchSheetMemberListResponse"
+        "401": { description: Unauthorized or expired authentication }
+        "403": { description: Profile is not authorized for this match sheet }
+  "/matchsheet-members/{memberId}":
+    x-discovered-source: "Recovered client mutation contract"
+    put:
+      operationId: update_matchsheet_member
+      tags: ["Matchsheets"]
+      summary: Update a member's match availability
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchSheetMemberAvailabilityRequest"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchSheetMemberResponse"
+        "401": { description: Unauthorized or expired authentication }
+        "403": { description: Profile cannot edit this match sheet }
+  "/matchsheet-team-submissions/{matchsheetId}/{teamId}":
+    x-discovered-source: "Recovered client call and authorized request trace"
+    get:
+      operationId: get_matchsheet_team_submission
+      tags: ["Matchsheets"]
+      summary: Get one team's submission or confirmation status
+      parameters:
+        - name: matchsheetId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: teamId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Team match-sheet status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSheetSubmissionResponse"
+        "401": { description: Unauthorized or expired authentication }
+        "403": { description: Profile is not authorized for this match sheet }
+  "/matchsheet-team-submissions":
+    x-discovered-source: "Recovered client mutation contract"
+    patch:
+      operationId: update_matchsheet_team_submission
+      tags: ["Matchsheets"]
+      summary: Submit, unsubmit, confirm, or unconfirm a team match sheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamSheetSubmissionRequest"
+      responses:
+        "200":
+          description: Updated team match-sheet status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSheetSubmissionResponse"
+        "401": { description: Unauthorized or expired authentication }
+        "403": { description: Profile cannot perform this transition }
+  "/matchsheet-referees":
+    x-discovered-source: "Recovered client call and authorized request trace"
+    get:
+      operationId: get_matchsheet_referees
+      tags: ["Matchsheets"]
+      summary: List allocated match-sheet referees
+      parameters:
+        - { name: matchsheet_id, in: query, required: true, schema: { type: string } }
+        - { name: tenant_id, in: query, required: true, schema: { type: string } }
+        - { name: season_id, in: query, required: true, schema: { type: string } }
+        - name: require_user_id
+          in: query
+          required: true
+          schema: { type: boolean, enum: [true] }
+      responses:
+        "200":
+          description: Allocated referees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchSheetOfficialListResponse"
+        "401": { description: Unauthorized or expired authentication }
+        "403": { description: Profile is not authorized for this match sheet }
+  "/matchsheet-officials":
+    x-discovered-source: "Recovered client call and authorized request trace"
+    get:
+      operationId: get_matchsheet_officials
+      tags: ["Matchsheets"]
+      summary: List other allocated match officials
+      parameters:
+        - { name: matchsheet_id, in: query, required: true, schema: { type: string } }
+        - { name: tenant_id, in: query, required: true, schema: { type: string } }
+        - { name: season_id, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Other allocated officials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchSheetOfficialListResponse"
+        "401": { description: Unauthorized or expired authentication }
+        "403": { description: Profile is not authorized for this match sheet }
 components:
   securitySchemes:
     bearerAuth:
@@ -3497,6 +3541,118 @@ components:
         type: string
         example: "Bearer <token>"
   schemas:
+    MatchSheetMemberListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchSheetMemberResource"
+    MatchSheetMemberResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/MatchSheetMemberResource"
+    MatchSheetMemberResource:
+      type: object
+      required: [id, attributes]
+      properties:
+        id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        attributes:
+          type: object
+          additionalProperties: true
+          properties:
+            user_id:
+              oneOf:
+                - { type: string }
+                - { type: integer }
+            team_id:
+              oneOf:
+                - { type: string }
+                - { type: integer }
+            first_name: { type: string, nullable: true }
+            last_name: { type: string, nullable: true }
+            first_name_alias: { type: string, nullable: true }
+            last_name_alias: { type: string, nullable: true }
+            image_url: { type: string, nullable: true, format: uri }
+            role_name: { type: string, nullable: true }
+            jersey_number:
+              oneOf:
+                - { type: string }
+                - { type: integer }
+            available: { type: boolean }
+    MatchSheetMemberAvailabilityRequest:
+      type: object
+      required: [available]
+      description: >-
+        When available is false, the original client also sends each optional
+        playing/role flag as false so stale lineup state is cleared.
+      properties:
+        available: { type: boolean }
+        starting: { type: boolean }
+        playing: { type: boolean }
+        is_captain: { type: boolean }
+        is_goalkeeper: { type: boolean }
+    TeamSheetSubmissionRequest:
+      type: object
+      required: [matchsheet_id, team_id, type]
+      properties:
+        matchsheet_id: { type: string }
+        team_id: { type: string }
+        type:
+          type: string
+          enum: [submit, unsubmit, confirm, unconfirm]
+    TeamSheetSubmissionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [attributes]
+          properties:
+            id:
+              oneOf:
+                - { type: string }
+                - { type: integer }
+            attributes:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [open, submitted, confirmed]
+    MatchSheetOfficialListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchSheetOfficialResource"
+    MatchSheetOfficialResource:
+      type: object
+      required: [id, attributes]
+      properties:
+        id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+        attributes:
+          type: object
+          additionalProperties: true
+          properties:
+            user_first_name: { type: string, nullable: true }
+            user_last_name: { type: string, nullable: true }
+            first_name: { type: string, nullable: true }
+            last_name: { type: string, nullable: true }
+            name: { type: string, nullable: true }
+            role_name: { type: string, nullable: true }
+            referee_role: { type: string, nullable: true }
+            type: { type: string, nullable: true }
     GenericRequest:
       type: object
       additionalProperties: true

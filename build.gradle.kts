@@ -76,6 +76,7 @@ kotlin {
     sourceSets {
         val commonMain = getByName("commonMain") {
             dependencies {
+                implementation(project(":dribl-client"))
                 implementation(libs.compose.runtime)
                 implementation(libs.compose.foundation)
                 implementation(libs.compose.material3)
@@ -155,6 +156,8 @@ dependencies {
 }
 
 val detektSources = files(
+    "dribl-client/src/commonMain/kotlin",
+    "dribl-client/src/commonTest/kotlin",
     "src/commonMain/kotlin",
     "src/commonTest/kotlin",
     "src/androidMain/kotlin",

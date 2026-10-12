@@ -41,6 +41,9 @@ import com.github.apkelly.drool.discover.ui.viewmodel.DiscoverViewModel
 import com.github.apkelly.drool.home.ui.HomeScreen
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import com.github.apkelly.drool.match.ui.MatchDetailsScreen
+import com.github.apkelly.drool.match.ui.TeamAvailabilityScreen
+import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
+import com.github.apkelly.drool.match.ui.model.MatchSheetUiState
 import com.github.apkelly.drool.match.ui.viewmodel.MatchViewModel
 import com.github.apkelly.drool.profile.ui.LinkMemberScreen
 import com.github.apkelly.drool.profile.ui.PersonalInformationScreen
@@ -105,6 +108,7 @@ fun MainNavigation(
         appViewModel.assignmentPollingInterval.collectAsState()
     val teamHubState by teamViewModel.state.collectAsState()
     val matchDetailsState by matchViewModel.state.collectAsState()
+    val matchSheetState by matchViewModel.matchSheetState.collectAsState()
     val availabilityState by availabilityViewModel.state.collectAsState()
     val availabilityProfileId by availabilityViewModel.activeProfileId.collectAsState()
     val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
@@ -142,6 +146,7 @@ fun MainNavigation(
             is AppRoute.Club -> AppScreen.Club
             is AppRoute.Team -> AppScreen.Team
             is AppRoute.MatchDetails -> AppScreen.MatchDetails
+            is AppRoute.TeamAvailability -> AppScreen.TeamAvailability
             is AppRoute.PersonalInformation -> AppScreen.PersonalInformation
             is AppRoute.Availability -> AppScreen.Availability
             AppRoute.LinkMember -> AppScreen.LinkMember
@@ -309,6 +314,29 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.MatchDetails> { route ->
+                    val details = matchDetailsState as? MatchDetailsUiState.Content
+                    val fixture = details?.takeIf {
+                        it.profileId == route.profileId && it.matchId == route.matchId
+                    }?.fixture
+                    val managedTeamIds = allProfileTeams
+                        .asSequence()
+                        .filter { it.profileId == route.profileId }
+                        .filter {
+                            it.relationship ==
+                                com.github.apkelly.drool.common.domain.model.TeamRelationship.Coaching ||
+                                it.relationship ==
+                                com.github.apkelly.drool.common.domain.model.TeamRelationship.Managing
+                        }
+                        .map { it.team.id }
+                        .toSet()
+                    val matchTeamIds = setOfNotNull(
+                        fixture?.homeTeamId,
+                        fixture?.awayTeamId,
+                    )
+                    val canViewMatchSheet =
+                        fixture?.role ==
+                            com.github.apkelly.drool.common.domain.model.FixtureRole.Referee ||
+                            managedTeamIds.any(matchTeamIds::contains)
                     MatchDetailsScreen(
                         profileId = route.profileId,
                         matchId = route.matchId,
@@ -320,6 +348,18 @@ fun MainNavigation(
                         },
                         onLoad = matchViewModel::load,
                         onRefresh = matchViewModel::refresh,
+                        canViewMatchSheet = canViewMatchSheet,
+                        matchSheetState = matchSheetState,
+                        onLoadMatchSheet = matchViewModel::loadMatchSheet,
+                        onMatchSheetTeamSelect = { teamId ->
+                            currentStack.add(
+                                AppRoute.TeamAvailability(
+                                    profileId = route.profileId,
+                                    matchId = route.matchId,
+                                    teamId = teamId,
+                                ),
+                            )
+                        },
                         onTeamSelect = {
                                 teamId,
                                 teamName,
@@ -336,6 +376,86 @@ fun MainNavigation(
                                     competitionName = competitionName,
                                     leagueId = leagueId,
                                 ),
+                            )
+                        },
+                    )
+                }
+                entry<AppRoute.TeamAvailability> { route ->
+                    val details = matchDetailsState as? MatchDetailsUiState.Content
+                    val fixture = details?.takeIf {
+                        it.profileId == route.profileId && it.matchId == route.matchId
+                    }?.fixture
+                    val managedTeamIds = allProfileTeams
+                        .asSequence()
+                        .filter { it.profileId == route.profileId }
+                        .filter {
+                            it.relationship ==
+                                com.github.apkelly.drool.common.domain.model.TeamRelationship.Coaching ||
+                                it.relationship ==
+                                com.github.apkelly.drool.common.domain.model.TeamRelationship.Managing
+                        }
+                        .map { it.team.id }
+                        .toSet()
+                    val isReferee = fixture?.role ==
+                        com.github.apkelly.drool.common.domain.model.FixtureRole.Referee
+                    val content = matchSheetState as? MatchSheetUiState.Content
+                    val team = content?.matchSheet?.homeTeam?.takeIf {
+                        it.id == route.teamId
+                    } ?: content?.matchSheet?.awayTeam?.takeIf {
+                        it.id == route.teamId
+                    }
+                    val managesMatchTeam = managedTeamIds.any {
+                        it == fixture?.homeTeamId || it == fixture?.awayTeamId
+                    }
+                    val action = when {
+                        isReferee || team == null -> null
+
+                        route.teamId in managedTeamIds -> when (team.status) {
+                            com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Open ->
+                                com.github.apkelly.drool.common.domain.model.TeamSheetAction.Submit
+
+                            com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Submitted ->
+                                com.github.apkelly.drool.common.domain.model.TeamSheetAction.Unsubmit
+
+                            com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Confirmed ->
+                                null
+                        }
+
+                        managesMatchTeam -> when (team.status) {
+                            com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Submitted ->
+                                com.github.apkelly.drool.common.domain.model.TeamSheetAction.Confirm
+
+                            com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Confirmed ->
+                                com.github.apkelly.drool.common.domain.model.TeamSheetAction.Unconfirm
+
+                            com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Open ->
+                                null
+                        }
+
+                        else -> null
+                    }
+                    TeamAvailabilityScreen(
+                        teamId = route.teamId,
+                        state = matchSheetState,
+                        canEditMembers = isReferee || route.teamId in managedTeamIds,
+                        teamAction = action,
+                        onBack = {
+                            if (currentStack.size > 1) {
+                                currentStack.removeAt(currentStack.lastIndex)
+                            }
+                        },
+                        onAvailabilityChange = { memberId, available ->
+                            matchViewModel.updateMemberAvailability(
+                                route.profileId,
+                                memberId,
+                                available,
+                            )
+                        },
+                        onTeamAction = { teamAction ->
+                            matchViewModel.updateTeamStatus(
+                                route.profileId,
+                                route.teamId,
+                                teamAction,
                             )
                         },
                     )

@@ -1,11 +1,9 @@
 package com.github.apkelly.drool.common.di
 
-import com.github.apkelly.dribl.api.AuthRemoteDataSource
 import com.github.apkelly.dribl.api.DriblApi
 import com.github.apkelly.dribl.api.DriblSportsApi
 import com.github.apkelly.dribl.api.DriblTokenRenewer
 import com.github.apkelly.dribl.api.DriblTokenStore
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.api.withAutomaticDriblTokenRenewal
 import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
 import com.github.apkelly.drool.auth.data.AuthRepositoryImpl
@@ -15,6 +13,10 @@ import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.common.data.local.createDroolDatabase
+import com.github.apkelly.drool.common.data.remote.AuthRemoteDataSource
+import com.github.apkelly.drool.common.data.remote.DriblAuthRemoteDataSource
+import com.github.apkelly.drool.common.data.remote.DriblSportsRemoteDataSource
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.remote.createPlatformHttpClient
 import com.github.apkelly.drool.common.data.repository.SessionDataSource
 import com.github.apkelly.drool.common.data.repository.SessionDataSourceImpl
@@ -46,7 +48,10 @@ import com.github.apkelly.drool.match.data.weather.platformWeatherApiKey
 import com.github.apkelly.drool.match.data.weather.platformWeatherRequestHeaders
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchSheetUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.domain.usecase.UpdateMatchSheetMemberUseCase
+import com.github.apkelly.drool.match.domain.usecase.UpdateTeamSheetStatusUseCase
 import com.github.apkelly.drool.match.ui.viewmodel.MatchCache
 import com.github.apkelly.drool.match.ui.viewmodel.MatchViewModel
 import com.github.apkelly.drool.profile.data.PreferencesRepositoryImpl
@@ -116,8 +121,12 @@ private val dataModule = module {
     single { DriblTokenRenewer(get(authHttpClient), get()) }
     single { createDroolDatabase() }
     single<TimeProvider> { SystemTimeProvider }
-    single<AuthRemoteDataSource> { DriblApi(client = get(authHttpClient)) }
-    single<SportsRemoteDataSource> { DriblSportsApi(client = get(sportsHttpClient)) }
+    single<AuthRemoteDataSource> {
+        DriblAuthRemoteDataSource(DriblApi(client = get(authHttpClient)))
+    }
+    single<SportsRemoteDataSource> {
+        DriblSportsRemoteDataSource(DriblSportsApi(client = get(sportsHttpClient)))
+    }
     single<WeatherRemoteDataSource> {
         GoogleWeatherApi(
             client = get(weatherHttpClient),
@@ -217,6 +226,9 @@ private val domainModule = module {
     factory { LoadTeamHubUseCase(repository = get()) }
     factory { LoadMatchDetailsUseCase(repository = get()) }
     factory { LoadMatchWeatherUseCase(repository = get()) }
+    factory { LoadMatchSheetUseCase(repository = get()) }
+    factory { UpdateMatchSheetMemberUseCase(repository = get()) }
+    factory { UpdateTeamSheetStatusUseCase(repository = get()) }
 }
 
 private val uiModule = module {
@@ -273,6 +285,9 @@ private val uiModule = module {
         MatchViewModel(
             loadMatchDetails = get(),
             loadMatchWeather = get(),
+            loadMatchSheetUseCase = get(),
+            updateMatchSheetMemberUseCase = get(),
+            updateTeamSheetStatusUseCase = get(),
             matchCache = get(),
         )
     }

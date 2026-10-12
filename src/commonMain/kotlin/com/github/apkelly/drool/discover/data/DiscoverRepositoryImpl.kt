@@ -1,11 +1,11 @@
 package com.github.apkelly.drool.discover.data
 
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.local.DroolDatabase
 import com.github.apkelly.drool.common.data.local.entity.TeamRelationshipEntity
 import com.github.apkelly.drool.common.data.local.inTransaction
 import com.github.apkelly.drool.common.data.mapper.toDomain
 import com.github.apkelly.drool.common.data.mapper.toEntity
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.repository.isStale
 import com.github.apkelly.drool.common.data.repository.markUpdated
 import com.github.apkelly.drool.common.data.repository.refreshResult
@@ -80,7 +80,7 @@ class DiscoverRepositoryImpl(
         force = force,
         existingCount = database.clubDao().count(),
     ) { token ->
-        val clubs = api.fetchClubs(token).map { it.toDomain() }
+        val clubs = api.fetchClubs(token)
         database.inTransaction {
             database.clubDao().deleteAll()
             database.clubDao().upsertAll(clubs.map { it.toEntity() })
@@ -96,7 +96,7 @@ class DiscoverRepositoryImpl(
         val existingCount = clubId?.let { database.teamDao().countForClub(it) }
             ?: database.teamDao().count()
         return refreshPublic(TEAMS_KEY, TEAMS_TTL, force, existingCount, scope) { token ->
-            val teams = api.fetchTeams(token, clubId).map { it.toDomain() }
+            val teams = api.fetchTeams(token, clubId)
             database.inTransaction {
                 if (clubId != null) {
                     database.teamDao().deleteUnrelatedForClub(clubId)

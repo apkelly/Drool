@@ -2,12 +2,11 @@ package com.github.apkelly.drool.common.data.repository
 
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import com.github.apkelly.dribl.api.AuthRemoteDataSource
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
-import com.github.apkelly.dribl.model.AuthApiRequest
-import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
-import com.github.apkelly.dribl.model.LinkUserResult
+import com.github.apkelly.dribl.dto.AuthApiRequest
+import com.github.apkelly.dribl.dto.CreateRefereeAvailabilityRequest
 import com.github.apkelly.drool.common.data.local.DroolDatabase
+import com.github.apkelly.drool.common.data.remote.AuthRemoteDataSource
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.storage.createBearerTokenStore
 import com.github.apkelly.drool.common.domain.model.Account
@@ -16,25 +15,21 @@ import com.github.apkelly.drool.common.domain.model.Club
 import com.github.apkelly.drool.common.domain.model.EmergencyContact
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
+import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
+import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetMember
+import com.github.apkelly.drool.common.domain.model.MatchSheetTeam
 import com.github.apkelly.drool.common.domain.model.Profile
+import com.github.apkelly.drool.common.domain.model.RefereeAvailability
+import com.github.apkelly.drool.common.domain.model.RefereeClub
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamAssociation
 import com.github.apkelly.drool.common.domain.model.TeamHub
+import com.github.apkelly.drool.common.domain.model.TeamSheetAction
+import com.github.apkelly.drool.common.domain.model.TeamSheetStatus
 import kotlinx.coroutines.Dispatchers
 import java.io.File
-import com.github.apkelly.dribl.model.Account as DriblAccount
-import com.github.apkelly.dribl.model.AuthenticationResult as DriblAuthenticationResult
-import com.github.apkelly.dribl.model.Club as DriblClub
-import com.github.apkelly.dribl.model.EmergencyContact as DriblEmergencyContact
-import com.github.apkelly.dribl.model.Fixture as DriblFixture
-import com.github.apkelly.dribl.model.Profile as DriblProfile
-import com.github.apkelly.dribl.model.RefereeAvailability as DriblRefereeAvailability
-import com.github.apkelly.dribl.model.RefereeClub as DriblRefereeClub
-import com.github.apkelly.dribl.model.RelatedUser as DriblRelatedUser
-import com.github.apkelly.dribl.model.Team as DriblTeam
-import com.github.apkelly.dribl.model.TeamAssociation as DriblTeamAssociation
-import com.github.apkelly.dribl.model.TeamHub as DriblTeamHub
 
 internal class TestDatabase : AutoCloseable {
     private val file = File.createTempFile("drool-test-", ".db").apply { delete() }
@@ -66,10 +61,10 @@ internal class FakeAuthRemote : AuthRemoteDataSource {
 
     override suspend fun signIn(
         request: AuthApiRequest,
-    ): DriblAuthenticationResult {
+    ): AuthenticationResult {
         failure?.let { throw it }
         this.request = request
-        return result.toDribl()
+        return result
     }
 }
 
@@ -98,15 +93,27 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         userTeamId = null,
         status = FixtureStatus.Unknown,
     )
+    var matchSheet = MatchSheet(
+        id = "sheet",
+        status = "pending",
+        homeTeam = MatchSheetTeam("home", "Home", TeamSheetStatus.Open),
+        awayTeam = MatchSheetTeam("away", "Away", TeamSheetStatus.Open),
+        members = emptyList(),
+        referees = emptyList(),
+        officials = emptyList(),
+    )
+    var matchSheetRequest: Pair<String, String>? = null
+    var memberAvailabilityRequest: Triple<String, String, Boolean>? = null
+    var teamSheetStatusRequest: List<String>? = null
     var teamHubRequest: Pair<String, String>? = null
     var teamHubCompetitionName: String? = null
     var teamHubLeagueId: String? = null
     var teamHubCalls = 0
     var matchDetailsRequest: Pair<String, String>? = null
-    var refereeClubs: List<DriblRefereeClub> = emptyList()
-    var refereeClubsByToken: Map<String, List<DriblRefereeClub>> = emptyMap()
+    var refereeClubs: List<RefereeClub> = emptyList()
+    var refereeClubsByToken: Map<String, List<RefereeClub>> = emptyMap()
     var refereeFixtures: List<Fixture> = emptyList()
-    var refereeAvailabilities: List<DriblRefereeAvailability> = emptyList()
+    var refereeAvailabilities: List<RefereeAvailability> = emptyList()
     var refereeAvailabilityQuery: Pair<String, String>? = null
     var createAvailabilityRequest: CreateRefereeAvailabilityRequest? = null
     var deletedAvailabilityId: String? = null
@@ -131,37 +138,37 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
 
     override suspend fun fetchClubs(
         bearerToken: String,
-    ): List<DriblClub> {
+    ): List<Club> {
         failure?.let { throw it }
-        return clubs.map { it.toDribl() }
+        return clubs.map { it }
     }
 
     override suspend fun fetchTeams(
         bearerToken: String,
         clubId: String?,
-    ): List<DriblTeam> {
+    ): List<Team> {
         failure?.let { throw it }
         teamClubId = clubId
-        return teams.map { it.toDribl() }
+        return teams.map { it }
     }
 
     override suspend fun fetchFixtures(
         bearerToken: String,
         userId: String?,
-    ): List<DriblFixture> {
+    ): List<Fixture> {
         failure?.let { throw it }
         fixtureUserIds += userId
-        return fixtures.map { it.toDribl() }
+        return fixtures.map { it }
     }
 
     override suspend fun fetchRefereeFixtures(
         bearerToken: String,
         userId: String,
-    ): List<DriblFixture> {
+    ): List<Fixture> {
         failure?.let { throw it }
         refereeFixtureTokens += bearerToken
         refereeFixtureUserIds += userId
-        return refereeFixtures.map { it.toDribl() }
+        return refereeFixtures.map { it }
     }
 
     override suspend fun updateRefereeAllocation(
@@ -175,55 +182,55 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
 
     override suspend fun fetchProfile(
         bearerToken: String,
-    ): DriblProfile {
+    ): Profile {
         failure?.let { throw it }
-        return profile.toDribl()
+        return profile
     }
 
     override suspend fun fetchRelatedUsers(
         bearerToken: String,
         email: String,
-    ): List<DriblRelatedUser> {
+    ): List<RelatedUser> {
         relatedUsersCalls++
         relatedUsersEmail = email
         associationFailure?.let { throw it }
         failure?.let { throw it }
-        return relatedUsers.map { it.toDribl() }
+        return relatedUsers.map { it }
     }
 
     override suspend fun fetchAccounts(
         bearerToken: String,
-    ): List<DriblAccount> {
+    ): List<Account> {
         accountsCalls++
         associationFailure?.let { throw it }
         failure?.let { throw it }
-        return accounts.map { it.toDribl() }
+        return accounts.map { it }
     }
 
     override suspend fun fetchLinkedUsers(
         bearerToken: String,
-    ): List<DriblRelatedUser> {
+    ): List<RelatedUser> {
         linkedUsersCalls++
         associationFailure?.let { throw it }
         failure?.let { throw it }
-        return (linkedUsers ?: relatedUsers).map { it.toDribl() }
+        return (linkedUsers ?: relatedUsers).map { it }
     }
 
     override suspend fun fetchLinkCandidates(
         bearerToken: String,
-    ): List<DriblRelatedUser> {
+    ): List<RelatedUser> {
         failure?.let { throw it }
-        return linkCandidates.map { it.toDribl() }
+        return linkCandidates.map { it }
     }
 
     override suspend fun requestLinkedUser(
         bearerToken: String,
         candidateId: String,
         isGuardian: Boolean,
-    ): LinkUserResult {
+    ): LinkMemberRequestResult {
         failure?.let { throw it }
         requestedLink = candidateId to isGuardian
-        return LinkUserResult(
+        return LinkMemberRequestResult(
             relationshipId = "linked-$candidateId",
             isApproved = linkRequestApproved,
         )
@@ -262,7 +269,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     override suspend fun fetchPersonalInformation(
         bearerToken: String,
         userId: String,
-    ): DriblRelatedUser {
+    ): RelatedUser {
         failure?.let { throw it }
         return (
             personalInformationDto ?: RelatedUser(
@@ -271,28 +278,28 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
                 email = null,
                 avatarUrl = null,
             )
-            ).toDribl()
+            )
     }
 
     override suspend fun fetchEmergencyContacts(
         bearerToken: String,
-    ): List<DriblEmergencyContact> {
+    ): List<EmergencyContact> {
         failure?.let { throw it }
-        return emergencyContacts.map { it.toDribl() }
+        return emergencyContacts.map { it }
     }
 
     override suspend fun fetchProfileTeams(
         bearerToken: String,
-    ): List<DriblTeamAssociation> {
+    ): List<TeamAssociation> {
         failure?.let { throw it }
-        return profileTeams.map { it.toDribl() }
+        return profileTeams.map { it }
     }
 
     override suspend fun fetchProfileClubs(
         bearerToken: String,
-    ): List<DriblClub> {
+    ): List<Club> {
         failure?.let { throw it }
-        return profileClubs.map { it.toDribl() }
+        return profileClubs.map { it }
     }
 
     override suspend fun fetchTeamHub(
@@ -300,27 +307,70 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         teamId: String,
         competitionName: String?,
         leagueId: String?,
-    ): DriblTeamHub {
+    ): TeamHub {
         failure?.let { throw it }
         teamHubCalls += 1
         teamHubRequest = bearerToken to teamId
         teamHubCompetitionName = competitionName
         teamHubLeagueId = leagueId
-        return teamHub.toDribl()
+        return teamHub
     }
 
     override suspend fun fetchMatchDetails(
         bearerToken: String,
         matchId: String,
-    ): DriblFixture {
+    ): Fixture {
         failure?.let { throw it }
         matchDetailsRequest = bearerToken to matchId
-        return matchDetails.toDribl()
+        return matchDetails
+    }
+
+    override suspend fun fetchMatchSheet(
+        bearerToken: String,
+        fixture: Fixture,
+    ): MatchSheet {
+        failure?.let { throw it }
+        matchSheetRequest = bearerToken to fixture.id
+        return matchSheet
+    }
+
+    override suspend fun updateMatchSheetMemberAvailability(
+        bearerToken: String,
+        memberId: String,
+        available: Boolean,
+    ): MatchSheetMember {
+        failure?.let { throw it }
+        memberAvailabilityRequest = Triple(bearerToken, memberId, available)
+        return matchSheet.members.first { it.id == memberId }.copy(available = available)
+    }
+
+    override suspend fun updateTeamSheetStatus(
+        bearerToken: String,
+        matchSheetId: String,
+        teamId: String,
+        action: TeamSheetAction,
+    ): TeamSheetStatus {
+        failure?.let { throw it }
+        teamSheetStatusRequest = listOf(
+            bearerToken,
+            matchSheetId,
+            teamId,
+            action.name,
+        )
+        return when (action) {
+            TeamSheetAction.Submit -> TeamSheetStatus.Submitted
+
+            TeamSheetAction.Confirm -> TeamSheetStatus.Confirmed
+
+            TeamSheetAction.Unsubmit,
+            TeamSheetAction.Unconfirm,
+            -> TeamSheetStatus.Open
+        }
     }
 
     override suspend fun fetchActiveRefereeClubs(
         bearerToken: String,
-    ): List<DriblRefereeClub> {
+    ): List<RefereeClub> {
         failure?.let { throw it }
         return refereeClubsByToken[bearerToken] ?: refereeClubs
     }
@@ -329,7 +379,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         bearerToken: String,
         userId: String,
         startDate: String,
-    ): List<DriblRefereeAvailability> {
+    ): List<RefereeAvailability> {
         failure?.let { throw it }
         refereeAvailabilityQuery = userId to startDate
         return refereeAvailabilities
@@ -338,7 +388,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     override suspend fun createRefereeAvailability(
         bearerToken: String,
         request: CreateRefereeAvailabilityRequest,
-    ): DriblRefereeAvailability {
+    ): RefereeAvailability {
         failure?.let { throw it }
         createAvailabilityRequest = request
         return refereeAvailabilities.first()
@@ -352,134 +402,3 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         deletedAvailabilityId = availabilityId
     }
 }
-
-private fun AuthenticationResult.toDribl() = DriblAuthenticationResult(
-    bearerToken = bearerToken,
-    identity = identity?.let {
-        com.github.apkelly.dribl.model.AuthenticationIdentity(
-            id = it.id,
-            firstName = it.firstName,
-            lastName = it.lastName,
-            email = it.email,
-            avatarUrl = it.avatarUrl,
-        )
-    },
-    relatedUsers = relatedUsers.map { it.toDribl() },
-    accounts = accounts.map { it.toDribl() },
-)
-
-private fun Profile.toDribl() = DriblProfile(
-    accountId = accountId,
-    displayName = displayName,
-    email = email,
-    avatarUrl = avatarUrl,
-    relatedUsers = relatedUsers.map { it.toDribl() },
-    accounts = accounts.map { it.toDribl() },
-)
-
-private fun RelatedUser.toDribl() = DriblRelatedUser(
-    id = id,
-    displayName = displayName,
-    email = email,
-    avatarUrl = avatarUrl,
-    subjectUserId = subjectUserId,
-    linkId = linkId,
-    isLinked = isLinked,
-    gender = gender,
-    dateOfBirth = dateOfBirth,
-    phoneNumber = phoneNumber,
-    address = address,
-    emergencyContacts = emergencyContacts.map { it.toDribl() },
-    firstName = firstName,
-    isGuardian = isGuardian,
-)
-
-private fun EmergencyContact.toDribl() = DriblEmergencyContact(
-    name = name,
-    phoneNumber = phoneNumber,
-    email = email,
-)
-
-private fun Account.toDribl() = DriblAccount(
-    id = id,
-    name = name,
-    subtitle = subtitle,
-    logoUrl = logoUrl,
-)
-
-private fun Club.toDribl() = DriblClub(
-    id = id,
-    name = name,
-    shortName = shortName,
-    logoUrl = logoUrl,
-    primaryColor = primaryColor,
-    secondaryColor = secondaryColor,
-)
-
-private fun Team.toDribl() = DriblTeam(
-    id = id,
-    clubId = clubId,
-    name = name,
-    shortName = shortName,
-    logoUrl = logoUrl,
-    ageGroup = ageGroup,
-    competitionName = competitionName,
-    active = active,
-    primaryColor = primaryColor,
-    secondaryColor = secondaryColor,
-)
-
-private fun TeamAssociation.toDribl() = DriblTeamAssociation(
-    team = team.toDribl(),
-    relationship = com.github.apkelly.dribl.model.TeamRelationship.valueOf(
-        relationship.name,
-    ),
-)
-
-private fun Fixture.toDribl() = DriblFixture(
-    id = id,
-    profileId = profileId,
-    kickoffEpochMillis = kickoffEpochMillis,
-    homeTeamId = homeTeamId,
-    homeTeamName = homeTeamName,
-    awayTeamId = awayTeamId,
-    awayTeamName = awayTeamName,
-    competitionName = competitionName,
-    venueName = venueName,
-    userTeamId = userTeamId,
-    status = com.github.apkelly.dribl.model.FixtureStatus.valueOf(status.name),
-    homeScore = homeScore,
-    awayScore = awayScore,
-    homeTeamLogoUrl = homeTeamLogoUrl,
-    awayTeamLogoUrl = awayTeamLogoUrl,
-    roundLabel = roundLabel,
-    venueAddress = venueAddress,
-    latitude = latitude,
-    longitude = longitude,
-    role = com.github.apkelly.dribl.model.FixtureRole.valueOf(role.name),
-    refereeRole = refereeRole,
-    leagueName = leagueName,
-)
-
-private fun TeamHub.toDribl() = DriblTeamHub(
-    teamId = teamId,
-    matches = matches.map { it.toDribl() },
-    results = results.map { it.toDribl() },
-    ladderName = ladderName,
-    ladder = ladder.map {
-        com.github.apkelly.dribl.model.LadderEntry(
-            position = it.position,
-            teamId = it.teamId,
-            teamName = it.teamName,
-            logoUrl = it.logoUrl,
-            played = it.played,
-            won = it.won,
-            drawn = it.drawn,
-            lost = it.lost,
-            goalsFor = it.goalsFor,
-            goalsAgainst = it.goalsAgainst,
-            goalDifference = it.goalDifference,
-            points = it.points,
-        )
-    },
-)

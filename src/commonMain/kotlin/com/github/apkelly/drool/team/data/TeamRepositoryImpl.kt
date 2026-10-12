@@ -1,9 +1,8 @@
 package com.github.apkelly.drool.team.data
 
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.local.DroolDatabase
 import com.github.apkelly.drool.common.data.local.entity.TeamHubCacheEntity
-import com.github.apkelly.drool.common.data.mapper.toDomain
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.repository.operationResult
 import com.github.apkelly.drool.common.data.repository.profileToken
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
@@ -48,14 +47,12 @@ class TeamRepositoryImpl(
             teamId,
             competitionName,
             leagueId,
-        )
-            .toDomain()
-            .let { loaded ->
-                loaded.copy(
-                    matches = loaded.matches.map { it.copy(profileId = profileId) },
-                    results = loaded.results.map { it.copy(profileId = profileId) },
-                )
-            }
+        ).let { loaded ->
+            loaded.copy(
+                matches = loaded.matches.map { it.copy(profileId = profileId) },
+                results = loaded.results.map { it.copy(profileId = profileId) },
+            )
+        }
         val updatedAt = timeProvider.nowEpochMillis()
         database.teamHubCacheDao().upsert(
             TeamHubCacheEntity(

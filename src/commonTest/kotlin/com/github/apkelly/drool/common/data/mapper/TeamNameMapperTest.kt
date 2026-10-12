@@ -1,8 +1,8 @@
 package com.github.apkelly.drool.common.data.mapper
 
-import com.github.apkelly.dribl.model.normalizedTeamName
 import com.github.apkelly.drool.common.data.local.entity.FixtureEntity
 import com.github.apkelly.drool.common.data.local.entity.TeamEntity
+import com.github.apkelly.drool.common.domain.model.normalizedTeamName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -1,0 +1,11 @@
+package com.github.apkelly.dribl.dto
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
+
+@Serializable
+internal data class LadderSummaryDto(
+    @SerialName("id") val id: JsonPrimitive? = null,
+    @SerialName("name") val name: String? = null,
+)

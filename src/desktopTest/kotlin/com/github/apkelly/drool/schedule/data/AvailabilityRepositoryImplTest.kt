@@ -1,13 +1,13 @@
 package com.github.apkelly.drool.schedule.data
 
 import com.github.apkelly.dribl.api.DriblHttpException
-import com.github.apkelly.dribl.model.AvailabilityPeriod
-import com.github.apkelly.dribl.model.RefereeAvailability
-import com.github.apkelly.dribl.model.RefereeClub
 import com.github.apkelly.drool.common.data.repository.FakeSportsRemote
 import com.github.apkelly.drool.common.data.repository.TestTokenStore
 import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.AvailabilityPeriod
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.RefereeAvailability
+import com.github.apkelly.drool.common.domain.model.RefereeClub
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult

@@ -16,4 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "drool"
 include(":androidApp")
+include(":dribl-client")
 include(":konsistTest")

@@ -1,15 +1,13 @@
 package com.github.apkelly.drool.common.data.repository
 
-import com.github.apkelly.dribl.api.AuthRemoteDataSource
 import com.github.apkelly.dribl.api.DriblHttpException
 import com.github.apkelly.dribl.api.DriblResponseException
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
-import com.github.apkelly.dribl.auth.profileFromBearerToken
 import com.github.apkelly.drool.common.data.local.DroolDatabase
 import com.github.apkelly.drool.common.data.local.inTransaction
 import com.github.apkelly.drool.common.data.mapper.accountEmailUpdates
 import com.github.apkelly.drool.common.data.mapper.emailAddress
 import com.github.apkelly.drool.common.data.mapper.linkedIdentityUpdates
+import com.github.apkelly.drool.common.data.mapper.profileFromBearerToken
 import com.github.apkelly.drool.common.data.mapper.reconcileRelatedUsers
 import com.github.apkelly.drool.common.data.mapper.toCurrentProfile
 import com.github.apkelly.drool.common.data.mapper.toDomain
@@ -17,6 +15,8 @@ import com.github.apkelly.drool.common.data.mapper.toDriblRequest
 import com.github.apkelly.drool.common.data.mapper.toEntity
 import com.github.apkelly.drool.common.data.mapper.toLinkedEntity
 import com.github.apkelly.drool.common.data.mapper.withIdentityFrom
+import com.github.apkelly.drool.common.data.remote.AuthRemoteDataSource
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.repository.SessionDataSource
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.domain.model.Account
@@ -76,7 +76,7 @@ class SessionDataSourceImpl(
                         .map { it.toDomain() },
                 )
             }
-            val tokenProfile = profileFromBearerToken(token)?.toDomain()
+            val tokenProfile = profileFromBearerToken(token)
             if (cachedProfile != null) {
                 val repairedProfile = tokenProfile?.takeIf {
                     cachedProfile.displayName.needsRepair(cachedProfile.accountId) &&
@@ -108,7 +108,7 @@ class SessionDataSourceImpl(
                 )
             }
 
-            val profileDto = tokenProfile ?: sportsApi.fetchProfile(token).toDomain()
+            val profileDto = tokenProfile ?: sportsApi.fetchProfile(token)
             persistProfile(profileDto)
             refreshAssociations(
                 token,
@@ -134,7 +134,7 @@ class SessionDataSourceImpl(
         credentials: AuthCredentials,
     ): AuthenticatedSession {
         try {
-            val authSession = authApi.signIn(credentials.toDriblRequest()).toDomain()
+            val authSession = authApi.signIn(credentials.toDriblRequest())
             val token = authSession.bearerToken
             val resolvedProfile = resolveProfile(token)
             val firstName = authSession.firstName?.trim().orEmpty()
@@ -187,9 +187,9 @@ class SessionDataSourceImpl(
     ): Profile {
         val tokenProfile = profileFromBearerToken(token)
         return if (tokenProfile == null) {
-            sportsApi.fetchProfile(token).toDomain()
+            sportsApi.fetchProfile(token)
         } else {
-            tokenProfile.toDomain()
+            tokenProfile
         }
     }
 
@@ -234,7 +234,7 @@ class SessionDataSourceImpl(
         val token = requireBearerToken()
         val accountId = requireActiveAccountId()
         return linkMemberRequest {
-            sportsApi.fetchLinkCandidates(token).map { it.toDomain() }
+            sportsApi.fetchLinkCandidates(token)
         }.filter { it.subjectUserId != accountId }
     }
 
@@ -248,10 +248,7 @@ class SessionDataSourceImpl(
         if (result.isApproved) {
             refreshLinkedUsers(token, accountId)
         }
-        LinkMemberRequestResult(
-            relationshipId = result.relationshipId,
-            isApproved = result.isApproved,
-        )
+        result
     }
 
     override suspend fun verifyLinkedUser(
@@ -291,7 +288,7 @@ class SessionDataSourceImpl(
         rejectUnauthorized: Boolean = false,
     ) {
         refreshAssociation("related users", rejectUnauthorized) {
-            val users = sportsApi.fetchRelatedUsers(token, email).map { it.toDomain() }
+            val users = sportsApi.fetchRelatedUsers(token, email)
             database.inTransaction {
                 database.profileDao().getActive()
                     ?.takeIf { it.accountId == accountId }
@@ -314,7 +311,7 @@ class SessionDataSourceImpl(
         rejectUnauthorized: Boolean = false,
     ) {
         refreshAssociation("linked users", rejectUnauthorized) {
-            val users = sportsApi.fetchLinkedUsers(token).map { it.toDomain() }
+            val users = sportsApi.fetchLinkedUsers(token)
             database.inTransaction {
                 database.profileDao().getActive()
                     .linkedIdentityUpdates(accountId, users)
@@ -338,7 +335,7 @@ class SessionDataSourceImpl(
     ): String? {
         var accountEmail: String? = null
         refreshAssociation("accounts", rejectUnauthorized) {
-            val accounts = sportsApi.fetchAccounts(token).map { it.toDomain() }
+            val accounts = sportsApi.fetchAccounts(token)
             accountEmail = accounts.emailAddress()
             database.inTransaction {
                 database.profileDao().getActive()

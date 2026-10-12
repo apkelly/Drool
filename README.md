@@ -12,10 +12,12 @@ The original app's `okhttp/4.12.0` user-agent is sent for API compatibility. Ker
 
 ## Architecture
 
-- `com.github.apkelly.dribl`: library-ready Dribl endpoint clients, wire DTOs,
-  request/response models, JWT decoding, response errors, and token renewal. It
-  has no dependency on Drool packages and accepts its `HttpClient` and token
-  persistence through public interfaces.
+- `dribl-client`: a top-level Kotlin Multiplatform library containing
+  `com.github.apkelly.dribl` endpoint clients, internal wire DTOs, public client
+  result models, response errors, and token renewal. It has no dependency on
+  Drool packages and accepts its `HttpClient` and token persistence through
+  public interfaces. Its Android target produces an AAR while desktop and iOS
+  consume the corresponding KMP variants.
 - `com.github.apkelly.drool.auth`, `.home`, `.schedule`, `.discover`,
   `.profile`, `.team`, and `.match`: vertical feature packages. Each feature
   owns its `data`, `domain`, and `ui` packages.
@@ -29,6 +31,9 @@ The original app's `okhttp/4.12.0` user-agent is sent for API compatibility. Ker
 
 Feature UI depends only on feature domain use cases and shared domain models.
 It never imports or calls a feature data layer directly.
+Drool's Dribl remote adapters are the only application classes that depend on
+`dribl-client` result models; they map those models into authoritative Drool
+domain models.
 Top-level destination composables receive a single immutable `*UiModel` input and expose
 user actions as callback parameters. Each top-level screen also provides a deterministic
 Compose preview backed by shared sample UI models.
@@ -241,6 +246,17 @@ Build Android when an Android SDK is installed:
 ```bash
 ./gradlew :androidApp:assembleDebug
 ```
+
+Build the standalone Dribl Android AAR:
+
+```bash
+./gradlew :dribl-client:assembleAndroidMain
+```
+
+The artifact is written to
+`dribl-client/build/outputs/aar/dribl-client.aar`. The app uses the
+`:dribl-client` project dependency so Gradle selects the matching Android,
+desktop, or iOS variant rather than consuming the AAR directly.
 
 Open `iosApp/Drool.xcodeproj` in Xcode to build and run the iOS host app. Its
 build phase invokes Gradle's `embedAndSignAppleFrameworkForXcode` task and

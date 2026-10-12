@@ -1,6 +1,5 @@
 package com.github.apkelly.drool.common.data.mapper
 
-import com.github.apkelly.dribl.model.normalizedTeamName
 import com.github.apkelly.drool.common.data.local.entity.AccountEntity
 import com.github.apkelly.drool.common.data.local.entity.ClubEntity
 import com.github.apkelly.drool.common.data.local.entity.FixtureEntity
@@ -16,6 +15,7 @@ import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.Team
+import com.github.apkelly.drool.common.domain.model.normalizedTeamName
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 

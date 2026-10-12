@@ -56,6 +56,7 @@ import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,7 +184,10 @@ fun HomeScreen(
                         onRetry = onRefresh,
                     )
                 }
-                val upcoming = fixtures.items.upcomingOnNextDay()
+                val now = Clock.System.now().toEpochMilliseconds()
+                val upcoming = fixtures.items
+                    .filter { it.kickoffEpochMillis >= now }
+                    .upcomingOnNextDay()
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

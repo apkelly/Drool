@@ -13,6 +13,7 @@ enum class AppScreen(
     Club("club"),
     Team("team"),
     MatchDetails("match_details"),
+    TeamAvailability("team_availability"),
     PersonalInformation("personal_information"),
     Availability("availability"),
     LinkMember("link_member"),

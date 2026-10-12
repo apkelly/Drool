@@ -341,12 +341,14 @@ private fun PlayerStats(
             colors = listOf(Color(0xFF22C55E), Color(0xFF15803D)),
             modifier = Modifier.weight(1f),
         )
-        StatPill(
-            label = stringResource(Res.string.player_card_gender),
-            value = playerCardGender(gender),
-            colors = listOf(Color(0xFFC084FC), Color(0xFF7E22CE)),
-            modifier = Modifier.weight(1f),
-        )
+        playerCardGender(gender)?.let { value ->
+            StatPill(
+                label = stringResource(Res.string.player_card_gender),
+                value = value,
+                colors = listOf(Color(0xFFC084FC), Color(0xFF7E22CE)),
+                modifier = Modifier.weight(1f),
+            )
+        }
         StatPill(
             label = stringResource(Res.string.player_card_total),
             value = card.total.toString(),
@@ -549,10 +551,10 @@ internal fun fantasyPlayerCard(
 
 internal fun playerCardGender(
     gender: String?,
-): String {
+): String? {
     val value = gender?.trim().orEmpty()
     return when (value.lowercase()) {
-        "" -> "-"
+        "", "-", "unknown", "unspecified", "not specified", "n/a" -> null
         "m", "male", "man", "boy" -> "M"
         "f", "female", "woman", "girl" -> "F"
         "nb", "nonbinary", "non-binary", "non binary" -> "NB"

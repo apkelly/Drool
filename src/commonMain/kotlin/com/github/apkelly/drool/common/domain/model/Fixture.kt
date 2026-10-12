@@ -31,6 +31,7 @@ data class Fixture(
     val leagueId: String? = null,
     val seasonId: String? = null,
     val tenantId: String? = null,
+    val matchSheetId: String? = null,
 )
 
 @Serializable

@@ -47,6 +47,13 @@ sealed interface AppRoute : NavKey {
     ) : AppRoute
 
     @Serializable
+    data class TeamAvailability(
+        val profileId: String,
+        val matchId: String,
+        val teamId: String,
+    ) : AppRoute
+
+    @Serializable
     data object Profile : AppRoute
 
     @Serializable

@@ -5,6 +5,7 @@ import com.github.apkelly.drool.common.domain.model.TeamRelationship
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PlayerHeroCardTest {
@@ -42,7 +43,10 @@ class PlayerHeroCardTest {
         assertEquals("NB", playerCardGender("non-binary"))
         assertEquals("X", playerCardGender("X"))
         assertEquals("OTH", playerCardGender("Other"))
-        assertEquals("-", playerCardGender(null))
+        assertNull(playerCardGender(null))
+        assertNull(playerCardGender(" "))
+        assertNull(playerCardGender("Unknown"))
+        assertNull(playerCardGender("Not specified"))
     }
 
     @Test

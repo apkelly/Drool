@@ -1,0 +1,10 @@
+package com.github.apkelly.dribl.dto
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+internal data class LinkUserSelection(
+    @SerialName("id") val id: String,
+    @SerialName("is_guardian") val isGuardian: Boolean,
+)

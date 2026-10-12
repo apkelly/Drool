@@ -26,6 +26,8 @@ import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamAssociation
 import com.github.apkelly.drool.common.domain.model.TeamHub
 import com.github.apkelly.drool.common.domain.model.TeamRelationship
+import com.github.apkelly.drool.common.domain.model.TeamSheetAction
+import com.github.apkelly.drool.common.domain.model.TeamSheetStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -100,6 +102,50 @@ class SportsDataSourceImplTest {
             repository.loadMatchDetails("child", "result")
             assertEquals("profile-token-child" to "result", remote.matchDetailsRequest)
             assertEquals(listOf("child"), remote.profileSessionUsers)
+            val matchFixture = content.matches.single().copy(
+                matchSheetId = "sheet",
+                tenantId = "tenant",
+                seasonId = "season",
+            )
+            assertIs<OperationResult.Success<*>>(
+                repository.loadMatchSheet("child", matchFixture),
+            )
+            assertEquals("profile-token-child" to "upcoming", remote.matchSheetRequest)
+            remote.matchSheet = remote.matchSheet.copy(
+                members = listOf(
+                    com.github.apkelly.drool.common.domain.model.MatchSheetMember(
+                        id = "member",
+                        userId = "user",
+                        teamId = "home",
+                        firstName = "Alex",
+                        lastName = "Player",
+                        imageUrl = null,
+                        roleName = "Player",
+                        jerseyNumber = "7",
+                        available = true,
+                    ),
+                ),
+            )
+            assertIs<OperationResult.Success<*>>(
+                repository.updateMemberAvailability("child", "member", false),
+            )
+            assertEquals(
+                Triple("profile-token-child", "member", false),
+                remote.memberAvailabilityRequest,
+            )
+            val status = assertIs<OperationResult.Success<TeamSheetStatus>>(
+                repository.updateTeamSheetStatus(
+                    "child",
+                    "sheet",
+                    "home",
+                    TeamSheetAction.Confirm,
+                ),
+            )
+            assertEquals(TeamSheetStatus.Confirmed, status.value)
+            assertEquals(
+                listOf("profile-token-child", "sheet", "home", "Confirm"),
+                remote.teamSheetStatusRequest,
+            )
             assertIs<OperationResult.Success<*>>(
                 repository.loadMatchWeather(content.matches.single()),
             )
@@ -382,6 +428,40 @@ class SportsDataSourceImplTest {
     }
 
     @Test
+    fun scheduleIncludesTwoWeeksOfHistory() {
+        val nowEpochMillis = 20L * 24L * 60L * 60L * 1_000L
+        val recent = fixture(
+            id = "recent",
+            kickoffEpochMillis = nowEpochMillis - 7L * 24L * 60L * 60L * 1_000L,
+            homeTeamId = "home",
+            homeTeamName = "Home",
+            awayTeamId = "away",
+            awayTeamName = "Away",
+            competitionName = null,
+            venueName = null,
+            userTeamId = null,
+            status = "complete",
+        )
+        val old = recent.copy(
+            id = "old",
+            kickoffEpochMillis = nowEpochMillis - 15L * 24L * 60L * 60L * 1_000L,
+        )
+        val future = recent.copy(
+            id = "future",
+            kickoffEpochMillis = nowEpochMillis + 1,
+            status = FixtureStatus.Scheduled,
+        )
+        val oldLive = old.copy(id = "old-live", status = FixtureStatus.Live)
+
+        assertEquals(
+            listOf("recent", "future", "old-live"),
+            listOf(old, recent, future, oldLive)
+                .recentAndUpcomingAt(nowEpochMillis)
+                .map(Fixture::id),
+        )
+    }
+
+    @Test
     fun linkedProfilesRefreshAndObserveAttributedFixturesAndTeams() = runTest {
         fixture { repository, remote, store, clock, database ->
             store.saveBearerToken("root-token")
@@ -419,7 +499,7 @@ class SportsDataSourceImplTest {
             )
             remote.refereeClubsByToken = mapOf(
                 "profile-token-child" to listOf(
-                    com.github.apkelly.dribl.model.RefereeClub(
+                    com.github.apkelly.drool.common.domain.model.RefereeClub(
                         id = "referee-club",
                         name = "Referee Club",
                         logoUrl = null,

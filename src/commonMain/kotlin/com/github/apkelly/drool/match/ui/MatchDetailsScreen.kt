@@ -18,13 +18,17 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +45,7 @@ import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_retry
 import com.github.apkelly.drool.common.resources.content_team_logo
 import com.github.apkelly.drool.common.resources.fixture_competition
+import com.github.apkelly.drool.common.resources.match_details_tab
 import com.github.apkelly.drool.common.resources.match_details_title
 import com.github.apkelly.drool.common.resources.match_directions
 import com.github.apkelly.drool.common.resources.match_kick_off
@@ -48,6 +53,7 @@ import com.github.apkelly.drool.common.resources.match_load_failed
 import com.github.apkelly.drool.common.resources.match_round
 import com.github.apkelly.drool.common.resources.match_round_unknown
 import com.github.apkelly.drool.common.resources.match_score
+import com.github.apkelly.drool.common.resources.match_sheet_tab
 import com.github.apkelly.drool.common.resources.match_status
 import com.github.apkelly.drool.common.resources.match_status_cancelled
 import com.github.apkelly.drool.common.resources.match_status_completed
@@ -78,6 +84,7 @@ import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
+import com.github.apkelly.drool.match.ui.model.MatchSheetUiState
 import com.github.apkelly.drool.match.ui.platform.platformWeatherTemperatureUnit
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
@@ -92,6 +99,10 @@ fun MatchDetailsScreen(
     onBack: () -> Unit,
     onLoad: (String, String) -> Unit,
     onRefresh: (String, String) -> Unit,
+    canViewMatchSheet: Boolean,
+    matchSheetState: MatchSheetUiState,
+    onLoadMatchSheet: (String, Boolean) -> Unit,
+    onMatchSheetTeamSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
     onTeamSelect: (String, String, String?, String?, String?) -> Unit,
 ) {
@@ -99,6 +110,13 @@ fun MatchDetailsScreen(
     LaunchedEffect(profileId, matchId) { currentOnLoad(profileId, matchId) }
     val details = (state as? MatchDetailsUiState.Content)
         ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+    var selectedTab by remember(profileId, matchId) { mutableIntStateOf(0) }
+    val currentOnLoadMatchSheet by rememberUpdatedState(onLoadMatchSheet)
+    LaunchedEffect(profileId, details?.fixture?.matchSheetId, canViewMatchSheet) {
+        if (canViewMatchSheet && details?.fixture?.matchSheetId != null) {
+            currentOnLoadMatchSheet(profileId, false)
+        }
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -112,38 +130,68 @@ fun MatchDetailsScreen(
             )
         },
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = details?.isRefreshing == true,
-            onRefresh = { onRefresh(profileId, matchId) },
-            modifier = Modifier.fillMaxSize().padding(padding),
-        ) {
-            when {
-                state is MatchDetailsUiState.Failed &&
-                    state.profileId == profileId && state.matchId == matchId -> {
-                    Column(Modifier.fillMaxSize()) {
-                        LoadFailure(
-                            message = stringResource(Res.string.match_load_failed),
-                            onRetry = { onLoad(profileId, matchId) },
-                        )
-                    }
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            if (canViewMatchSheet && details?.fixture?.matchSheetId != null) {
+                PrimaryTabRow(selectedTabIndex = selectedTab) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = { Text(stringResource(Res.string.match_details_tab)) },
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = { Text(stringResource(Res.string.match_sheet_tab)) },
+                    )
                 }
-
-                details == null -> {
-                    Column(Modifier.fillMaxSize()) {
-                        LoadingContent()
+            }
+            PullToRefreshBox(
+                isRefreshing = details?.isRefreshing == true,
+                onRefresh = {
+                    if (selectedTab == 1) {
+                        onLoadMatchSheet(profileId, true)
+                    } else {
+                        onRefresh(profileId, matchId)
                     }
-                }
+                },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            ) {
+                when {
+                    state is MatchDetailsUiState.Failed &&
+                        state.profileId == profileId && state.matchId == matchId -> {
+                        Column(Modifier.fillMaxSize()) {
+                            LoadFailure(
+                                message = stringResource(Res.string.match_load_failed),
+                                onRetry = { onLoad(profileId, matchId) },
+                            )
+                        }
+                    }
 
-                else -> MatchDetails(
-                    fixture = details.fixture,
-                    weather = details.weather,
-                    isWeatherLoading = details.isWeatherLoading,
-                    weatherUnavailable = details.weatherUnavailable,
-                    refreshFailed = details.refreshFailed,
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                    onRefresh = { onRefresh(profileId, matchId) },
-                    onTeamSelect = onTeamSelect,
-                )
+                    details == null -> {
+                        Column(Modifier.fillMaxSize()) {
+                            LoadingContent()
+                        }
+                    }
+
+                    selectedTab == 1 && canViewMatchSheet -> MatchSheetSummary(
+                        profileId = profileId,
+                        matchId = matchId,
+                        state = matchSheetState,
+                        onRetry = { onLoadMatchSheet(profileId, true) },
+                        onTeamSelect = onMatchSheetTeamSelect,
+                    )
+
+                    else -> MatchDetails(
+                        fixture = details.fixture,
+                        weather = details.weather,
+                        isWeatherLoading = details.isWeatherLoading,
+                        weatherUnavailable = details.weatherUnavailable,
+                        refreshFailed = details.refreshFailed,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        onRefresh = { onRefresh(profileId, matchId) },
+                        onTeamSelect = onTeamSelect,
+                    )
+                }
             }
         }
     }

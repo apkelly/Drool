@@ -15,6 +15,9 @@ import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetMember
+import com.github.apkelly.drool.common.domain.model.MatchSheetTeam
 import com.github.apkelly.drool.common.domain.model.MatchWeather
 import com.github.apkelly.drool.common.domain.model.OperationResult
 import com.github.apkelly.drool.common.domain.model.Profile
@@ -27,6 +30,8 @@ import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamHub
 import com.github.apkelly.drool.common.domain.model.TeamRelationship
+import com.github.apkelly.drool.common.domain.model.TeamSheetAction
+import com.github.apkelly.drool.common.domain.model.TeamSheetStatus
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.discover.domain.repository.DiscoverRepository
 import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
@@ -40,7 +45,10 @@ import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
 import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
+import com.github.apkelly.drool.match.domain.usecase.LoadMatchSheetUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.domain.usecase.UpdateMatchSheetMemberUseCase
+import com.github.apkelly.drool.match.domain.usecase.UpdateTeamSheetStatusUseCase
 import com.github.apkelly.drool.match.ui.viewmodel.MatchCache
 import com.github.apkelly.drool.match.ui.viewmodel.MatchViewModel
 import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
@@ -220,6 +228,31 @@ class UseCasesTest {
         )
         assertEquals("profile" to "match", dataSource.lastMatchDetails)
         assertEquals(
+            dataSource.matchSheet,
+            (
+                LoadMatchSheetUseCase(match)("profile", dataSource.matchDetails) as
+                    OperationResult.Success
+                ).value,
+        )
+        assertEquals(
+            dataSource.matchSheetMember.copy(available = false),
+            (
+                UpdateMatchSheetMemberUseCase(match)("profile", "member", false) as
+                    OperationResult.Success
+                ).value,
+        )
+        assertEquals(
+            TeamSheetStatus.Confirmed,
+            (
+                UpdateTeamSheetStatusUseCase(match)(
+                    "profile",
+                    "sheet",
+                    "home",
+                    TeamSheetAction.Confirm,
+                ) as OperationResult.Success
+                ).value,
+        )
+        assertEquals(
             dataSource.weather,
             (
                 LoadMatchWeatherUseCase(match)(dataSource.matchDetails) as
@@ -251,6 +284,9 @@ class UseCasesTest {
         val matchViewModel = MatchViewModel(
             loadMatchDetails = LoadMatchDetailsUseCase(dataSource),
             loadMatchWeather = LoadMatchWeatherUseCase(dataSource),
+            loadMatchSheetUseCase = LoadMatchSheetUseCase(dataSource),
+            updateMatchSheetMemberUseCase = UpdateMatchSheetMemberUseCase(dataSource),
+            updateTeamSheetStatusUseCase = UpdateTeamSheetStatusUseCase(dataSource),
             matchCache = matchCache,
         )
         try {
@@ -411,6 +447,26 @@ internal class FakeSportsDataSource :
         null,
         FixtureStatus.Scheduled,
     )
+    val matchSheet = MatchSheet(
+        id = "sheet",
+        status = "pending",
+        homeTeam = MatchSheetTeam("home", "Home", TeamSheetStatus.Open),
+        awayTeam = MatchSheetTeam("away", "Away", TeamSheetStatus.Open),
+        members = emptyList(),
+        referees = emptyList(),
+        officials = emptyList(),
+    )
+    val matchSheetMember = MatchSheetMember(
+        id = "member",
+        userId = "user",
+        teamId = "home",
+        firstName = "Alex",
+        lastName = "Player",
+        imageUrl = null,
+        roleName = "Player",
+        jerseyNumber = "7",
+        available = true,
+    )
 
     override fun observeClubs(): Flow<CachedData<List<Club>>> = clubs
     override fun observeTeams(
@@ -520,4 +576,34 @@ internal class FakeSportsDataSource :
         lastWeatherForce = force
         return OperationResult.Success(weather)
     }
+
+    override suspend fun loadMatchSheet(
+        profileId: String,
+        fixture: Fixture,
+    ): OperationResult<MatchSheet> = OperationResult.Success(matchSheet)
+
+    override suspend fun updateMemberAvailability(
+        profileId: String,
+        memberId: String,
+        available: Boolean,
+    ): OperationResult<MatchSheetMember> = OperationResult.Success(
+        matchSheetMember.copy(available = available),
+    )
+
+    override suspend fun updateTeamSheetStatus(
+        profileId: String,
+        matchSheetId: String,
+        teamId: String,
+        action: TeamSheetAction,
+    ): OperationResult<TeamSheetStatus> = OperationResult.Success(
+        when (action) {
+            TeamSheetAction.Submit -> TeamSheetStatus.Submitted
+
+            TeamSheetAction.Confirm -> TeamSheetStatus.Confirmed
+
+            TeamSheetAction.Unsubmit,
+            TeamSheetAction.Unconfirm,
+            -> TeamSheetStatus.Open
+        },
+    )
 }

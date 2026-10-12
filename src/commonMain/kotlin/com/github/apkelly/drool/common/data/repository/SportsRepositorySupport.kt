@@ -2,9 +2,9 @@ package com.github.apkelly.drool.common.data.repository
 
 import com.github.apkelly.dribl.api.DriblHttpException
 import com.github.apkelly.dribl.api.DriblResponseException
-import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.local.DroolDatabase
 import com.github.apkelly.drool.common.data.local.entity.CacheMetadataEntity
+import com.github.apkelly.drool.common.data.remote.SportsRemoteDataSource
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.domain.model.OperationResult
 import com.github.apkelly.drool.common.domain.model.RefreshFailure

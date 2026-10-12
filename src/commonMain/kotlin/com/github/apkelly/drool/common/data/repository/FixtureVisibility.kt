@@ -25,9 +25,20 @@ internal fun List<Fixture>.upcomingAt(
     }
 }
 
+/**
+ * Keeps upcoming fixtures and enough recent history to revisit match-day workflows.
+ */
+internal fun List<Fixture>.recentAndUpcomingAt(
+    nowEpochMillis: Long,
+): List<Fixture> = filter { fixture ->
+    fixture.status == FixtureStatus.Live ||
+        fixture.kickoffEpochMillis >= nowEpochMillis - SCHEDULE_HISTORY_MILLIS
+}
+
 private val finishedFixtureStatuses = setOf(
     FixtureStatus.Completed,
     FixtureStatus.Cancelled,
     FixtureStatus.Washout,
 )
 private const val MAXIMUM_FIXTURE_VISIBILITY_MILLIS = 3L * 60L * 60L * 1_000L
+private const val SCHEDULE_HISTORY_MILLIS = 14L * 24L * 60L * 60L * 1_000L
