@@ -38,4 +38,4 @@ expect fun createPlatformAssignmentPollingScheduler(
 expect fun createPlatformRefereeAssignmentNotifier(): RefereeAssignmentNotifier
 
 @Composable
-expect fun rememberAssignmentNotificationPermissionRequester(): () -> Unit
+expect fun rememberAssignmentNotificationPermissionRequester(): (() -> Unit)?

@@ -1,7 +1,6 @@
 package com.github.apkelly.drool.schedule.background
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.logging.DroolLog
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +23,7 @@ actual fun createPlatformAssignmentPollingScheduler(
 actual fun createPlatformRefereeAssignmentNotifier(): RefereeAssignmentNotifier = DesktopRefereeAssignmentNotifier()
 
 @Composable
-actual fun rememberAssignmentNotificationPermissionRequester(): () -> Unit = remember { {} }
+actual fun rememberAssignmentNotificationPermissionRequester(): (() -> Unit)? = null
 
 private class DesktopAssignmentPollingScheduler(
     private val executor: AssignmentPollExecutor,

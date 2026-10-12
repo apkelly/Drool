@@ -67,6 +67,10 @@ import com.github.apkelly.drool.common.resources.availability_fortnightly
 import com.github.apkelly.drool.common.resources.availability_load_failed
 import com.github.apkelly.drool.common.resources.availability_monthly
 import com.github.apkelly.drool.common.resources.availability_no_clubs
+import com.github.apkelly.drool.common.resources.availability_notification_allow
+import com.github.apkelly.drool.common.resources.availability_notification_body
+import com.github.apkelly.drool.common.resources.availability_notification_not_now
+import com.github.apkelly.drool.common.resources.availability_notification_title
 import com.github.apkelly.drool.common.resources.availability_repeat_end_date
 import com.github.apkelly.drool.common.resources.availability_repeats
 import com.github.apkelly.drool.common.resources.availability_save
@@ -111,14 +115,24 @@ fun AvailabilityScreen(
     onLoad: () -> Unit,
     onRefresh: () -> Unit,
     onCreate: (RefereeAvailabilityDraft) -> Unit,
+    shouldRequestNotificationPermission: Boolean,
+    onNotificationPermissionRequestConsume: () -> Unit,
+    onRequestNotificationPermission: (() -> Unit)?,
     onDelete: (String) -> Unit,
     modifier: Modifier = Modifier,
     onClearFailure: () -> Unit,
 ) {
     val currentOnLoad by rememberUpdatedState(onLoad)
     val currentOnClearFailure by rememberUpdatedState(onClearFailure)
+    val currentOnNotificationPermissionRequestConsume by
+        rememberUpdatedState(onNotificationPermissionRequestConsume)
+    val currentOnRequestNotificationPermission by
+        rememberUpdatedState(onRequestNotificationPermission)
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddDialog by remember(model.profileId) { mutableStateOf(false) }
+    var showNotificationPermissionDialog by remember(model.profileId) {
+        mutableStateOf(false)
+    }
     var pendingDelete by remember(model.profileId) {
         mutableStateOf<RefereeAvailability?>(null)
     }
@@ -131,6 +145,13 @@ fun AvailabilityScreen(
         if (ready?.failure != null) {
             snackbarHostState.showSnackbar(failureMessage)
             currentOnClearFailure()
+        }
+    }
+    LaunchedEffect(shouldRequestNotificationPermission) {
+        if (shouldRequestNotificationPermission) {
+            showNotificationPermissionDialog =
+                currentOnRequestNotificationPermission != null
+            currentOnNotificationPermissionRequestConsume()
         }
     }
 
@@ -244,6 +265,35 @@ fun AvailabilityScreen(
             onSave = {
                 showAddDialog = false
                 onCreate(it)
+            },
+        )
+    }
+
+    if (showNotificationPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotificationPermissionDialog = false },
+            title = {
+                Text(stringResource(Res.string.availability_notification_title))
+            },
+            text = {
+                Text(stringResource(Res.string.availability_notification_body))
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showNotificationPermissionDialog = false
+                        currentOnRequestNotificationPermission?.invoke()
+                    },
+                ) {
+                    Text(stringResource(Res.string.availability_notification_allow))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showNotificationPermissionDialog = false },
+                ) {
+                    Text(stringResource(Res.string.availability_notification_not_now))
+                }
             },
         )
     }
@@ -700,6 +750,9 @@ private fun AvailabilityScreenPreview() {
             onLoad = {},
             onRefresh = {},
             onCreate = {},
+            shouldRequestNotificationPermission = false,
+            onNotificationPermissionRequestConsume = {},
+            onRequestNotificationPermission = null,
             onDelete = {},
             onClearFailure = {},
         )

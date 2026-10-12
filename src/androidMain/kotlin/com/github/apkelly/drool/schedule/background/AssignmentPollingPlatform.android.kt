@@ -38,20 +38,21 @@ actual fun createPlatformRefereeAssignmentNotifier(): RefereeAssignmentNotifier 
     AndroidRefereeAssignmentNotifier(requireAndroidApplicationContext())
 
 @Composable
-actual fun rememberAssignmentNotificationPermissionRequester(): () -> Unit {
+actual fun rememberAssignmentNotificationPermissionRequester(): (() -> Unit)? {
     val context = LocalContext.current
+    if (
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED
+    ) {
+        return null
+    }
     return remember(context) {
         {
-            if (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                (context as? Activity)?.requestPermissions(
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    NOTIFICATION_PERMISSION_REQUEST_CODE,
-                )
-            }
+            (context as? Activity)?.requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                NOTIFICATION_PERMISSION_REQUEST_CODE,
+            )
         }
     }
 }

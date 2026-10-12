@@ -3,7 +3,12 @@
 package com.github.apkelly.drool.schedule.background
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import com.github.apkelly.drool.common.di.initDroolKoin
 import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +20,7 @@ import org.koin.mp.KoinPlatform
 import platform.Foundation.NSLog
 import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionSound
+import platform.UserNotifications.UNAuthorizationStatusNotDetermined
 import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNNotificationSound
@@ -77,14 +83,30 @@ actual fun createPlatformAssignmentPollingScheduler(
 actual fun createPlatformRefereeAssignmentNotifier(): RefereeAssignmentNotifier = IosRefereeAssignmentNotifier()
 
 @Composable
-actual fun rememberAssignmentNotificationPermissionRequester(): () -> Unit = remember {
-    {
-        UNUserNotificationCenter.currentNotificationCenter()
-            .requestAuthorizationWithOptions(
-                options = UNAuthorizationOptionAlert or UNAuthorizationOptionSound,
-                completionHandler = { _, _ -> },
-            )
+actual fun rememberAssignmentNotificationPermissionRequester(): (() -> Unit)? {
+    val notificationCenter = UNUserNotificationCenter.currentNotificationCenter()
+    val scope = rememberCoroutineScope()
+    var shouldRequest by remember { mutableStateOf(false) }
+    LaunchedEffect(notificationCenter) {
+        notificationCenter.getNotificationSettingsWithCompletionHandler { settings ->
+            scope.launch {
+                shouldRequest =
+                    settings?.authorizationStatus == UNAuthorizationStatusNotDetermined
+            }
+        }
     }
+    val request = remember(notificationCenter, scope) {
+        {
+            notificationCenter
+                .requestAuthorizationWithOptions(
+                    options = UNAuthorizationOptionAlert or UNAuthorizationOptionSound,
+                    completionHandler = { _, _ ->
+                        scope.launch { shouldRequest = false }
+                    },
+                )
+        }
+    }
+    return request.takeIf { shouldRequest }
 }
 
 private class IosRefereeAssignmentNotifier : RefereeAssignmentNotifier {

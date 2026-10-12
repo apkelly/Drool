@@ -36,7 +36,6 @@ import com.github.apkelly.drool.auth.ui.RegisterScreen
 import com.github.apkelly.drool.auth.ui.SignInScreen
 import com.github.apkelly.drool.auth.ui.WelcomeScreen
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
-import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.observability.AppScreen
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.nav_discover
@@ -215,13 +214,10 @@ private fun MainNavigation(
     val availabilityState by availabilityViewModel.state.collectAsState()
     val availabilityProfileId by availabilityViewModel.activeProfileId.collectAsState()
     val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
+    val shouldRequestNotificationPermission by
+        availabilityViewModel.shouldRequestNotificationPermission.collectAsState()
     val requestAssignmentNotificationPermission =
         rememberAssignmentNotificationPermissionRequester()
-    LaunchedEffect(assignmentPollingInterval) {
-        if (assignmentPollingInterval != AssignmentPollingInterval.Off) {
-            requestAssignmentNotificationPermission()
-        }
-    }
 
     val homeStack = rememberNavBackStack(navigationStateConfiguration, AppRoute.Home as NavKey)
     val scheduleStack = rememberNavBackStack(
@@ -441,8 +437,6 @@ private fun MainNavigation(
                         onObservabilityChange = appViewModel::updateObservability,
                         onAssignmentPollingIntervalChange =
                         appViewModel::updateAssignmentPollingInterval,
-                        onRequestAssignmentNotificationPermission =
-                        requestAssignmentNotificationPermission,
                         onAddMember = {
                             currentStack.add(AppRoute.LinkMember)
                         },
@@ -507,6 +501,12 @@ private fun MainNavigation(
                         onCreate = { draft ->
                             availabilityViewModel.create(route.profileId, draft)
                         },
+                        shouldRequestNotificationPermission =
+                        shouldRequestNotificationPermission,
+                        onNotificationPermissionRequestConsume =
+                        availabilityViewModel::consumeNotificationPermissionRequest,
+                        onRequestNotificationPermission =
+                        requestAssignmentNotificationPermission,
                         onDelete = { availabilityId ->
                             availabilityViewModel.delete(route.profileId, availabilityId)
                         },

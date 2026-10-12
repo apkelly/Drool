@@ -55,6 +55,9 @@ class AvailabilityViewModelTest {
 
         assertEquals(draft, repository.createdDraft)
         assertEquals(2, repository.loadCalls)
+        assertEquals(true, viewModel.shouldRequestNotificationPermission.value)
+        viewModel.consumeNotificationPermissionRequest()
+        assertEquals(false, viewModel.shouldRequestNotificationPermission.value)
 
         viewModel.delete("referee", "availability")
         advanceUntilIdle()
@@ -79,6 +82,7 @@ class AvailabilityViewModelTest {
         viewModel.create("referee", draft)
         advanceUntilIdle()
 
+        assertEquals(false, viewModel.shouldRequestNotificationPermission.value)
         assertEquals(
             AvailabilityFailure.Offline,
             assertIs<AvailabilityUiState.Ready>(viewModel.state.value).failure,

@@ -85,7 +85,6 @@ fun ProfileScreen(
     onThemeChange: (ThemeMode) -> Unit,
     onObservabilityChange: (Boolean) -> Unit,
     onAssignmentPollingIntervalChange: (AssignmentPollingInterval) -> Unit,
-    onRequestAssignmentNotificationPermission: () -> Unit,
     onAddMember: () -> Unit,
     onRelatedUserSelect: (RelatedUser) -> Unit,
     onUnlinkUser: (String) -> Unit,
@@ -256,9 +255,6 @@ fun ProfileScreen(
                         FilterChip(
                             selected = assignmentPollingInterval == interval,
                             onClick = {
-                                if (interval != AssignmentPollingInterval.Off) {
-                                    onRequestAssignmentNotificationPermission()
-                                }
                                 onAssignmentPollingIntervalChange(interval)
                             },
                             label = { Text(stringResource(interval.labelResource())) },
@@ -439,7 +435,6 @@ private fun ProfileScreenPreview() {
             onThemeChange = {},
             onObservabilityChange = {},
             onAssignmentPollingIntervalChange = {},
-            onRequestAssignmentNotificationPermission = {},
             onAddMember = {},
             onRelatedUserSelect = {},
             onUnlinkUser = {},

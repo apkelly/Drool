@@ -69,6 +69,10 @@
     <string name="availability_delete_body">This removes the selected availability from Dribl.</string>
     <string name="availability_load_failed">Couldn’t load referee availability. Check your connection and try again.</string>
     <string name="availability_save_failed">Couldn’t update referee availability. Try again.</string>
+    <string name="availability_notification_title">Get referee allocation updates</string>
+    <string name="availability_notification_body">Allow notifications so Drool can let you know when a referee allocation is added or changes.</string>
+    <string name="availability_notification_allow">Allow notifications</string>
+    <string name="availability_notification_not_now">Not now</string>
     <string name="availability_no_clubs">No active referee club is available for this profile.</string>
     <string name="discover_title">Clubs</string>
     <string name="discover_search">Search clubs</string>

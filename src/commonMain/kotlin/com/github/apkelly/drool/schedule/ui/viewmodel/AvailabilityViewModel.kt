@@ -35,6 +35,10 @@ class AvailabilityViewModel(
     private val mutableActiveProfileId = MutableStateFlow<String?>(null)
     val activeProfileId: StateFlow<String?> = mutableActiveProfileId.asStateFlow()
 
+    private val mutableShouldRequestNotificationPermission = MutableStateFlow(false)
+    val shouldRequestNotificationPermission: StateFlow<Boolean> =
+        mutableShouldRequestNotificationPermission.asStateFlow()
+
     private val checkedProfileIds = mutableSetOf<String>()
     private val overviewCache = mutableMapOf<String, RefereeAvailabilityOverview>()
     private var linkedProfilesById = emptyMap<String, LinkedProfile>()
@@ -52,6 +56,7 @@ class AvailabilityViewModel(
             checkedProfileIds.clear()
             overviewCache.clear()
             mutableRefereeProfileIds.value = emptySet()
+            mutableShouldRequestNotificationPermission.value = false
             mutableState.value = AvailabilityUiState.Idle
         }
         linkedProfilesById = profiles.associateBy(LinkedProfile::id)
@@ -146,6 +151,7 @@ class AvailabilityViewModel(
             when (val result = createAvailability(profile, draft)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
+                    mutableShouldRequestNotificationPermission.value = true
                     overviewCache.remove(profileId)
                     if (mutableActiveProfileId.value == profileId) {
                         load(profileId, force = true)
@@ -167,6 +173,10 @@ class AvailabilityViewModel(
                 }
             }
         }
+    }
+
+    fun consumeNotificationPermissionRequest() {
+        mutableShouldRequestNotificationPermission.value = false
     }
 
     fun delete(
