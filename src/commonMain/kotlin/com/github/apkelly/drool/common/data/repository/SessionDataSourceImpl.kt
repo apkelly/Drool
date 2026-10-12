@@ -442,6 +442,7 @@ class SessionDataSourceImpl(
         database.inTransaction {
             database.cacheMetadataDao().deleteAll()
             database.fixtureDao().deleteAll()
+            database.refereeAssignmentSnapshotDao().deleteAll()
             database.teamDao().deleteAllRelationships()
             database.clubDao().deleteAllRelationships()
             database.profileDao().deleteAllRelatedUsers()

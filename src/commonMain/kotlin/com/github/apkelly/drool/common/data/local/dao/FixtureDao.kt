@@ -23,6 +23,15 @@ interface FixtureDao {
         accountId: String,
     ): Int
 
+    @Query(
+        "SELECT * FROM FixtureEntity " +
+            "WHERE accountId IN (:accountIds) AND role = 'Referee' " +
+            "ORDER BY kickoffEpochMillis",
+    )
+    suspend fun getRefereeFixtures(
+        accountIds: List<String>,
+    ): List<FixtureEntity>
+
     @Upsert
     suspend fun upsertAll(
         fixtures: List<FixtureEntity>,

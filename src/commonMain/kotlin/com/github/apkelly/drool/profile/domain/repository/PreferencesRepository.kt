@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.profile.domain.repository
 
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 
@@ -11,5 +12,9 @@ interface PreferencesRepository {
     fun observeObservabilityEnabled(): Flow<Boolean>
     suspend fun setObservabilityEnabled(
         enabled: Boolean,
+    )
+    fun observeAssignmentPollingInterval(): Flow<AssignmentPollingInterval>
+    suspend fun setAssignmentPollingInterval(
+        interval: AssignmentPollingInterval,
     )
 }

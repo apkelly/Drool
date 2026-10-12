@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.github.apkelly.dribl.api.DriblTokenStore
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -36,6 +37,7 @@ class BearerTokenStore(
         dataStore.edit { preferences ->
             preferences.remove(BearerTokenKey)
             preferences.remove(ActiveAccountKey)
+            preferences.remove(AssignmentBaselineAccountIdKey)
         }
     }
 
@@ -75,11 +77,41 @@ class BearerTokenStore(
         }
     }
 
+    suspend fun getAssignmentBaselineAccountId(): String? = dataStore.data.first()[AssignmentBaselineAccountIdKey]
+
+    suspend fun setAssignmentBaselineAccountId(
+        accountId: String,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[AssignmentBaselineAccountIdKey] = accountId
+        }
+    }
+
+    fun observeAssignmentPollingInterval(): Flow<AssignmentPollingInterval> = dataStore.data.map { preferences ->
+        preferences[AssignmentPollingIntervalKey]
+            ?.let { value ->
+                AssignmentPollingInterval.entries.firstOrNull { it.name == value }
+            }
+            ?: AssignmentPollingInterval.Hourly
+    }
+
+    suspend fun setAssignmentPollingInterval(
+        interval: AssignmentPollingInterval,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[AssignmentPollingIntervalKey] = interval.name
+        }
+    }
+
     private companion object {
         val BearerTokenKey = stringPreferencesKey("bearer_token")
         val ActiveAccountKey = stringPreferencesKey("active_account_id")
         val ThemeModeKey = stringPreferencesKey("theme_mode")
         val ObservabilityEnabledKey = booleanPreferencesKey("observability_enabled")
+        val AssignmentBaselineAccountIdKey =
+            stringPreferencesKey("assignment_baseline_account_id")
+        val AssignmentPollingIntervalKey =
+            stringPreferencesKey("assignment_polling_interval")
     }
 }
 

@@ -187,6 +187,7 @@ fun FixtureCard(
     profileName: String? = null,
     stackedTeams: Boolean = false,
     onClick: (() -> Unit)? = null,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val teamNames = fixture.displayTeamNames()
     SportsCard(
@@ -336,6 +337,7 @@ fun FixtureCard(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            footer?.invoke(this)
         }
     }
 }

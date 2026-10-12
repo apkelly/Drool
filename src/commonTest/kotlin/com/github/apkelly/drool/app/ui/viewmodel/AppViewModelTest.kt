@@ -7,6 +7,7 @@ import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.auth.ui.model.AuthFailure
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.AuthCredentials
 import com.github.apkelly.drool.common.domain.model.AuthenticatedSession
 import com.github.apkelly.drool.common.domain.model.AuthenticationException
@@ -20,15 +21,18 @@ import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
+import com.github.apkelly.drool.schedule.background.AssignmentPollingScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +47,29 @@ import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModelTest {
+    @Test
+    fun assignmentPollingIntervalPersistsAndReschedules() = runTest {
+        val sessions = FakeViewModelSessionRepository()
+        val preferences = FakeViewModelPreferencesRepository()
+        val scheduler = FakeAssignmentPollingScheduler()
+        val viewModel = viewModel(sessions, preferences, scheduler)
+
+        advanceUntilIdle()
+        assertEquals(AssignmentPollingInterval.Hourly, scheduler.intervals.last())
+
+        viewModel.updateAssignmentPollingInterval(AssignmentPollingInterval.EveryThreeHours)
+        advanceUntilIdle()
+
+        assertEquals(
+            AssignmentPollingInterval.EveryThreeHours,
+            preferences.assignmentPollingInterval.value,
+        )
+        assertEquals(
+            AssignmentPollingInterval.EveryThreeHours,
+            scheduler.intervals.last(),
+        )
+    }
+
     @Test
     fun restoreSelectsTheCorrectOfflineSessionState() = runTest {
         val sessionRepository = FakeViewModelSessionRepository()
@@ -213,6 +240,7 @@ class AppViewModelTest {
     private fun kotlinx.coroutines.test.TestScope.viewModel(
         sessions: FakeViewModelSessionRepository,
         preferences: FakeViewModelPreferencesRepository,
+        scheduler: AssignmentPollingScheduler = AssignmentPollingScheduler {},
     ) = AppViewModel(
         observeProfile = ObserveProfileUseCase(sessions),
         restoreSession = RestoreSessionUseCase(sessions),
@@ -226,8 +254,23 @@ class AppViewModelTest {
         setThemeMode = SetThemeModeUseCase(preferences),
         observeObservabilityEnabled = ObserveObservabilityEnabledUseCase(preferences),
         setObservabilityEnabled = SetObservabilityEnabledUseCase(preferences),
+        observeAssignmentPollingInterval =
+        ObserveAssignmentPollingIntervalUseCase(preferences),
+        setAssignmentPollingInterval =
+        SetAssignmentPollingIntervalUseCase(preferences),
+        assignmentPollingScheduler = scheduler,
         scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler)),
     )
+}
+
+private class FakeAssignmentPollingScheduler : AssignmentPollingScheduler {
+    val intervals = mutableListOf<AssignmentPollingInterval>()
+
+    override fun schedule(
+        interval: AssignmentPollingInterval,
+    ) {
+        intervals += interval
+    }
 }
 
 private class FakeViewModelSessionRepository :
@@ -297,6 +340,7 @@ private class FakeViewModelSessionRepository :
 private class FakeViewModelPreferencesRepository : PreferencesRepository {
     val theme = MutableStateFlow(ThemeMode.System)
     val observabilityEnabled = MutableStateFlow(false)
+    val assignmentPollingInterval = MutableStateFlow(AssignmentPollingInterval.Hourly)
 
     override fun observeThemeMode(): Flow<ThemeMode> = theme
 
@@ -312,5 +356,13 @@ private class FakeViewModelPreferencesRepository : PreferencesRepository {
         enabled: Boolean,
     ) {
         observabilityEnabled.value = enabled
+    }
+
+    override fun observeAssignmentPollingInterval(): Flow<AssignmentPollingInterval> = assignmentPollingInterval
+
+    override suspend fun setAssignmentPollingInterval(
+        interval: AssignmentPollingInterval,
+    ) {
+        assignmentPollingInterval.value = interval
     }
 }

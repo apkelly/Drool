@@ -1,6 +1,7 @@
 package com.github.apkelly.drool.schedule.domain.usecase
 
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 
 class ObserveFixturesUseCase(
@@ -27,4 +28,14 @@ class RefreshLinkedProfilesUseCase(
         profiles: List<LinkedProfile>,
         force: Boolean = true,
     ) = repository.refreshLinkedProfiles(profiles, force)
+}
+
+class UpdateRefereeAllocationUseCase(
+    private val repository: ScheduleRepository,
+) {
+    suspend operator fun invoke(
+        profile: LinkedProfile,
+        allocationId: String,
+        decision: RefereeAllocationDecision,
+    ) = repository.updateRefereeAllocation(profile, allocationId, decision)
 }

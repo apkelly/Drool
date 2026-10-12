@@ -6,6 +6,7 @@ import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.auth.ui.model.AuthFailure
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.AuthCredentials
 import com.github.apkelly.drool.common.domain.model.AuthenticationException
 import com.github.apkelly.drool.common.domain.model.AuthenticationFailure
@@ -21,15 +22,18 @@ import com.github.apkelly.drool.common.observability.Observability
 import com.github.apkelly.drool.common.observability.SignInOutcome
 import com.github.apkelly.drool.common.observability.ThemeSelection
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
+import com.github.apkelly.drool.schedule.background.AssignmentPollingScheduler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +59,9 @@ class AppViewModel(
     private val setThemeMode: SetThemeModeUseCase,
     observeObservabilityEnabled: ObserveObservabilityEnabledUseCase,
     private val setObservabilityEnabled: SetObservabilityEnabledUseCase,
+    observeAssignmentPollingInterval: ObserveAssignmentPollingIntervalUseCase,
+    private val setAssignmentPollingInterval: SetAssignmentPollingIntervalUseCase,
+    assignmentPollingScheduler: AssignmentPollingScheduler,
     private val observability: Observability = NoOpObservability,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
@@ -77,6 +84,11 @@ class AppViewModel(
         observeObservabilityEnabled()
             .onEach(observability::setCollectionEnabled)
             .stateIn(scope, SharingStarted.Eagerly, false)
+
+    val assignmentPollingInterval: StateFlow<AssignmentPollingInterval> =
+        observeAssignmentPollingInterval()
+            .onEach(assignmentPollingScheduler::schedule)
+            .stateIn(scope, SharingStarted.Eagerly, AssignmentPollingInterval.Off)
 
     init {
         restore()
@@ -300,6 +312,12 @@ class AppViewModel(
         enabled: Boolean,
     ) {
         scope.launch { setObservabilityEnabled(enabled) }
+    }
+
+    fun updateAssignmentPollingInterval(
+        interval: AssignmentPollingInterval,
+    ) {
+        scope.launch { setAssignmentPollingInterval(interval) }
     }
 
     fun trackScreen(

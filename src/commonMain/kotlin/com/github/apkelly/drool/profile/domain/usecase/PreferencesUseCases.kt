@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.profile.domain.usecase
 
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 
@@ -29,4 +30,18 @@ class SetObservabilityEnabledUseCase(
     suspend operator fun invoke(
         enabled: Boolean,
     ) = repository.setObservabilityEnabled(enabled)
+}
+
+class ObserveAssignmentPollingIntervalUseCase(
+    private val repository: PreferencesRepository,
+) {
+    operator fun invoke() = repository.observeAssignmentPollingInterval()
+}
+
+class SetAssignmentPollingIntervalUseCase(
+    private val repository: PreferencesRepository,
+) {
+    suspend operator fun invoke(
+        interval: AssignmentPollingInterval,
+    ) = repository.setAssignmentPollingInterval(interval)
 }

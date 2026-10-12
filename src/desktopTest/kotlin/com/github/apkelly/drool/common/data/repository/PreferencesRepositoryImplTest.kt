@@ -1,5 +1,6 @@
 package com.github.apkelly.drool.common.data.repository
 
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.data.PreferencesRepositoryImpl
 import kotlinx.coroutines.flow.first
@@ -18,6 +19,15 @@ class PreferencesRepositoryImplTest {
             assertEquals(false, repository.observeObservabilityEnabled().first())
             repository.setObservabilityEnabled(true)
             assertEquals(true, repository.observeObservabilityEnabled().first())
+            assertEquals(
+                AssignmentPollingInterval.Hourly,
+                repository.observeAssignmentPollingInterval().first(),
+            )
+            repository.setAssignmentPollingInterval(AssignmentPollingInterval.EveryThreeHours)
+            assertEquals(
+                AssignmentPollingInterval.EveryThreeHours,
+                repository.observeAssignmentPollingInterval().first(),
+            )
         }
     }
 }

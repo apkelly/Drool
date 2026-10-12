@@ -38,6 +38,11 @@ interface SportsRemoteDataSource {
         bearerToken: String,
         userId: String,
     ): List<Fixture>
+    suspend fun updateRefereeAllocation(
+        bearerToken: String,
+        allocationId: String,
+        status: String,
+    )
     suspend fun fetchActiveRefereeClubs(
         bearerToken: String,
     ): List<RefereeClub>

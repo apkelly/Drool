@@ -6,6 +6,7 @@ import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.ProfileClub
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamHub
@@ -43,6 +44,11 @@ interface SportsDataSource {
         profiles: List<LinkedProfile>,
         force: Boolean = false,
     ): Map<String, RefreshResult>
+    suspend fun updateRefereeAllocation(
+        profile: LinkedProfile,
+        allocationId: String,
+        decision: RefereeAllocationDecision,
+    ): RefreshResult
     suspend fun setFollowing(
         teamId: String,
         following: Boolean,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.ThemeMode
@@ -41,8 +43,14 @@ import com.github.apkelly.drool.common.observability.platformSupportsObservabili
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_cancel
 import com.github.apkelly.drool.common.resources.action_sign_out
+import com.github.apkelly.drool.common.resources.assignment_polling_hourly
+import com.github.apkelly.drool.common.resources.assignment_polling_off
+import com.github.apkelly.drool.common.resources.assignment_polling_six_hours
+import com.github.apkelly.drool.common.resources.assignment_polling_three_hours
 import com.github.apkelly.drool.common.resources.content_profile_image
 import com.github.apkelly.drool.common.resources.profile_appearance
+import com.github.apkelly.drool.common.resources.profile_assignment_checks
+import com.github.apkelly.drool.common.resources.profile_assignment_checks_body
 import com.github.apkelly.drool.common.resources.profile_link_member
 import com.github.apkelly.drool.common.resources.profile_no_related_users
 import com.github.apkelly.drool.common.resources.profile_observability
@@ -76,6 +84,8 @@ fun ProfileScreen(
     model: ProfileUiModel,
     onThemeChange: (ThemeMode) -> Unit,
     onObservabilityChange: (Boolean) -> Unit,
+    onAssignmentPollingIntervalChange: (AssignmentPollingInterval) -> Unit,
+    onRequestAssignmentNotificationPermission: () -> Unit,
     onAddMember: () -> Unit,
     onRelatedUserSelect: (RelatedUser) -> Unit,
     onUnlinkUser: (String) -> Unit,
@@ -86,6 +96,7 @@ fun ProfileScreen(
     val profile = model.profile
     val themeMode = model.themeMode
     val observabilityEnabled = model.observabilityEnabled
+    val assignmentPollingInterval = model.assignmentPollingInterval
     var confirmSignOut by remember { mutableStateOf(false) }
     var pendingUnlink by remember { mutableStateOf<RelatedUser?>(null) }
     val linkedUsers = profile.relatedUsers
@@ -223,6 +234,34 @@ fun ProfileScreen(
                         Switch(
                             checked = observabilityEnabled,
                             onCheckedChange = onObservabilityChange,
+                        )
+                    }
+                }
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(Res.string.profile_assignment_checks),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(Res.string.profile_assignment_checks_body),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(AssignmentPollingInterval.entries) { interval ->
+                        FilterChip(
+                            selected = assignmentPollingInterval == interval,
+                            onClick = {
+                                if (interval != AssignmentPollingInterval.Off) {
+                                    onRequestAssignmentNotificationPermission()
+                                }
+                                onAssignmentPollingIntervalChange(interval)
+                            },
+                            label = { Text(stringResource(interval.labelResource())) },
                         )
                     }
                 }
@@ -399,6 +438,8 @@ private fun ProfileScreenPreview() {
             model = TopLevelScreenPreviewData.profileModel,
             onThemeChange = {},
             onObservabilityChange = {},
+            onAssignmentPollingIntervalChange = {},
+            onRequestAssignmentNotificationPermission = {},
             onAddMember = {},
             onRelatedUserSelect = {},
             onUnlinkUser = {},
@@ -406,4 +447,16 @@ private fun ProfileScreenPreview() {
             onSignOut = {},
         )
     }
+}
+
+private fun AssignmentPollingInterval.labelResource() = when (this) {
+    AssignmentPollingInterval.Off -> Res.string.assignment_polling_off
+
+    AssignmentPollingInterval.Hourly -> Res.string.assignment_polling_hourly
+
+    AssignmentPollingInterval.EveryThreeHours ->
+        Res.string.assignment_polling_three_hours
+
+    AssignmentPollingInterval.EverySixHours ->
+        Res.string.assignment_polling_six_hours
 }

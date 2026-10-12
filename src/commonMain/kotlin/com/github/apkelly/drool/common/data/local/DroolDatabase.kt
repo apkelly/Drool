@@ -10,6 +10,7 @@ import com.github.apkelly.drool.common.data.local.dao.ClubDao
 import com.github.apkelly.drool.common.data.local.dao.FixtureDao
 import com.github.apkelly.drool.common.data.local.dao.MatchWeatherCacheDao
 import com.github.apkelly.drool.common.data.local.dao.ProfileDao
+import com.github.apkelly.drool.common.data.local.dao.RefereeAssignmentSnapshotDao
 import com.github.apkelly.drool.common.data.local.dao.TeamDao
 import com.github.apkelly.drool.common.data.local.dao.TeamHubCacheDao
 import com.github.apkelly.drool.common.data.local.entity.AccountEntity
@@ -19,6 +20,7 @@ import com.github.apkelly.drool.common.data.local.entity.ClubRelationshipEntity
 import com.github.apkelly.drool.common.data.local.entity.FixtureEntity
 import com.github.apkelly.drool.common.data.local.entity.MatchWeatherCacheEntity
 import com.github.apkelly.drool.common.data.local.entity.ProfileEntity
+import com.github.apkelly.drool.common.data.local.entity.RefereeAssignmentSnapshotEntity
 import com.github.apkelly.drool.common.data.local.entity.RelatedUserEntity
 import com.github.apkelly.drool.common.data.local.entity.TeamEntity
 import com.github.apkelly.drool.common.data.local.entity.TeamHubCacheEntity
@@ -34,12 +36,13 @@ import kotlinx.coroutines.Dispatchers
         FixtureEntity::class,
         ProfileEntity::class,
         RelatedUserEntity::class,
+        RefereeAssignmentSnapshotEntity::class,
         TeamEntity::class,
         TeamRelationshipEntity::class,
         TeamHubCacheEntity::class,
         MatchWeatherCacheEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
 )
 @ConstructedBy(DroolDatabaseConstructor::class)
@@ -48,6 +51,7 @@ abstract class DroolDatabase : RoomDatabase() {
     abstract fun clubDao(): ClubDao
     abstract fun fixtureDao(): FixtureDao
     abstract fun profileDao(): ProfileDao
+    abstract fun refereeAssignmentSnapshotDao(): RefereeAssignmentSnapshotDao
     abstract fun teamDao(): TeamDao
     abstract fun teamHubCacheDao(): TeamHubCacheDao
     abstract fun matchWeatherCacheDao(): MatchWeatherCacheDao

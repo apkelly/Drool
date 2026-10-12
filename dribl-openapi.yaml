@@ -2476,18 +2476,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
   "/universal/allocations/":
-    x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
-    x-note: "Recovered literal ends with a slash; it may be a collection prefix used with appended identifiers."
+    x-discovered-source: "Hermes bytecode plus authenticated live response"
+    x-note: "This user-scoped collection is the authoritative referee assignment feed. The similarly named /universal/schedule endpoint can return club-wide allocations and its user_id filter is unreliable."
     get:
       operationId: get_universal_allocations_slash
       tags: ["Universal"]
-      summary: "Discovered read endpoint for universal allocations"
-      x-method-inference: "inferred as read/list endpoint from resource-style path"
+      summary: "List referee allocations for a linked profile"
       parameters:
         - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: user_id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: start_date
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: end_date
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
       responses:
         "200":
-          description: Successful response; schema not recovered from APK
+          description: "JSON:API response whose data array contains allocation resources, including event_id, date, referee_role, and referee_status attributes."
           content:
             application/json:
               schema:
@@ -2500,6 +2511,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/universal/allocations/{allocationId}":
+    x-discovered-source: "Hermes bytecode plus authenticated original-client request"
+    patch:
+      operationId: patch_universal_allocation
+      tags: ["Universal"]
+      summary: "Respond to a referee allocation"
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationHeader"
+        - name: allocationId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [accepted, request_contact]
+                  description: "Use accepted to accept. The recovered client uses request_contact, optionally with notes, when the referee cannot accept; no direct rejected status was observed."
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: "Updated JSON:API allocation resource"
+        "401":
+          description: Unauthorized or expired authentication
+        default:
+          description: Error response
+          content:
+           application/json:
+             schema:
+               $ref: "#/components/schemas/ErrorResponse"
   "/universal/allocations/self-allocate":
     x-discovered-source: "Hermes bytecode string table: assets/index.android.bundle"
     post:

@@ -118,6 +118,8 @@ internal fun com.github.apkelly.dribl.model.Fixture.toDomain() = com.github.apke
     longitude = longitude,
     role = com.github.apkelly.drool.common.domain.model.FixtureRole.valueOf(role.name),
     refereeRole = refereeRole,
+    refereeAllocationId = refereeAllocationId,
+    refereeStatus = refereeStatus,
     leagueName = leagueName,
 )
 

@@ -1,6 +1,7 @@
 package com.github.apkelly.drool.profile.data
 
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 
@@ -18,4 +19,10 @@ class PreferencesRepositoryImpl(
     override suspend fun setObservabilityEnabled(
         enabled: Boolean,
     ) = store.setObservabilityEnabled(enabled)
+
+    override fun observeAssignmentPollingInterval() = store.observeAssignmentPollingInterval()
+
+    override suspend fun setAssignmentPollingInterval(
+        interval: AssignmentPollingInterval,
+    ) = store.setAssignmentPollingInterval(interval)
 }

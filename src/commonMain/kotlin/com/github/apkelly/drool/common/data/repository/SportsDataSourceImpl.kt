@@ -23,6 +23,7 @@ import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.ProfileClub
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.Team
@@ -175,7 +176,7 @@ class SportsDataSourceImpl(
         return runRefresh(existingCount > 0) {
             val fixtures = (
                 api.fetchFixtures(token, accountId).map { it.toDomain() } +
-                    api.fetchRefereeFixtures(token, accountId).map { it.toDomain() }
+                    loadRefereeFixtures(token, accountId)
                 ).distinctBy { it.id to it.role }
             database.inTransaction {
                 database.fixtureDao().deleteForAccount(accountId)
@@ -217,8 +218,7 @@ class SportsDataSourceImpl(
                         val teams = api.fetchProfileTeams(token).map { it.toDomain() }
                         val fixtures = (
                             api.fetchFixtures(token, profile.subjectUserId).map { it.toDomain() } +
-                                api.fetchRefereeFixtures(token, profile.subjectUserId)
-                                    .map { it.toDomain() }
+                                loadRefereeFixtures(token, profile.subjectUserId)
                             ).distinctBy { it.id to it.role }
                         val clubs = api.fetchProfileClubs(token).map { it.toDomain() }
                         database.inTransaction {
@@ -261,6 +261,38 @@ class SportsDataSourceImpl(
                 }
             }
             profile.id to result
+        }
+    }
+
+    private suspend fun loadRefereeFixtures(
+        bearerToken: String,
+        userId: String,
+    ): List<Fixture> {
+        if (api.fetchActiveRefereeClubs(bearerToken).isEmpty()) return emptyList()
+        return api.fetchRefereeFixtures(bearerToken, userId).map { it.toDomain() }
+    }
+
+    override suspend fun updateRefereeAllocation(
+        profile: LinkedProfile,
+        allocationId: String,
+        decision: RefereeAllocationDecision,
+    ): RefreshResult {
+        val rootToken = store.getBearerToken()
+            ?: return RefreshResult.Failed(RefreshFailure.Unauthorized, hasCachedData = true)
+        return runRefresh(hasCachedData = true) {
+            val token = if (profile.isPrimary) {
+                rootToken
+            } else {
+                api.createProfileSession(rootToken, profile.id)
+            }
+            api.updateRefereeAllocation(
+                bearerToken = token,
+                allocationId = allocationId,
+                status = when (decision) {
+                    RefereeAllocationDecision.Accept -> "accepted"
+                    RefereeAllocationDecision.Decline -> "request_contact"
+                },
+            )
         }
     }
 

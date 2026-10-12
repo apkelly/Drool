@@ -102,6 +102,8 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     var teamHubCalls = 0
     var matchDetailsRequest: Pair<String, String>? = null
     var refereeClubs: List<DriblRefereeClub> = emptyList()
+    var refereeClubsByToken: Map<String, List<DriblRefereeClub>> = emptyMap()
+    var refereeFixtures: List<Fixture> = emptyList()
     var refereeAvailabilities: List<DriblRefereeAvailability> = emptyList()
     var refereeAvailabilityQuery: Pair<String, String>? = null
     var createAvailabilityRequest: CreateRefereeAvailabilityRequest? = null
@@ -114,7 +116,9 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     val profileSessionUsers = mutableListOf<String>()
     val profileSessionFailureUsers = mutableSetOf<String>()
     val fixtureUserIds = mutableListOf<String?>()
+    val refereeFixtureTokens = mutableListOf<String>()
     val refereeFixtureUserIds = mutableListOf<String>()
+    var updatedRefereeAllocation: Triple<String, String, String>? = null
     var teamClubId: String? = null
     var relatedUsersCalls = 0
     var relatedUsersEmail: String? = null
@@ -153,8 +157,18 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         userId: String,
     ): List<DriblFixture> {
         failure?.let { throw it }
+        refereeFixtureTokens += bearerToken
         refereeFixtureUserIds += userId
-        return emptyList()
+        return refereeFixtures.map { it.toDribl() }
+    }
+
+    override suspend fun updateRefereeAllocation(
+        bearerToken: String,
+        allocationId: String,
+        status: String,
+    ) {
+        failure?.let { throw it }
+        updatedRefereeAllocation = Triple(bearerToken, allocationId, status)
     }
 
     override suspend fun fetchProfile(
@@ -302,7 +316,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         bearerToken: String,
     ): List<DriblRefereeClub> {
         failure?.let { throw it }
-        return refereeClubs
+        return refereeClubsByToken[bearerToken] ?: refereeClubs
     }
 
     override suspend fun fetchRefereeAvailabilities(

@@ -6,6 +6,7 @@ import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileClub
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.Team
@@ -31,6 +32,7 @@ import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.UpdateRefereeAllocationUseCase
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
 import kotlinx.coroutines.CoroutineScope
@@ -82,6 +84,7 @@ class SportsViewModel(
     private val refreshTeamsUseCase: RefreshTeamsUseCase,
     private val refreshFixturesUseCase: RefreshFixturesUseCase,
     private val refreshLinkedProfiles: RefreshLinkedProfilesUseCase,
+    private val updateRefereeAllocationUseCase: UpdateRefereeAllocationUseCase,
     private val setTeamFollowing: SetTeamFollowingUseCase,
     private val loadTeamHub: LoadTeamHubUseCase,
     private val loadMatchDetails: LoadMatchDetailsUseCase,
@@ -98,6 +101,8 @@ class SportsViewModel(
     private val clubsFailure = MutableStateFlow<RefreshFailure?>(null)
     private val teamsFailure = MutableStateFlow<RefreshFailure?>(null)
     private val fixturesFailure = MutableStateFlow<RefreshFailure?>(null)
+    private val mutableAllocationUpdatingId = MutableStateFlow<String?>(null)
+    private val mutableAllocationFailure = MutableStateFlow<RefreshFailure?>(null)
     private val selectedClubId = MutableStateFlow<String?>(null)
     private val mutableLinkedProfiles = MutableStateFlow<List<LinkedProfile>>(emptyList())
     private val mutableSelectedProfileId = MutableStateFlow<String?>(null)
@@ -114,6 +119,8 @@ class SportsViewModel(
     val selectedProfileId: StateFlow<String?> = mutableSelectedProfileId
     val linkedProfileRefreshResults: StateFlow<Map<String, RefreshResult>> =
         mutableLinkedProfileRefreshResults
+    val allocationUpdatingId: StateFlow<String?> = mutableAllocationUpdatingId
+    val allocationFailure: StateFlow<RefreshFailure?> = mutableAllocationFailure
     val teamHubState: StateFlow<TeamHubUiState> = mutableTeamHubState
     val matchDetailsState: StateFlow<MatchDetailsUiState> = mutableMatchDetailsState
 
@@ -293,6 +300,38 @@ class SportsViewModel(
                 } finally {
                     fixturesRefreshing.value = false
                 }
+            }
+        }
+    }
+
+    fun updateRefereeAllocation(
+        fixture: Fixture,
+        decision: RefereeAllocationDecision,
+    ) {
+        val allocationId = fixture.refereeAllocationId ?: return
+        val profile = mutableLinkedProfiles.value.firstOrNull { it.id == fixture.profileId }
+            ?: return
+        if (mutableAllocationUpdatingId.value != null) return
+
+        scope.launch {
+            mutableAllocationUpdatingId.value = allocationId
+            mutableAllocationFailure.value = null
+            try {
+                when (
+                    val result = updateRefereeAllocationUseCase(
+                        profile = profile,
+                        allocationId = allocationId,
+                        decision = decision,
+                    )
+                ) {
+                    is RefreshResult.Failed -> mutableAllocationFailure.value = result.reason
+
+                    RefreshResult.NotModified,
+                    RefreshResult.Updated,
+                    -> refreshFixtures(force = true)
+                }
+            } finally {
+                mutableAllocationUpdatingId.value = null
             }
         }
     }

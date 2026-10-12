@@ -113,6 +113,37 @@ links `FirebaseAnalytics` and `FirebaseCrashlytics` through Swift Package
 Manager and runs the Crashlytics symbol-upload build phase. Release archives
 therefore require network access to upload dSYMs.
 
+## Referee assignment monitoring
+
+Referee appointments and their acceptance state are server-backed data returned
+by `GET /universal/schedule`. Drool periodically refreshes that endpoint for the
+signed-in profile and linked profiles, then compares the current allocation IDs
+and `referee_status` values with a separate Room snapshot. The first successful
+check establishes a baseline without notifying; later new appointments and
+status changes produce local notifications. Profile provides **Off**, **Hourly**,
+**Every 3 hours**, and **Every 6 hours** controls, with hourly checks enabled by
+default. Manual and foreground refresh remain available.
+
+Polling is required because the original Dribl client registers a raw Firebase
+Cloud Messaging token with `POST /device-token`. An FCM registration token is
+scoped to the Firebase project and signed app identity that created it. A token
+issued by Drool's Firebase project cannot be addressed by Dribl's Firebase
+sender, while using Dribl's iOS push identity would additionally require its
+bundle entitlement, provisioning profile, APNs key, and cooperation. Drool
+therefore keeps its own Firebase configuration limited to opt-in Analytics and
+Crashlytics and does not submit an incompatible device token to Dribl.
+
+The polling guarantee is platform-specific:
+
+- Android uses WorkManager with a network constraint and retry/backoff. Work is
+  durable across process restarts and reboot, but Doze and battery policy may
+  defer the requested interval.
+- iOS uses `BGAppRefreshTask`. iOS chooses when or whether it runs, may delay it
+  substantially, and stops background launches after the user force-quits the
+  app.
+- Desktop polls at the chosen interval while Drool is running. It intentionally
+  does not install a login item, launch agent, or persistent system daemon.
+
 ## Offline behavior
 
 Club and team catalogs are cached for 24 hours; fixtures are cached for 15 minutes. Home and Schedule provide a linked-profile selector with an **All profiles** overview and separate profile filters. Linked profiles are resolved through short-lived backend profile sessions, while fixtures and team relationships are stored with explicit profile ownership so overlapping fixture IDs cannot collide. Their personal details and emergency contacts are hydrated from the profile-scoped `/users/{userId}` and `/user-contacts/` endpoints and retained in the account-scoped cache. Cached content remains browsable when refresh fails, and list screens support pull-to-refresh. A stored root session with a cached profile, related users, and accounts can start offline. Signing out clears the token and all account-scoped profiles, linked users, personal details, accounts, fixtures, relationships, and cache metadata, so connectivity is required to authenticate again.

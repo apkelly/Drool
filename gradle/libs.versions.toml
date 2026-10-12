@@ -3,6 +3,7 @@ agp = "9.4.1"
 androidx-activity = "1.13.0"
 androidx-datastore = "1.2.1"
 androidx-room = "2.8.5"
+androidx-work = "2.12.0"
 androidx-sqlite = "2.7.1"
 coil = "3.6.3"
 compottie = "2.3.2"
@@ -34,6 +35,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }

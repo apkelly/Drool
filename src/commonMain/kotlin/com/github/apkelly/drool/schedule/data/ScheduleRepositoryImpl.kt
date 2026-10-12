@@ -2,6 +2,7 @@ package com.github.apkelly.drool.schedule.data
 
 import com.github.apkelly.drool.common.data.repository.SportsDataSource
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 
 class ScheduleRepositoryImpl(
@@ -21,4 +22,10 @@ class ScheduleRepositoryImpl(
         profiles: List<LinkedProfile>,
         force: Boolean,
     ) = sportsDataSource.refreshLinkedProfiles(profiles, force)
+
+    override suspend fun updateRefereeAllocation(
+        profile: LinkedProfile,
+        allocationId: String,
+        decision: RefereeAllocationDecision,
+    ) = sportsDataSource.updateRefereeAllocation(profile, allocationId, decision)
 }

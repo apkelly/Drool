@@ -17,6 +17,10 @@ class LoadMatchWeatherUseCase(
 ) {
     suspend operator fun invoke(
         fixture: Fixture,
-        force: Boolean = false,
+    ) = invoke(fixture, force = false)
+
+    suspend operator fun invoke(
+        fixture: Fixture,
+        force: Boolean,
     ) = repository.loadMatchWeather(fixture, force)
 }

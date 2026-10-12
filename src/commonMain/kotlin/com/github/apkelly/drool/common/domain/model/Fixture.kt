@@ -25,6 +25,8 @@ data class Fixture(
     val longitude: Double? = null,
     val role: FixtureRole = FixtureRole.Player,
     val refereeRole: String? = null,
+    val refereeAllocationId: String? = null,
+    val refereeStatus: String? = null,
     val leagueName: String? = null,
 )
 
@@ -33,6 +35,11 @@ enum class FixtureRole {
     Player,
     Referee,
     Coach,
+}
+
+enum class RefereeAllocationDecision {
+    Accept,
+    Decline,
 }
 
 @Serializable

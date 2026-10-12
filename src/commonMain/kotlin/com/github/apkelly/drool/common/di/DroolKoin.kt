@@ -54,13 +54,19 @@ import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.profile.domain.repository.ProfileRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
+import com.github.apkelly.drool.schedule.background.AssignmentPollExecutor
+import com.github.apkelly.drool.schedule.background.RefereeAssignmentPoller
+import com.github.apkelly.drool.schedule.background.createPlatformAssignmentPollingScheduler
+import com.github.apkelly.drool.schedule.background.createPlatformRefereeAssignmentNotifier
 import com.github.apkelly.drool.schedule.data.AvailabilityRepositoryImpl
 import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
 import com.github.apkelly.drool.schedule.domain.repository.AvailabilityRepository
@@ -72,6 +78,7 @@ import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeClubsUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.UpdateRefereeAllocationUseCase
 import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
 import com.github.apkelly.drool.team.data.TeamRepositoryImpl
 import com.github.apkelly.drool.team.domain.repository.TeamRepository
@@ -154,6 +161,10 @@ private val dataModule = module {
         )
     }
     single<Observability> { createPlatformObservability() }
+    single { createPlatformRefereeAssignmentNotifier() }
+    single { RefereeAssignmentPoller(get(), get(), get(), get()) }
+    single { AssignmentPollExecutor(get(), get()) }
+    single { createPlatformAssignmentPollingScheduler(get()) }
 }
 
 private val domainModule = module {
@@ -169,6 +180,8 @@ private val domainModule = module {
     factory { SetThemeModeUseCase(repository = get()) }
     factory { ObserveObservabilityEnabledUseCase(repository = get()) }
     factory { SetObservabilityEnabledUseCase(repository = get()) }
+    factory { ObserveAssignmentPollingIntervalUseCase(repository = get()) }
+    factory { SetAssignmentPollingIntervalUseCase(repository = get()) }
     factory { ObserveClubsUseCase(repository = get()) }
     factory { ObserveTeamsUseCase(repository = get()) }
     factory { ObserveFixturesUseCase(repository = get()) }
@@ -179,6 +192,7 @@ private val domainModule = module {
     factory { RefreshTeamsUseCase(repository = get()) }
     factory { RefreshFixturesUseCase(repository = get()) }
     factory { RefreshLinkedProfilesUseCase(repository = get()) }
+    factory { UpdateRefereeAllocationUseCase(repository = get()) }
     factory { GetRefereeClubsUseCase(get()) }
     factory { GetRefereeAvailabilityUseCase(get()) }
     factory { CreateRefereeAvailabilityUseCase(get()) }
@@ -204,6 +218,9 @@ private val uiModule = module {
             setThemeMode = get(),
             observeObservabilityEnabled = get(),
             setObservabilityEnabled = get(),
+            observeAssignmentPollingInterval = get(),
+            setAssignmentPollingInterval = get(),
+            assignmentPollingScheduler = get(),
             observability = get(),
         )
     }
@@ -219,6 +236,7 @@ private val uiModule = module {
             refreshTeamsUseCase = get(),
             refreshFixturesUseCase = get(),
             refreshLinkedProfiles = get(),
+            updateRefereeAllocationUseCase = get(),
             setTeamFollowing = get(),
             loadTeamHub = get(),
             loadMatchDetails = get(),

@@ -128,6 +128,11 @@
     <string name="fixture_role_referee">Referee</string>
     <string name="fixture_role_referee_named">Referee · %1$s</string>
     <string name="fixture_role_coach">Coach</string>
+    <string name="schedule_allocation_accept">Accept</string>
+    <string name="schedule_allocation_decline">Decline</string>
+    <string name="schedule_allocation_decline_title">Can’t referee this match?</string>
+    <string name="schedule_allocation_decline_body">Dribl does not expose a direct rejection action. This will ask the referee coordinator to contact you so they can reassign the match.</string>
+    <string name="schedule_allocation_update_failed">Couldn’t update this referee assignment. Try again.</string>
     <string name="profile_title">Profile</string>
     <string name="profile_link_member">Link profile</string>
     <string name="profile_link_candidates_empty">No additional accounts are available to link.</string>
@@ -164,6 +169,12 @@
     <string name="profile_appearance">Appearance</string>
     <string name="profile_observability">Share anonymous diagnostics</string>
     <string name="profile_observability_body">Send privacy-safe usage events and crash reports to help improve Drool. No names, email addresses, account details, team or match IDs, tokens, or API data are included.</string>
+    <string name="profile_assignment_checks">Referee assignment checks</string>
+    <string name="profile_assignment_checks_body">Check Dribl for new or updated referee appointments and notify you locally. Android and iOS schedule background checks when the system allows; desktop checks while Drool is open.</string>
+    <string name="assignment_polling_off">Off</string>
+    <string name="assignment_polling_hourly">Hourly</string>
+    <string name="assignment_polling_three_hours">Every 3 hours</string>
+    <string name="assignment_polling_six_hours">Every 6 hours</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>

@@ -327,6 +327,11 @@ internal data class ScheduleAllocationAttributesDto(
 )
 
 @Serializable
+internal data class UpdateRefereeAllocationRequest(
+    @SerialName("status") val status: String,
+)
+
+@Serializable
 internal data class FixtureDto(
     @SerialName("id") val id: JsonPrimitive? = null,
     @SerialName("match_id") val matchId: JsonPrimitive? = null,

@@ -112,6 +112,7 @@ kotlin {
 
         getByName("androidMain") {
             dependencies {
+                implementation(libs.androidx.work.runtime)
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.okhttp.logging)
                 implementation(libs.google.maps)

@@ -13,8 +13,10 @@ import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.Club
 import com.github.apkelly.drool.common.domain.model.EmergencyContact
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.RelatedUser
@@ -355,6 +357,33 @@ class SportsDataSourceImplTest {
             remote.profileClubs = listOf(
                 Club("club", "United", "U", null, "#008000", "#FFFFFF"),
             )
+            remote.refereeClubsByToken = mapOf(
+                "profile-token-child" to listOf(
+                    com.github.apkelly.dribl.model.RefereeClub(
+                        id = "referee-club",
+                        name = "Referee Club",
+                        logoUrl = null,
+                        timeZone = "Australia/Sydney",
+                    ),
+                ),
+            )
+            remote.refereeFixtures = listOf(
+                Fixture(
+                    id = "referee-match",
+                    kickoffEpochMillis = 2_000L,
+                    homeTeamId = "home",
+                    homeTeamName = "Home",
+                    awayTeamId = "away",
+                    awayTeamName = "Away",
+                    competitionName = "Competition",
+                    venueName = "Field",
+                    userTeamId = null,
+                    status = FixtureStatus.Scheduled,
+                    role = FixtureRole.Referee,
+                    refereeAllocationId = "allocation",
+                    refereeStatus = "accepted",
+                ),
+            )
             val profiles = listOf(
                 LinkedProfile(
                     id = "root",
@@ -403,12 +432,17 @@ class SportsDataSourceImplTest {
             )
             assertEquals(listOf("child"), remote.profileSessionUsers)
             assertEquals(listOf<String?>("root", "child"), remote.fixtureUserIds)
-            assertEquals(listOf("root", "child"), remote.refereeFixtureUserIds)
+            assertEquals(listOf("profile-token-child"), remote.refereeFixtureTokens)
+            assertEquals(listOf("child"), remote.refereeFixtureUserIds)
 
             val fixtures =
                 repository.observeLinkedProfileFixtures(setOf("root", "child")).first()
-            assertEquals(2, fixtures.size)
+            assertEquals(3, fixtures.size)
             assertEquals(setOf("root", "child"), fixtures.mapNotNull { it.profileId }.toSet())
+            assertEquals(
+                "child",
+                fixtures.single { it.role == FixtureRole.Referee }.profileId,
+            )
 
             val teams = repository.observeProfileTeams(setOf("root", "child")).first()
             assertEquals(2, teams.size)
@@ -681,6 +715,59 @@ class SportsDataSourceImplTest {
         fixture { repository, _, _, _, _ ->
             assertTrue(repository.observeFixtures().first().value.isEmpty())
             assertTrue(repository.observeTeamRelationships().first().isEmpty())
+        }
+    }
+
+    @Test
+    fun refereeAllocationDecisionsUseProfileSessionAndRecoveredStatuses() = runTest {
+        fixture { repository, remote, store, _, _ ->
+            assertEquals(
+                RefreshResult.Failed(RefreshFailure.Unauthorized, hasCachedData = true),
+                repository.updateRefereeAllocation(
+                    LinkedProfile("root", "Alex", null, isPrimary = true),
+                    "allocation-0",
+                    RefereeAllocationDecision.Accept,
+                ),
+            )
+
+            store.saveBearerToken("root-token")
+            assertEquals(
+                RefreshResult.Updated,
+                repository.updateRefereeAllocation(
+                    LinkedProfile("root", "Alex", null, isPrimary = true),
+                    "allocation-0",
+                    RefereeAllocationDecision.Accept,
+                ),
+            )
+            assertEquals(
+                Triple("root-token", "allocation-0", "accepted"),
+                remote.updatedRefereeAllocation,
+            )
+
+            val profile = LinkedProfile("child", "Jude", null, isPrimary = false)
+
+            assertEquals(
+                RefreshResult.Updated,
+                repository.updateRefereeAllocation(
+                    profile,
+                    "allocation-1",
+                    RefereeAllocationDecision.Accept,
+                ),
+            )
+            assertEquals(
+                Triple("profile-token-child", "allocation-1", "accepted"),
+                remote.updatedRefereeAllocation,
+            )
+
+            repository.updateRefereeAllocation(
+                profile,
+                "allocation-2",
+                RefereeAllocationDecision.Decline,
+            )
+            assertEquals(
+                Triple("profile-token-child", "allocation-2", "request_contact"),
+                remote.updatedRefereeAllocation,
+            )
         }
     }
 

@@ -8,6 +8,7 @@ import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.common.data.repository.SessionDataSource
 import com.github.apkelly.drool.common.data.repository.SportsDataSource
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.AuthCredentials
 import com.github.apkelly.drool.common.domain.model.AuthenticatedSession
 import com.github.apkelly.drool.common.domain.model.CachedData
@@ -21,6 +22,7 @@ import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.common.domain.model.ProfileClub
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.Team
@@ -44,9 +46,11 @@ import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
 import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
+import com.github.apkelly.drool.profile.domain.usecase.ObserveAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.ObserveThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.RequestLinkedUserUseCase
+import com.github.apkelly.drool.profile.domain.usecase.SetAssignmentPollingIntervalUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUseCase
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
@@ -55,6 +59,7 @@ import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
+import com.github.apkelly.drool.schedule.domain.usecase.UpdateRefereeAllocationUseCase
 import com.github.apkelly.drool.team.data.TeamRepositoryImpl
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -124,6 +129,18 @@ class UseCasesTest {
         assertEquals(false, ObserveObservabilityEnabledUseCase(repository)().first())
         SetObservabilityEnabledUseCase(repository)(true)
         assertEquals(true, repository.observabilityEnabled.value)
+
+        assertEquals(
+            AssignmentPollingInterval.Hourly,
+            ObserveAssignmentPollingIntervalUseCase(repository)().first(),
+        )
+        SetAssignmentPollingIntervalUseCase(repository)(
+            AssignmentPollingInterval.EverySixHours,
+        )
+        assertEquals(
+            AssignmentPollingInterval.EverySixHours,
+            repository.assignmentPollingInterval.value,
+        )
     }
 
     @Test
@@ -170,6 +187,14 @@ class UseCasesTest {
             RefreshLinkedProfilesUseCase(schedule)(profiles),
         )
         assertEquals(true, dataSource.lastForce)
+        assertEquals(
+            RefreshResult.Updated,
+            UpdateRefereeAllocationUseCase(schedule)(
+                profiles.single(),
+                "allocation-1",
+                RefereeAllocationDecision.Accept,
+            ),
+        )
         assertEquals(RefreshResult.Updated, RefreshTeamsUseCase(discover)(clubId = "club"))
         assertEquals(true, dataSource.lastForce)
         assertEquals("club", dataSource.lastRefreshClubId)
@@ -230,6 +255,7 @@ class UseCasesTest {
             refreshTeamsUseCase = RefreshTeamsUseCase(discover),
             refreshFixturesUseCase = RefreshFixturesUseCase(schedule),
             refreshLinkedProfiles = RefreshLinkedProfilesUseCase(schedule),
+            updateRefereeAllocationUseCase = UpdateRefereeAllocationUseCase(schedule),
             setTeamFollowing = SetTeamFollowingUseCase(discover),
             loadTeamHub = LoadTeamHubUseCase(team),
             loadMatchDetails = LoadMatchDetailsUseCase(match),
@@ -284,7 +310,7 @@ private class FakeMatchWeatherDataSource : MatchWeatherDataSource {
     }
 }
 
-private class FakeSessionDataSource : SessionDataSource {
+internal class FakeSessionDataSource : SessionDataSource {
     val profile = MutableStateFlow<Profile?>(null)
     var restoreResult: AuthenticatedSession? = null
     var signInResult = AuthenticatedSession("token", null)
@@ -346,6 +372,7 @@ private class FakeSessionDataSource : SessionDataSource {
 private class FakePreferencesRepository : PreferencesRepository {
     val theme = MutableStateFlow(ThemeMode.System)
     val observabilityEnabled = MutableStateFlow(false)
+    val assignmentPollingInterval = MutableStateFlow(AssignmentPollingInterval.Hourly)
     override fun observeThemeMode(): Flow<ThemeMode> = theme
     override suspend fun setThemeMode(
         mode: ThemeMode,
@@ -358,9 +385,15 @@ private class FakePreferencesRepository : PreferencesRepository {
     ) {
         observabilityEnabled.value = enabled
     }
+    override fun observeAssignmentPollingInterval(): Flow<AssignmentPollingInterval> = assignmentPollingInterval
+    override suspend fun setAssignmentPollingInterval(
+        interval: AssignmentPollingInterval,
+    ) {
+        assignmentPollingInterval.value = interval
+    }
 }
 
-private class FakeSportsDataSource : SportsDataSource {
+internal class FakeSportsDataSource : SportsDataSource {
     val clubs = MutableStateFlow(CachedData<List<Club>>(emptyList(), null, true))
     val teams = MutableStateFlow(CachedData<List<Team>>(emptyList(), null, true))
     val fixtures = MutableStateFlow(CachedData<List<Fixture>>(emptyList(), null, true))
@@ -377,6 +410,7 @@ private class FakeSportsDataSource : SportsDataSource {
     var lastTeamHub: Pair<String, String>? = null
     var lastTeamHubForce: Boolean? = null
     var lastMatchDetails: Pair<String, String>? = null
+    var linkedProfileRefreshResults: Map<String, RefreshResult>? = null
     var teamHub = TeamHub("team", emptyList(), emptyList(), null, emptyList())
     var teamHubCalls = 0
     var matchDetailsCalls = 0
@@ -453,8 +487,15 @@ private class FakeSportsDataSource : SportsDataSource {
     ): Map<String, RefreshResult> {
         lastLinkedProfiles = profiles
         lastForce = force
-        return profiles.associate { it.id to RefreshResult.Updated }
+        return linkedProfileRefreshResults
+            ?: profiles.associate { it.id to RefreshResult.Updated }
     }
+
+    override suspend fun updateRefereeAllocation(
+        profile: LinkedProfile,
+        allocationId: String,
+        decision: RefereeAllocationDecision,
+    ) = RefreshResult.Updated
 
     override suspend fun setFollowing(
         teamId: String,

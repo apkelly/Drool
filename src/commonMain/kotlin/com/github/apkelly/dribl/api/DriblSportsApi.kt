@@ -29,11 +29,11 @@ import com.github.apkelly.dribl.dto.RefereeAvailabilityResourceDto
 import com.github.apkelly.dribl.dto.RefereeAvailabilityResponse
 import com.github.apkelly.dribl.dto.ResourceList
 import com.github.apkelly.dribl.dto.ScheduleAllocationResourceDto
-import com.github.apkelly.dribl.dto.ScheduleResponse
 import com.github.apkelly.dribl.dto.ShortcutResponse
 import com.github.apkelly.dribl.dto.TeamDto
 import com.github.apkelly.dribl.dto.TeamListResponse
 import com.github.apkelly.dribl.dto.TokenVerificationRequest
+import com.github.apkelly.dribl.dto.UpdateRefereeAllocationRequest
 import com.github.apkelly.dribl.dto.UserResponse
 import com.github.apkelly.dribl.model.Account
 import com.github.apkelly.dribl.model.AvailabilityPeriod
@@ -156,14 +156,34 @@ class DriblSportsApi(
         bearerToken: String,
         userId: String,
     ): List<Fixture> {
-        val response = getBody<ScheduleResponse>("/universal/schedule", bearerToken) {
+        val response = getBody<ResourceList<ScheduleAllocationResourceDto>>(
+            "/universal/allocations/",
+            bearerToken,
+        ) {
             parameter("start_date", upcomingScheduleStart(currentEpochMillis()))
-            parameter("direction", "asc")
+            parameter("end_date", refereeScheduleEnd(currentEpochMillis()))
             parameter("user_id", userId)
-            parameter("skip_first", false)
-            parameter("require_payrun", false)
         }
-        return response.allocations.mapNotNull(ScheduleAllocationResourceDto::toDomain)
+        val fixtures = response.items.mapNotNull(ScheduleAllocationResourceDto::toDomain)
+        if (response.items.isNotEmpty() && fixtures.isEmpty()) {
+            throw DriblResponseException("Allocation response contained no valid fixtures")
+        }
+        return fixtures
+    }
+
+    override suspend fun updateRefereeAllocation(
+        bearerToken: String,
+        allocationId: String,
+        status: String,
+    ) {
+        val url = url("/universal/allocations/$allocationId")
+        client.patch(url) {
+            accept(ContentType.Application.Json)
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.UserAgent, ORIGINAL_DRIBL_USER_AGENT)
+            bearerAuth(bearerToken)
+            setBody(UpdateRefereeAllocationRequest(status))
+        }.requireSuccess(url)
     }
 
     override suspend fun fetchActiveRefereeClubs(
@@ -911,6 +931,8 @@ private fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
         awayTeamLogoUrl = attributes.awayClubImage,
         role = FixtureRole.Referee,
         refereeRole = attributes.refereeRole?.takeIf(String::isNotBlank),
+        refereeAllocationId = id.textValue,
+        refereeStatus = attributes.refereeStatus?.takeIf(String::isNotBlank),
         leagueName = attributes.leagueName,
     )
 }
@@ -936,6 +958,12 @@ private fun upcomingScheduleStart(
     currentEpochMillis: Long,
 ): String = Instant.fromEpochMilliseconds(currentEpochMillis - SCHEDULE_LOOKBACK_MILLIS).toString()
 
+private fun refereeScheduleEnd(
+    currentEpochMillis: Long,
+): String = Instant.fromEpochMilliseconds(
+    currentEpochMillis + REFEREE_SCHEDULE_LOOKAHEAD_MILLIS,
+).toString()
+
 private fun Fixture.involves(
     teamId: String,
 ): Boolean = homeTeamId == teamId || awayTeamId == teamId || userTeamId == teamId
@@ -955,6 +983,7 @@ private val JsonPrimitive?.textValue: String?
     get() = this?.contentOrNull?.takeUnless { it.isBlank() || it == "null" }
 
 private const val SCHEDULE_LOOKBACK_MILLIS = 24L * 60L * 60L * 1_000L
+private const val REFEREE_SCHEDULE_LOOKAHEAD_MILLIS = 90L * 24L * 60L * 60L * 1_000L
 private const val MAX_ERROR_BODY_LENGTH = 2_000
 
 private val JsonPrimitive?.epochMillis: Long?

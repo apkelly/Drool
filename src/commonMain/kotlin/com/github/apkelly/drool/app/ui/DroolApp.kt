@@ -36,6 +36,7 @@ import com.github.apkelly.drool.auth.ui.RegisterScreen
 import com.github.apkelly.drool.auth.ui.SignInScreen
 import com.github.apkelly.drool.auth.ui.WelcomeScreen
 import com.github.apkelly.drool.auth.ui.model.SessionUiState
+import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.observability.AppScreen
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.nav_discover
@@ -55,6 +56,7 @@ import com.github.apkelly.drool.profile.ui.LinkMemberScreen
 import com.github.apkelly.drool.profile.ui.PersonalInformationScreen
 import com.github.apkelly.drool.profile.ui.ProfileScreen
 import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
+import com.github.apkelly.drool.schedule.background.rememberAssignmentNotificationPermissionRequester
 import com.github.apkelly.drool.schedule.ui.AvailabilityScreen
 import com.github.apkelly.drool.schedule.ui.ScheduleScreen
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
@@ -196,6 +198,8 @@ private fun MainNavigation(
     val fixtures by sportsViewModel.fixtures.collectAsState()
     val linkedProfiles by sportsViewModel.linkedProfiles.collectAsState()
     val selectedProfileId by sportsViewModel.selectedProfileId.collectAsState()
+    val allocationUpdatingId by sportsViewModel.allocationUpdatingId.collectAsState()
+    val allocationFailure by sportsViewModel.allocationFailure.collectAsState()
     val profileTeams by sportsViewModel.profileTeams.collectAsState()
     val linkedProfileRefreshResults by
         sportsViewModel.linkedProfileRefreshResults.collectAsState()
@@ -204,11 +208,20 @@ private fun MainNavigation(
     val relationships by sportsViewModel.relationships.collectAsState()
     val themeMode by appViewModel.themeMode.collectAsState()
     val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
+    val assignmentPollingInterval by
+        appViewModel.assignmentPollingInterval.collectAsState()
     val teamHubState by sportsViewModel.teamHubState.collectAsState()
     val matchDetailsState by sportsViewModel.matchDetailsState.collectAsState()
     val availabilityState by availabilityViewModel.state.collectAsState()
     val availabilityProfileId by availabilityViewModel.activeProfileId.collectAsState()
     val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
+    val requestAssignmentNotificationPermission =
+        rememberAssignmentNotificationPermissionRequester()
+    LaunchedEffect(assignmentPollingInterval) {
+        if (assignmentPollingInterval != AssignmentPollingInterval.Off) {
+            requestAssignmentNotificationPermission()
+        }
+    }
 
     val homeStack = rememberNavBackStack(navigationStateConfiguration, AppRoute.Home as NavKey)
     val scheduleStack = rememberNavBackStack(
@@ -303,6 +316,8 @@ private fun MainNavigation(
                             selectedProfileId = selectedProfileId,
                             canManageRefereeAvailability =
                             selectedProfileId in refereeProfileIds,
+                            allocationUpdatingId = allocationUpdatingId,
+                            allocationFailure = allocationFailure,
                         ),
                         onProfileSelect = sportsViewModel::selectLinkedProfile,
                         onRefresh = sportsViewModel::refreshFixtures,
@@ -316,6 +331,7 @@ private fun MainNavigation(
                                 )
                             }
                         },
+                        onAllocationDecision = sportsViewModel::updateRefereeAllocation,
                         onOpenAvailability = {
                             selectedProfileId?.let { profileId ->
                                 currentStack.add(AppRoute.Availability(profileId))
@@ -418,10 +434,15 @@ private fun MainNavigation(
                             profile = profile,
                             themeMode = themeMode,
                             observabilityEnabled = observabilityEnabled,
+                            assignmentPollingInterval = assignmentPollingInterval,
                             unlinkMemberState = unlinkMemberState,
                         ),
                         onThemeChange = appViewModel::updateTheme,
                         onObservabilityChange = appViewModel::updateObservability,
+                        onAssignmentPollingIntervalChange =
+                        appViewModel::updateAssignmentPollingInterval,
+                        onRequestAssignmentNotificationPermission =
+                        requestAssignmentNotificationPermission,
                         onAddMember = {
                             currentStack.add(AppRoute.LinkMember)
                         },

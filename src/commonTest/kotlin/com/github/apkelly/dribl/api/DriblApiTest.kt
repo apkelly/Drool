@@ -834,17 +834,19 @@ class DriblApiTest {
     }
 
     @Test
-    fun refereeAllocationScheduleUsesRecoveredContractAndSubjectUserId() = runTest {
+    fun refereeAllocationsUseUserScopedCollectionAndBoundedWindow() = runTest {
         var parameters: io.ktor.http.Parameters? = null
+        var path: String? = null
         val client = HttpClient(MockEngine) {
             install(ContentNegotiation) { json(driblJson) }
             engine {
                 addHandler { request ->
+                    path = request.url.encodedPath
                     parameters = request.url.parameters
                     respond(
                         content = """
                             {
-                              "allocations": [{
+                              "data": [{
                                 "type": "allocations",
                                 "id": 123,
                                 "attributes": {
@@ -871,21 +873,58 @@ class DriblApiTest {
             }
         }
 
-        val fixture = DriblSportsApi(client, "https://example.test/api")
-            .fetchRefereeFixtures("token", "1001")
+        val fixture = DriblSportsApi(
+            client = client,
+            baseUrl = "https://example.test/api",
+            currentEpochMillis = { 1_760_788_800_000L },
+        )
+            .fetchRefereeFixtures("token", "user-42")
             .single()
 
+        assertEquals("/api/universal/allocations/", path)
         assertEquals("456", fixture.id)
         assertEquals("Home FC", fixture.homeTeamName)
         assertEquals("Away FC", fixture.awayTeamName)
         assertEquals("Main Oval - Field 1", fixture.venueName)
         assertEquals(FixtureRole.Referee, fixture.role)
         assertEquals("AR1", fixture.refereeRole)
-        assertEquals("1001", parameters?.get("user_id"))
-        assertEquals("asc", parameters?.get("direction"))
-        assertEquals("false", parameters?.get("skip_first"))
-        assertEquals("false", parameters?.get("require_payrun"))
-        assertEquals(true, parameters?.get("start_date")?.isNotBlank())
+        assertEquals("123", fixture.refereeAllocationId)
+        assertEquals("accepted", fixture.refereeStatus)
+        assertEquals("user-42", parameters?.get("user_id"))
+        assertEquals("2025-10-17T12:00:00Z", parameters?.get("start_date"))
+        assertEquals("2026-01-16T12:00:00Z", parameters?.get("end_date"))
+    }
+
+    @Test
+    fun refereeAllocationStatusUsesRecoveredPatchContract() = runTest {
+        var body: String? = null
+        val client = HttpClient(MockEngine) {
+            install(ContentNegotiation) { json(driblJson) }
+            engine {
+                addHandler { request ->
+                    assertEquals(HttpMethod.Patch, request.method)
+                    assertEquals(
+                        "/api/universal/allocations/allocation-123",
+                        request.url.encodedPath,
+                    )
+                    body = (request.body as OutgoingContent.ByteArrayContent)
+                        .bytes()
+                        .decodeToString()
+                    respond(
+                        content = """{"data":{"id":"allocation-123"}}""",
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            }
+        }
+
+        DriblSportsApi(client, "https://example.test/api")
+            .updateRefereeAllocation("token", "allocation-123", "accepted")
+
+        assertEquals(
+            driblJson.parseToJsonElement("""{"status":"accepted"}"""),
+            driblJson.parseToJsonElement(checkNotNull(body)),
+        )
     }
 
     @Test
