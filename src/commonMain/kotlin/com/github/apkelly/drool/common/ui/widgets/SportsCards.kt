@@ -1,10 +1,10 @@
 package com.github.apkelly.drool.common.ui.widgets
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Club
@@ -47,8 +49,10 @@ import com.github.apkelly.drool.common.resources.fixture_role_referee
 import com.github.apkelly.drool.common.resources.fixture_role_referee_named
 import com.github.apkelly.drool.common.resources.fixture_venue
 import com.github.apkelly.drool.common.resources.fixture_versus
+import com.github.apkelly.drool.common.resources.fixture_versus_separator
 import com.github.apkelly.drool.common.resources.linked_profile_item
 import com.github.apkelly.drool.common.resources.linked_profiles_all
+import com.github.apkelly.drool.common.resources.match_score
 import com.github.apkelly.drool.common.resources.team_age_group
 import com.github.apkelly.drool.common.resources.team_relationship_coach
 import com.github.apkelly.drool.common.resources.team_relationship_following
@@ -56,6 +60,7 @@ import com.github.apkelly.drool.common.resources.team_relationship_player
 import com.github.apkelly.drool.common.resources.team_your_team
 import com.github.apkelly.drool.common.ui.format.displayTeamNames
 import com.github.apkelly.drool.common.ui.format.formatFixtureDateTime
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -66,12 +71,13 @@ fun ClubCard(
 ) {
     val brandColor = club.primaryColor.toColorOrNull() ?: MaterialTheme.colorScheme.primaryContainer
     val contentColor = if (brandColor.luminance() > 0.45f) Color.Black else Color.White
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
+    SportsCard(
+        modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = brandColor,
             contentColor = contentColor,
         ),
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -108,9 +114,9 @@ fun TeamCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth()
-            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
+    SportsCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -179,13 +185,12 @@ fun FixtureCard(
     fixture: Fixture,
     modifier: Modifier = Modifier,
     profileName: String? = null,
+    stackedTeams: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     val teamNames = fixture.displayTeamNames()
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
+    SportsCard(
+        modifier = modifier.fillMaxWidth(),
         colors = if (fixture.role == FixtureRole.Referee) {
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -194,6 +199,7 @@ fun FixtureCard(
         } else {
             CardDefaults.cardColors()
         },
+        onClick = onClick,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -248,15 +254,79 @@ fun FixtureCard(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
-            Text(
-                text = stringResource(
-                    Res.string.fixture_versus,
-                    teamNames.home,
-                    teamNames.away,
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RemoteImage(
+                    url = fixture.homeTeamLogoUrl,
+                    contentDescription = stringResource(
+                        Res.string.content_team_logo,
+                        fixture.homeTeamName,
+                    ),
+                    fallbackIcon = MaterialSymbol.Groups,
+                    modifier = Modifier.size(44.dp),
+                )
+                if (fixture.homeScore != null && fixture.awayScore != null) {
+                    Text(
+                        text = stringResource(
+                            Res.string.match_score,
+                            fixture.homeScore,
+                            fixture.awayScore,
+                        ),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
+                } else if (stackedTeams) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = teamNames.home,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = stringResource(Res.string.fixture_versus_separator),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = teamNames.away,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                } else {
+                    Text(
+                        text = stringResource(
+                            Res.string.fixture_versus,
+                            teamNames.home,
+                            teamNames.away,
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                RemoteImage(
+                    url = fixture.awayTeamLogoUrl,
+                    contentDescription = stringResource(
+                        Res.string.content_team_logo,
+                        fixture.awayTeamName,
+                    ),
+                    fallbackIcon = MaterialSymbol.Groups,
+                    modifier = Modifier.size(44.dp),
+                )
+            }
             fixture.competitionName?.let {
                 Text(stringResource(Res.string.fixture_competition, it))
             }
@@ -309,46 +379,104 @@ fun ProfileTeamCard(
     profileTeam: ProfileTeam,
     profileName: String,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)),
+    SportsCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        if (compact) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                RemoteImage(
-                    url = profileTeam.team.logoUrl,
-                    contentDescription = stringResource(
-                        Res.string.content_team_logo,
-                        profileTeam.team.name,
-                    ),
-                    fallbackIcon = MaterialSymbol.Groups,
-                    modifier = Modifier.size(44.dp),
+                ProfileTeamIdentity(
+                    profileTeam = profileTeam,
+                    profileName = profileName,
+                    modifier = Modifier.weight(1f),
+                    relationshipLabel = profileTeam.relationship.labelResource(),
                 )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = profileTeam.team.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+            }
+        } else {
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                ProfileTeamIdentity(
+                    profileTeam = profileTeam,
+                    profileName = profileName,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                profileTeam.relationship.labelResource()?.let { label ->
+                    AssistChip(
+                        onClick = {},
+                        label = { Text(stringResource(label)) },
+                        modifier = Modifier.align(Alignment.BottomEnd),
                     )
-                    Text(profileName, style = MaterialTheme.typography.bodySmall)
                 }
             }
-            profileTeam.relationship.labelResource()?.let { label ->
+        }
+    }
+}
+
+@Composable
+private fun ProfileTeamIdentity(
+    profileTeam: ProfileTeam,
+    profileName: String,
+    modifier: Modifier = Modifier,
+    relationshipLabel: StringResource? = null,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        RemoteImage(
+            url = profileTeam.team.logoUrl,
+            contentDescription = stringResource(
+                Res.string.content_team_logo,
+                profileTeam.team.name,
+            ),
+            fallbackIcon = MaterialSymbol.Groups,
+            modifier = Modifier.size(44.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = profileTeam.team.name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(profileName, style = MaterialTheme.typography.bodySmall)
+            relationshipLabel?.let { label ->
                 AssistChip(
                     onClick = {},
                     label = { Text(stringResource(label)) },
-                    modifier = Modifier.align(Alignment.BottomEnd),
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SportsCard(
+    modifier: Modifier = Modifier,
+    colors: CardColors = CardDefaults.cardColors(),
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    if (onClick == null) {
+        Card(
+            modifier = modifier,
+            colors = colors,
+            content = content,
+        )
+    } else {
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            colors = colors,
+            content = content,
+        )
     }
 }
 

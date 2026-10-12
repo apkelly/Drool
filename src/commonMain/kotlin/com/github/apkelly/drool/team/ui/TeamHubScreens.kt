@@ -1,7 +1,6 @@
 package com.github.apkelly.drool.team.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -240,7 +239,8 @@ private fun FixtureList(
         items(fixtures, key = { it.id }) { fixture ->
             val teamNames = fixture.displayTeamNames()
             Card(
-                modifier = Modifier.fillMaxWidth().clickable { onSelect(fixture) },
+                onClick = { onSelect(fixture) },
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
                     Modifier.fillMaxWidth().padding(16.dp),

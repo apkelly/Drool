@@ -1,8 +1,8 @@
 package com.github.apkelly.drool.profile.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.ThemeMode
+import com.github.apkelly.drool.common.observability.platformSupportsObservability
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_cancel
 import com.github.apkelly.drool.common.resources.action_sign_out
@@ -200,28 +201,30 @@ fun ProfileScreen(
                     }
                 }
             }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+            if (platformSupportsObservability) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        Text(
-                            stringResource(Res.string.profile_observability),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            stringResource(Res.string.profile_observability_body),
-                            style = MaterialTheme.typography.bodySmall,
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                stringResource(Res.string.profile_observability),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                stringResource(Res.string.profile_observability_body),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Switch(
+                            checked = observabilityEnabled,
+                            onCheckedChange = onObservabilityChange,
                         )
                     }
-                    Switch(
-                        checked = observabilityEnabled,
-                        onCheckedChange = onObservabilityChange,
-                    )
                 }
             }
             item {
@@ -324,11 +327,7 @@ private fun ProfileAssociationCard(
     onClick: (() -> Unit)?,
     action: (@Composable () -> Unit)? = null,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().let { modifier ->
-            if (onClick == null) modifier else modifier.clickable(onClick = onClick)
-        },
-    ) {
+    val content: @Composable ColumnScope.() -> Unit = {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -346,6 +345,18 @@ private fun ProfileAssociationCard(
             }
             action?.invoke()
         }
+    }
+    if (onClick == null) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            content = content,
+        )
+    } else {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            content = content,
+        )
     }
 }
 

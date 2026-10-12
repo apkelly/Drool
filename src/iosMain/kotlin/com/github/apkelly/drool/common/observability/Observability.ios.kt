@@ -57,3 +57,5 @@ private object IosObservability : Observability {
 }
 
 actual fun createPlatformObservability(): Observability = IosObservability
+
+actual val platformSupportsObservability: Boolean = true

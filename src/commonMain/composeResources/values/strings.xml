@@ -121,6 +121,7 @@
     <string name="ladder_goal_difference">GD</string>
     <string name="ladder_points">Pts</string>
     <string name="fixture_versus">%1$s vs %2$s</string>
+    <string name="fixture_versus_separator">vs</string>
     <string name="fixture_venue">At %1$s</string>
     <string name="fixture_competition">%1$s</string>
     <string name="fixture_role_player">Player</string>

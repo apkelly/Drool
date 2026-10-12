@@ -69,11 +69,19 @@ class TeamNameMapperTest {
             userTeamId = null,
             status = "Scheduled",
             leagueName = "Under 13 Mixed White Mixed",
+            homeScore = 2,
+            awayScore = 1,
+            homeTeamLogoUrl = "home.png",
+            awayTeamLogoUrl = "away.png",
         ).toDomain()
 
         assertEquals("Sheffield Wednesday", team.name)
         assertEquals("Sheffield Wednesday", fixture.homeTeamName)
         assertEquals("Cobh RAMBLERS", fixture.awayTeamName)
         assertEquals("Under 13 Mixed White Mixed", fixture.leagueName)
+        assertEquals(2, fixture.homeScore)
+        assertEquals(1, fixture.awayScore)
+        assertEquals("home.png", fixture.homeTeamLogoUrl)
+        assertEquals("away.png", fixture.awayTeamLogoUrl)
     }
 }

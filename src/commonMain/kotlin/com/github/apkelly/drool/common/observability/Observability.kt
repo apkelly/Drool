@@ -139,3 +139,5 @@ internal fun AnalyticsEvent.toPayload(): AnalyticsPayload = when (this) {
 }
 
 expect fun createPlatformObservability(): Observability
+
+expect val platformSupportsObservability: Boolean

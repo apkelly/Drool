@@ -48,3 +48,5 @@ private class FirebaseObservability(
 }
 
 actual fun createPlatformObservability(): Observability = FirebaseObservability()
+
+actual val platformSupportsObservability: Boolean = true

@@ -39,7 +39,7 @@ import kotlinx.coroutines.Dispatchers
         TeamHubCacheEntity::class,
         MatchWeatherCacheEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 @ConstructedBy(DroolDatabaseConstructor::class)

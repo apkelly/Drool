@@ -95,6 +95,7 @@ fun HomeScreen(
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val availableWidth = maxWidth - HOME_GRID_PADDING * 2
+            val compactLayout = maxWidth < TABLET_BREAKPOINT
             val columnCount = (
                 (availableWidth + HOME_GRID_SPACING) /
                     (HOME_TEAM_CARD_MIN_WIDTH + HOME_GRID_SPACING)
@@ -221,6 +222,7 @@ fun HomeScreen(
                                 next.profileId,
                                 selectedProfileId,
                             ),
+                            stackedTeams = true,
                             onClick = { onFixtureSelect(next) },
                         )
                     }
@@ -242,7 +244,12 @@ fun HomeScreen(
                                 .firstOrNull { it.id == profileTeam.profileId }
                                 ?.displayName
                                 ?: profileTeam.profileId,
-                            modifier = Modifier.aspectRatio(1f),
+                            modifier = if (compactLayout) {
+                                Modifier.fillMaxWidth()
+                            } else {
+                                Modifier.aspectRatio(1f)
+                            },
+                            compact = compactLayout,
                             onClick = { onTeamSelect(profileTeam) },
                         )
                     }
@@ -253,7 +260,8 @@ fun HomeScreen(
 }
 
 private val HOME_TEAM_CARD_MIN_WIDTH = 240.dp
-private const val HOME_TEAM_MIN_COLUMNS = 2
+private const val HOME_TEAM_MIN_COLUMNS = 1
+private val TABLET_BREAKPOINT = 600.dp
 private val HOME_GRID_PADDING = 20.dp
 private val HOME_GRID_SPACING = 14.dp
 

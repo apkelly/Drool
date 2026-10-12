@@ -1,6 +1,5 @@
 package com.github.apkelly.drool.profile.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -276,12 +275,9 @@ fun LinkMemberScreen(
                             items(state.candidates, key = { it.id }) { candidate ->
                                 val requesting = state.requestingCandidateId == candidate.id
                                 Card(
-                                    modifier = Modifier.fillMaxWidth()
-                                        .clickable(
-                                            enabled = state.requestingCandidateId == null,
-                                        ) {
-                                            selected = candidate
-                                        },
+                                    onClick = { selected = candidate },
+                                    enabled = state.requestingCandidateId == null,
+                                    modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),

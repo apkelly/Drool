@@ -73,6 +73,10 @@ fun Fixture.toEntity(
     role = role.name,
     refereeRole = refereeRole,
     leagueName = leagueName,
+    homeScore = homeScore,
+    awayScore = awayScore,
+    homeTeamLogoUrl = homeTeamLogoUrl,
+    awayTeamLogoUrl = awayTeamLogoUrl,
 )
 
 fun FixtureEntity.toDomain() = Fixture(
@@ -104,10 +108,10 @@ fun FixtureEntity.toDomain() = Fixture(
         "cancelled", "canceled" -> FixtureStatus.Cancelled
         else -> FixtureStatus.Unknown
     },
-    homeScore = null,
-    awayScore = null,
-    homeTeamLogoUrl = null,
-    awayTeamLogoUrl = null,
+    homeScore = homeScore,
+    awayScore = awayScore,
+    homeTeamLogoUrl = homeTeamLogoUrl,
+    awayTeamLogoUrl = awayTeamLogoUrl,
     role = runCatching { FixtureRole.valueOf(role) }.getOrDefault(FixtureRole.Player),
     refereeRole = refereeRole,
     leagueName = leagueName,

@@ -106,7 +106,7 @@ uses only fixed event and parameter values for screen categories, sign-in
 outcomes, refresh outcomes, theme changes, and sign-out. Names, email
 addresses, account/profile/team/match IDs, tokens, free-form text, and API
 request or response data are never sent. Desktop uses a no-op observability
-adapter.
+adapter and omits the diagnostics control from Profile.
 
 Android uses the Google Services and Crashlytics Gradle plugins. The iOS target
 links `FirebaseAnalytics` and `FirebaseCrashlytics` through Swift Package
