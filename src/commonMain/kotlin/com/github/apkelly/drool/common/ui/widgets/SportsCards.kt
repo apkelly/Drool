@@ -56,6 +56,7 @@ import com.github.apkelly.drool.common.resources.match_score
 import com.github.apkelly.drool.common.resources.team_age_group
 import com.github.apkelly.drool.common.resources.team_relationship_coach
 import com.github.apkelly.drool.common.resources.team_relationship_following
+import com.github.apkelly.drool.common.resources.team_relationship_manager
 import com.github.apkelly.drool.common.resources.team_relationship_player
 import com.github.apkelly.drool.common.resources.team_your_team
 import com.github.apkelly.drool.common.ui.format.displayTeamNames
@@ -139,7 +140,8 @@ fun TeamCard(
                 }
                 if (
                     relationship == TeamRelationship.Player ||
-                    relationship == TeamRelationship.Coaching
+                    relationship == TeamRelationship.Coaching ||
+                    relationship == TeamRelationship.Managing
                 ) {
                     AssistChip(
                         onClick = {},
@@ -148,6 +150,8 @@ fun TeamCard(
                                 stringResource(
                                     if (relationship == TeamRelationship.Coaching) {
                                         Res.string.team_relationship_coach
+                                    } else if (relationship == TeamRelationship.Managing) {
+                                        Res.string.team_relationship_manager
                                     } else {
                                         Res.string.team_your_team
                                     },
@@ -487,6 +491,7 @@ private fun TeamRelationship.labelResource() = when (this) {
     TeamRelationship.Following -> Res.string.team_relationship_following
     TeamRelationship.Player -> Res.string.team_relationship_player
     TeamRelationship.Coaching -> Res.string.team_relationship_coach
+    TeamRelationship.Managing -> Res.string.team_relationship_manager
 }
 
 /**

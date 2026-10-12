@@ -46,7 +46,9 @@ import com.github.apkelly.drool.profile.ui.LinkMemberScreen
 import com.github.apkelly.drool.profile.ui.PersonalInformationScreen
 import com.github.apkelly.drool.profile.ui.ProfileScreen
 import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
+import com.github.apkelly.drool.profile.ui.playerCardRole
 import com.github.apkelly.drool.schedule.background.rememberAssignmentNotificationPermissionRequester
+import com.github.apkelly.drool.schedule.domain.model.RefereeAvailabilityDraft
 import com.github.apkelly.drool.schedule.ui.AvailabilityScreen
 import com.github.apkelly.drool.schedule.ui.ScheduleScreen
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiModel
@@ -91,6 +93,7 @@ fun MainNavigation(
     val allocationUpdatingId by scheduleViewModel.allocationUpdatingId.collectAsState()
     val allocationFailure by scheduleViewModel.allocationFailure.collectAsState()
     val profileTeams by scheduleViewModel.profileTeams.collectAsState()
+    val allProfileTeams by scheduleViewModel.allProfileTeams.collectAsState()
     val linkedProfileRefreshResults by
         scheduleViewModel.linkedProfileRefreshResults.collectAsState()
     val linkMemberState by appViewModel.linkMemberState.collectAsState()
@@ -347,17 +350,66 @@ fun MainNavigation(
                         ?.let { user ->
                             PersonalInformationScreen(
                                 user = user,
+                                cardRole = playerCardRole(
+                                    allProfileTeams
+                                        .filter { it.profileId == route.userId }
+                                        .map { it.relationship },
+                                ),
                                 onBack = {
                                     if (currentStack.size > 1) {
                                         currentStack.removeAt(currentStack.lastIndex)
                                     }
                                 },
-                                onOpenAvailability = if (
+                                availabilityContent = if (
                                     route.userId in refereeProfileIds
                                 ) {
                                     {
-                                        currentStack.add(
-                                            AppRoute.Availability(route.userId),
+                                        AvailabilityDestination(
+                                            model = AvailabilityUiModel(
+                                                profileId = route.userId,
+                                                profileName = user.displayName,
+                                                state = if (
+                                                    availabilityProfileId == route.userId
+                                                ) {
+                                                    availabilityState
+                                                } else {
+                                                    com.github.apkelly.drool.schedule.ui.model
+                                                        .AvailabilityUiState.Idle
+                                                },
+                                            ),
+                                            onLoad = {
+                                                availabilityViewModel.load(route.userId)
+                                            },
+                                            onRefresh = {
+                                                availabilityViewModel.load(
+                                                    route.userId,
+                                                    force = true,
+                                                )
+                                            },
+                                            onCreate = { draft ->
+                                                availabilityViewModel.create(
+                                                    route.userId,
+                                                    draft,
+                                                )
+                                            },
+                                            shouldRequestNotificationPermission =
+                                            shouldRequestNotificationPermission,
+                                            onNotificationPermissionRequestConsume = {
+                                                availabilityViewModel
+                                                    .consumeNotificationPermissionRequest()
+                                            },
+                                            onRequestNotificationPermission =
+                                            requestAssignmentNotificationPermission,
+                                            onDelete = { availabilityId ->
+                                                availabilityViewModel.delete(
+                                                    route.userId,
+                                                    availabilityId,
+                                                )
+                                            },
+                                            onClearFailure =
+                                            availabilityViewModel::clearFailure,
+                                            onBack = {},
+                                            showTopBar = false,
                                         )
                                     }
                                 } else {
@@ -367,7 +419,7 @@ fun MainNavigation(
                         }
                 }
                 entry<AppRoute.Availability> { route ->
-                    AvailabilityScreen(
+                    AvailabilityDestination(
                         model = AvailabilityUiModel(
                             profileId = route.profileId,
                             profileName = linkedProfiles
@@ -380,11 +432,6 @@ fun MainNavigation(
                                 com.github.apkelly.drool.schedule.ui.model.AvailabilityUiState.Idle
                             },
                         ),
-                        onBack = {
-                            if (currentStack.size > 1) {
-                                currentStack.removeAt(currentStack.lastIndex)
-                            }
-                        },
                         onLoad = { availabilityViewModel.load(route.profileId) },
                         onRefresh = {
                             availabilityViewModel.load(route.profileId, force = true)
@@ -402,6 +449,11 @@ fun MainNavigation(
                             availabilityViewModel.delete(route.profileId, availabilityId)
                         },
                         onClearFailure = availabilityViewModel::clearFailure,
+                        onBack = {
+                            if (currentStack.size > 1) {
+                                currentStack.removeAt(currentStack.lastIndex)
+                            }
+                        },
                     )
                 }
                 entry<AppRoute.LinkMember> {
@@ -484,6 +536,36 @@ fun MainNavigation(
             }
         }
     }
+}
+
+@Composable
+private fun AvailabilityDestination(
+    model: AvailabilityUiModel,
+    onLoad: () -> Unit,
+    onRefresh: () -> Unit,
+    onCreate: (RefereeAvailabilityDraft) -> Unit,
+    shouldRequestNotificationPermission: Boolean,
+    onNotificationPermissionRequestConsume: () -> Unit,
+    onRequestNotificationPermission: (() -> Unit)?,
+    onDelete: (String) -> Unit,
+    onClearFailure: () -> Unit,
+    onBack: () -> Unit,
+    showTopBar: Boolean = true,
+) {
+    AvailabilityScreen(
+        model = model,
+        onBack = onBack,
+        onLoad = onLoad,
+        onRefresh = onRefresh,
+        onCreate = onCreate,
+        shouldRequestNotificationPermission = shouldRequestNotificationPermission,
+        onNotificationPermissionRequestConsume =
+        onNotificationPermissionRequestConsume,
+        onRequestNotificationPermission = onRequestNotificationPermission,
+        onDelete = onDelete,
+        onClearFailure = onClearFailure,
+        showTopBar = showTopBar,
+    )
 }
 
 private data class TopLevelItem(

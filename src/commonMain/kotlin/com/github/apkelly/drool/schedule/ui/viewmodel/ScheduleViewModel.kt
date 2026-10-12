@@ -88,17 +88,18 @@ class ScheduleViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.Eagerly, CollectionUiState())
 
-    val profileTeams: StateFlow<List<ProfileTeam>> =
-        combine(mutableLinkedProfiles, mutableSelectedProfileId) { profiles, selected ->
-            profiles to selected
-        }.flatMapLatest { (profiles, selected) ->
+    val allProfileTeams: StateFlow<List<ProfileTeam>> =
+        mutableLinkedProfiles.flatMapLatest { profiles ->
             if (profiles.isEmpty()) {
                 flowOf(emptyList())
             } else {
-                observeProfileTeams(profiles.map { it.id }.toSet()).map { teams ->
-                    teams.filter { selected == null || it.profileId == selected }
-                }
+                observeProfileTeams(profiles.map { it.id }.toSet())
             }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val profileTeams: StateFlow<List<ProfileTeam>> =
+        combine(allProfileTeams, mutableSelectedProfileId) { teams, selected ->
+            teams.filter { selected == null || it.profileId == selected }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val profileClubs: StateFlow<List<ProfileClub>> =

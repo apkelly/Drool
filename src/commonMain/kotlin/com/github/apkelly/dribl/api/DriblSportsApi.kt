@@ -528,6 +528,7 @@ class DriblSportsApi(
     }
 
     private fun List<String>.toTeamRelationship(): TeamRelationship = when {
+        any { "manager" in it } -> TeamRelationship.Managing
         any { "coach" in it } -> TeamRelationship.Coaching
         any { "player" in it } -> TeamRelationship.Player
         any { "supporter" in it } -> TeamRelationship.Following

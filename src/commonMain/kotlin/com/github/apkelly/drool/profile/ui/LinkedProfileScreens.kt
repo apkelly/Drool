@@ -1,7 +1,9 @@
 package com.github.apkelly.drool.profile.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,22 +18,24 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.EmergencyContact
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
@@ -39,8 +43,6 @@ import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_cancel
 import com.github.apkelly.drool.common.resources.action_retry
-import com.github.apkelly.drool.common.resources.availability_action
-import com.github.apkelly.drool.common.resources.content_profile_image
 import com.github.apkelly.drool.common.resources.personal_address
 import com.github.apkelly.drool.common.resources.personal_contact_call
 import com.github.apkelly.drool.common.resources.personal_contact_email
@@ -63,6 +65,9 @@ import com.github.apkelly.drool.common.resources.profile_link_guardian_yes
 import com.github.apkelly.drool.common.resources.profile_link_member
 import com.github.apkelly.drool.common.resources.profile_link_session_expired
 import com.github.apkelly.drool.common.resources.profile_link_verify
+import com.github.apkelly.drool.common.resources.profile_tab_availability
+import com.github.apkelly.drool.common.resources.profile_tab_card
+import com.github.apkelly.drool.common.resources.profile_tab_personal
 import com.github.apkelly.drool.common.ui.platform.rememberContactActionLauncher
 import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
@@ -78,64 +83,99 @@ fun PersonalInformationScreen(
     user: RelatedUser,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenAvailability: (() -> Unit)? = null,
+    availabilityContent: (@Composable () -> Unit)? = null,
+    cardRole: PlayerCardRole = PlayerCardRole.Player,
 ) {
+    var selectedTabIndex by rememberSaveable(user.subjectUserId) {
+        mutableIntStateOf(0)
+    }
+    val tabLabels = if (availabilityContent == null) {
+        listOf(
+            Res.string.profile_tab_card,
+            Res.string.profile_tab_personal,
+        )
+    } else {
+        listOf(
+            Res.string.profile_tab_card,
+            Res.string.profile_tab_personal,
+            Res.string.profile_tab_availability,
+        )
+    }
+    val selectedTab = selectedTabIndex.coerceIn(0, tabLabels.lastIndex)
+
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.personal_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        MaterialBackIcon(contentDescription = null)
+            Column {
+                TopAppBar(
+                    title = { Text(stringResource(Res.string.personal_title)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            MaterialBackIcon(contentDescription = null)
+                        }
+                    },
+                )
+                PrimaryTabRow(selectedTabIndex = selectedTab) {
+                    tabLabels.forEachIndexed { index, label ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTabIndex = index },
+                            text = { Text(stringResource(label)) },
+                        )
                     }
-                },
-            )
+                }
+            }
         },
     ) { contentPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    RemoteImage(
-                        url = user.avatarUrl,
-                        contentDescription = stringResource(
-                            Res.string.content_profile_image,
-                            user.displayName,
+        when (selectedTab) {
+            PROFILE_CARD_TAB -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .padding(
+                            start = 20.dp,
+                            top = 12.dp,
+                            end = 20.dp,
+                            bottom = 20.dp,
                         ),
-                        fallbackIcon = MaterialSymbol.Person,
-                        modifier = Modifier.size(72.dp),
-                        contentScale = ContentScale.Crop,
-                    )
-                    Text(user.displayName, style = MaterialTheme.typography.headlineSmall)
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    PlayerHeroCard(user, role = cardRole)
                 }
             }
-            onOpenAvailability?.let { openAvailability ->
-                item {
-                    OutlinedButton(onClick = openAvailability) {
-                        MaterialSymbolIcon(
-                            symbol = MaterialSymbol.CalendarMonth,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp),
-                        )
-                        Text(stringResource(Res.string.availability_action))
+
+            PERSONAL_INFORMATION_TAB -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(contentPadding),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    item { PersonalField(Res.string.personal_full_name, user.displayName) }
+                    item { PersonalField(Res.string.personal_gender, user.gender) }
+                    item { PersonalField(Res.string.personal_date_of_birth, user.dateOfBirth) }
+                    item { PersonalField(Res.string.personal_phone, user.phoneNumber) }
+                    item { PersonalField(Res.string.personal_email, user.email) }
+                    item { PersonalField(Res.string.personal_address, user.address) }
+                    item {
+                        EmergencyContactsField(user.emergencyContacts)
                     }
                 }
             }
-            item { PersonalField(Res.string.personal_full_name, user.displayName) }
-            item { PersonalField(Res.string.personal_gender, user.gender) }
-            item { PersonalField(Res.string.personal_date_of_birth, user.dateOfBirth) }
-            item { PersonalField(Res.string.personal_phone, user.phoneNumber) }
-            item { PersonalField(Res.string.personal_email, user.email) }
-            item { PersonalField(Res.string.personal_address, user.address) }
-            item {
-                EmergencyContactsField(user.emergencyContacts)
+
+            else -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(contentPadding),
+                ) {
+                    availabilityContent?.invoke()
+                }
             }
         }
     }
 }
+
+private const val PROFILE_CARD_TAB = 0
+private const val PERSONAL_INFORMATION_TAB = 1
 
 @Composable
 private fun EmergencyContactsField(

@@ -557,6 +557,15 @@ class DriblApiTest {
                                       "attributes": {"slug":"teamofficial"}
                                     }]
                                   }
+                                },
+                                {
+                                  "id": "managing",
+                                  "attributes": {
+                                    "name": "Managers",
+                                    "roles": [{
+                                      "attributes": {"slug":"teammanager"}
+                                    }]
+                                  }
                                 }
                               ]
                             }
@@ -600,6 +609,8 @@ class DriblApiTest {
         assertEquals(com.github.apkelly.dribl.model.TeamRelationship.Coaching, teams[2].relationship)
         assertEquals("associated", teams[3].team.id)
         assertEquals(com.github.apkelly.dribl.model.TeamRelationship.None, teams[3].relationship)
+        assertEquals("managing", teams[4].team.id)
+        assertEquals(com.github.apkelly.dribl.model.TeamRelationship.Managing, teams[4].relationship)
         assertEquals("club", clubs.single().id)
         assertEquals("United", clubs.single().name)
         assertEquals("POST /api/auth/impersonate/1001?", requests[0])

@@ -119,8 +119,9 @@ fun AvailabilityScreen(
     onNotificationPermissionRequestConsume: () -> Unit,
     onRequestNotificationPermission: (() -> Unit)?,
     onDelete: (String) -> Unit,
-    modifier: Modifier = Modifier,
     onClearFailure: () -> Unit,
+    modifier: Modifier = Modifier,
+    showTopBar: Boolean = true,
 ) {
     val currentOnLoad by rememberUpdatedState(onLoad)
     val currentOnClearFailure by rememberUpdatedState(onClearFailure)
@@ -158,16 +159,18 @@ fun AvailabilityScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(stringResource(Res.string.availability_title, model.profileName))
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        MaterialBackIcon(stringResource(Res.string.action_back))
-                    }
-                },
-            )
+            if (showTopBar) {
+                TopAppBar(
+                    title = {
+                        Text(stringResource(Res.string.availability_title, model.profileName))
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            MaterialBackIcon(stringResource(Res.string.action_back))
+                        }
+                    },
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {

@@ -23,4 +23,5 @@ enum class TeamRelationship {
     Following,
     Player,
     Coaching,
+    Managing,
 }
