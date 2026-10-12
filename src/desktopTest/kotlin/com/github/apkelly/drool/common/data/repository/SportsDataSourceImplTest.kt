@@ -10,12 +10,14 @@ import com.github.apkelly.drool.common.data.local.entity.TeamEntity
 import com.github.apkelly.drool.common.data.local.entity.TeamRelationshipEntity
 import com.github.apkelly.drool.common.data.mapper.toDomain
 import com.github.apkelly.drool.common.data.time.TimeProvider
+import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Club
 import com.github.apkelly.drool.common.domain.model.EmergencyContact
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.model.OperationResult
 import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
@@ -40,14 +42,20 @@ class SportsDataSourceImplTest {
     @Test
     fun teamHubUsesProfileSessionAndSeparatesMatchesFromResults() = runTest {
         fixture { repository, remote, store, _, _ ->
-            assertFailsWith<DriblResponseException> {
-                repository.loadTeamHub("root", "team")
-            }
+            assertEquals(
+                RefreshFailure.InvalidResponse,
+                assertIs<OperationResult.Failed>(
+                    repository.loadTeamHub("root", "team"),
+                ).reason,
+            )
 
             store.saveBearerToken("root-token")
-            assertFailsWith<DriblResponseException> {
-                repository.loadTeamHub("root", "team")
-            }
+            assertEquals(
+                RefreshFailure.InvalidResponse,
+                assertIs<OperationResult.Failed>(
+                    repository.loadTeamHub("root", "team"),
+                ).reason,
+            )
             store.setActiveAccountId("root")
             remote.teamHub = teamHub(
                 teamId = "team",
@@ -83,14 +91,18 @@ class SportsDataSourceImplTest {
                 ladder = emptyList(),
             )
 
-            val hub = repository.loadTeamHub("root", "team").value
-            assertEquals(listOf("upcoming"), hub.matches.map { it.id })
-            assertEquals(listOf("result"), hub.results.map { it.id })
+            val hub = repository.loadTeamHub("root", "team").teamHubData()
+            val content = hub.value
+            assertEquals(listOf("upcoming"), content.matches.map { it.id })
+            assertEquals(listOf("result"), content.results.map { it.id })
             assertEquals("root-token" to "team", remote.teamHubRequest)
 
             repository.loadMatchDetails("child", "result")
             assertEquals("profile-token-child" to "result", remote.matchDetailsRequest)
             assertEquals(listOf("child"), remote.profileSessionUsers)
+            assertIs<OperationResult.Success<*>>(
+                repository.loadMatchWeather(content.matches.single()),
+            )
         }
     }
 
@@ -119,25 +131,28 @@ class SportsDataSourceImplTest {
                 ladder = emptyList(),
             )
 
-            val initial = repository.loadTeamHub("root", "team")
+            val initial = repository.loadTeamHub("root", "team").teamHubData()
             assertFalse(initial.isStale)
             assertEquals(1, remote.teamHubCalls)
 
             clock.now = 24L * 60L * 60L * 1_000L - 1L
             remote.failure = IOException("offline")
-            val freshCache = repository.loadTeamHub("root", "team")
+            val freshCache = repository.loadTeamHub("root", "team").teamHubData()
             assertFalse(freshCache.isStale)
             assertEquals("Premier League", freshCache.value.ladderName)
             assertEquals(1, remote.teamHubCalls)
 
             clock.now += 1L
-            val staleCache = repository.loadTeamHub("root", "team")
+            val staleCache = repository.loadTeamHub("root", "team").teamHubData()
             assertTrue(staleCache.isStale)
             assertEquals(1, remote.teamHubCalls)
 
-            assertFailsWith<IOException> {
-                repository.loadTeamHub("root", "team", force = true)
-            }
+            assertEquals(
+                RefreshFailure.Offline,
+                assertIs<OperationResult.Failed>(
+                    repository.loadTeamHub("root", "team", force = true),
+                ).reason,
+            )
             remote.failure = null
             repository.loadTeamHub("root", "team", force = true)
             assertEquals(2, remote.teamHubCalls)
@@ -860,7 +875,7 @@ class SportsDataSourceImplTest {
 
     private suspend fun fixture(
         block: suspend (
-            SportsDataSourceImpl,
+            TestSportsRepositories,
             FakeSportsRemote,
             com.github.apkelly.drool.common.data.storage.BearerTokenStore,
             MutableTimeProvider,
@@ -872,7 +887,7 @@ class SportsDataSourceImplTest {
                 val remote = FakeSportsRemote()
                 val clock = MutableTimeProvider()
                 block(
-                    SportsDataSourceImpl(
+                    TestSportsRepositories(
                         api = remote,
                         database = testDatabase.database,
                         store = testStore.store,
@@ -893,3 +908,6 @@ private class MutableTimeProvider(
 ) : TimeProvider {
     override fun nowEpochMillis(): Long = now
 }
+
+private fun OperationResult<CachedData<TeamHub>>.teamHubData(): CachedData<TeamHub> =
+    assertIs<OperationResult.Success<CachedData<TeamHub>>>(this).value

@@ -82,6 +82,7 @@ kotlin {
                 implementation(libs.compose.components.resources)
                 implementation(libs.compose.ui.tooling.preview)
                 implementation(libs.androidx.datastore.preferences)
+                implementation(libs.androidx.lifecycle.viewmodel.compose)
                 implementation(libs.androidx.room.runtime)
                 implementation(libs.androidx.sqlite.bundled)
                 implementation(libs.navigation3.ui)
@@ -114,6 +115,7 @@ kotlin {
             dependencies {
                 implementation(libs.androidx.work.runtime)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.okhttp.logging)
                 implementation(libs.google.maps)
                 implementation(project.dependencies.platform(libs.firebase.bom))

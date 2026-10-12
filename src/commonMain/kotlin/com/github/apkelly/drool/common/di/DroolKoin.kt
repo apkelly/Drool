@@ -8,7 +8,6 @@ import com.github.apkelly.dribl.api.DriblTokenStore
 import com.github.apkelly.dribl.api.SportsRemoteDataSource
 import com.github.apkelly.dribl.api.withAutomaticDriblTokenRenewal
 import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
-import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.auth.data.AuthRepositoryImpl
 import com.github.apkelly.drool.auth.domain.repository.AuthRepository
 import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
@@ -19,8 +18,6 @@ import com.github.apkelly.drool.common.data.local.createDroolDatabase
 import com.github.apkelly.drool.common.data.remote.createPlatformHttpClient
 import com.github.apkelly.drool.common.data.repository.SessionDataSource
 import com.github.apkelly.drool.common.data.repository.SessionDataSourceImpl
-import com.github.apkelly.drool.common.data.repository.SportsDataSource
-import com.github.apkelly.drool.common.data.repository.SportsDataSourceImpl
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.storage.createPlatformBearerTokenStore
 import com.github.apkelly.drool.common.data.time.SystemTimeProvider
@@ -35,6 +32,7 @@ import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
+import com.github.apkelly.drool.discover.ui.viewmodel.DiscoverViewModel
 import com.github.apkelly.drool.home.data.HomeRepositoryImpl
 import com.github.apkelly.drool.home.domain.repository.HomeRepository
 import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
@@ -49,6 +47,8 @@ import com.github.apkelly.drool.match.data.weather.platformWeatherRequestHeaders
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.ui.viewmodel.MatchCache
+import com.github.apkelly.drool.match.ui.viewmodel.MatchViewModel
 import com.github.apkelly.drool.profile.data.PreferencesRepositoryImpl
 import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
@@ -80,9 +80,11 @@ import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.UpdateRefereeAllocationUseCase
 import com.github.apkelly.drool.schedule.ui.viewmodel.AvailabilityViewModel
+import com.github.apkelly.drool.schedule.ui.viewmodel.ScheduleViewModel
 import com.github.apkelly.drool.team.data.TeamRepositoryImpl
 import com.github.apkelly.drool.team.domain.repository.TeamRepository
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
+import com.github.apkelly.drool.team.ui.viewmodel.TeamViewModel
 import io.ktor.client.HttpClient
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
@@ -130,21 +132,34 @@ private val dataModule = module {
             database = get(),
         )
     }
-    single<SportsDataSource> {
-        SportsDataSourceImpl(
+    single<AuthRepository> { AuthRepositoryImpl(sessionDataSource = get()) }
+    single<ProfileRepository> { ProfileRepositoryImpl(sessionDataSource = get()) }
+    single<HomeRepository> { HomeRepositoryImpl(database = get()) }
+    single<ScheduleRepository> {
+        ScheduleRepositoryImpl(
             api = get(),
             database = get(),
             store = get(),
             timeProvider = get(),
         )
     }
-    single<AuthRepository> { AuthRepositoryImpl(sessionDataSource = get()) }
-    single<ProfileRepository> { ProfileRepositoryImpl(sessionDataSource = get()) }
-    single<HomeRepository> { HomeRepositoryImpl(sportsDataSource = get()) }
-    single<ScheduleRepository> { ScheduleRepositoryImpl(sportsDataSource = get()) }
     single<AvailabilityRepository> { AvailabilityRepositoryImpl(get(), get(), get()) }
-    single<DiscoverRepository> { DiscoverRepositoryImpl(sportsDataSource = get()) }
-    single<TeamRepository> { TeamRepositoryImpl(sportsDataSource = get()) }
+    single<DiscoverRepository> {
+        DiscoverRepositoryImpl(
+            api = get(),
+            database = get(),
+            store = get(),
+            timeProvider = get(),
+        )
+    }
+    single<TeamRepository> {
+        TeamRepositoryImpl(
+            api = get(),
+            database = get(),
+            store = get(),
+            timeProvider = get(),
+        )
+    }
     single<PreferencesRepository> { PreferencesRepositoryImpl(store = get()) }
     single<MatchWeatherDataSource> {
         MatchWeatherDataSourceImpl(
@@ -156,7 +171,8 @@ private val dataModule = module {
     }
     single<MatchRepository> {
         MatchRepositoryImpl(
-            sportsDataSource = get(),
+            api = get(),
+            store = get(),
             weatherDataSource = get(),
         )
     }
@@ -204,7 +220,7 @@ private val domainModule = module {
 }
 
 private val uiModule = module {
-    single {
+    factory {
         AppViewModel(
             observeProfile = get(),
             restoreSession = get(),
@@ -224,27 +240,43 @@ private val uiModule = module {
             observability = get(),
         )
     }
-    single {
-        SportsViewModel(
+    factory {
+        DiscoverViewModel(
             observeClubs = get(),
             observeTeams = get(),
-            observeFixtures = get(),
-            observeProfileTeams = get(),
-            observeProfileClubs = get(),
             observeRelationships = get(),
             refreshClubsUseCase = get(),
             refreshTeamsUseCase = get(),
-            refreshFixturesUseCase = get(),
-            refreshLinkedProfiles = get(),
-            updateRefereeAllocationUseCase = get(),
             setTeamFollowing = get(),
-            loadTeamHub = get(),
-            loadMatchDetails = get(),
-            loadMatchWeather = get(),
             observability = get(),
         )
     }
-    single {
+    factory {
+        ScheduleViewModel(
+            observeFixtures = get(),
+            observeProfileTeams = get(),
+            observeProfileClubs = get(),
+            refreshFixturesUseCase = get(),
+            refreshLinkedProfiles = get(),
+            updateRefereeAllocationUseCase = get(),
+            observability = get(),
+        )
+    }
+    single { MatchCache() }
+    factory {
+        TeamViewModel(
+            loadTeamHub = get(),
+            matchCache = get(),
+        )
+    }
+    factory {
+        MatchViewModel(
+            loadMatchDetails = get(),
+            loadMatchWeather = get(),
+            matchCache = get(),
+        )
+    }
+    factory {
         AvailabilityViewModel(
             getRefereeClubs = get(),
             getAvailability = get(),

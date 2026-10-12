@@ -1,4 +1,4 @@
-package com.github.apkelly.drool.app.ui.navigation
+package com.github.apkelly.drool.app.navigation
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

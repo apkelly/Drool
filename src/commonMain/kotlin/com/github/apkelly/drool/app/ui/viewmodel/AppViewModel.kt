@@ -1,5 +1,7 @@
 package com.github.apkelly.drool.app.ui.viewmodel
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
 import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
@@ -35,10 +37,7 @@ import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
 import com.github.apkelly.drool.schedule.background.AssignmentPollingScheduler
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -63,8 +62,7 @@ class AppViewModel(
     private val setAssignmentPollingInterval: SetAssignmentPollingIntervalUseCase,
     assignmentPollingScheduler: AssignmentPollingScheduler,
     private val observability: Observability = NoOpObservability,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : ViewModel() {
     private val logger = DroolLog.withTag("AppViewModel")
     private val mutableSessionState = MutableStateFlow<SessionUiState>(SessionUiState.Bootstrapping)
     val sessionState: StateFlow<SessionUiState> = mutableSessionState
@@ -78,17 +76,17 @@ class AppViewModel(
 
     val themeMode: StateFlow<ThemeMode> =
         observeThemeMode()
-            .stateIn(scope, SharingStarted.Eagerly, ThemeMode.System)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.System)
 
     val observabilityEnabled: StateFlow<Boolean> =
         observeObservabilityEnabled()
             .onEach(observability::setCollectionEnabled)
-            .stateIn(scope, SharingStarted.Eagerly, false)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val assignmentPollingInterval: StateFlow<AssignmentPollingInterval> =
         observeAssignmentPollingInterval()
             .onEach(assignmentPollingScheduler::schedule)
-            .stateIn(scope, SharingStarted.Eagerly, AssignmentPollingInterval.Off)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, AssignmentPollingInterval.Off)
 
     init {
         restore()
@@ -96,7 +94,7 @@ class AppViewModel(
 
     fun restore() {
         updateSessionState(SessionUiState.Bootstrapping)
-        scope.launch {
+        viewModelScope.launch {
             val state = try {
                 val session = restoreSession()
                 when {
@@ -130,7 +128,7 @@ class AppViewModel(
         }
 
         updateSessionState(SessionUiState.Authenticating)
-        scope.launch {
+        viewModelScope.launch {
             val state = try {
                 val session = signInUser(
                     AuthCredentials(
@@ -187,7 +185,7 @@ class AppViewModel(
     }
 
     fun signOut() {
-        scope.launch {
+        viewModelScope.launch {
             signOutUser()
             observability.log(AnalyticsEvent.SignedOut)
             updateSessionState(SessionUiState.AuthenticationRequired)
@@ -196,7 +194,7 @@ class AppViewModel(
 
     fun loadLinkCandidates() {
         mutableLinkMemberState.value = LinkMemberUiState.Loading
-        scope.launch {
+        viewModelScope.launch {
             mutableLinkMemberState.value = try {
                 LinkMemberUiState.Ready(getLinkCandidates())
             } catch (error: CancellationException) {
@@ -214,7 +212,7 @@ class AppViewModel(
         val current = mutableLinkMemberState.value as? LinkMemberUiState.Ready ?: return
         if (current.requestingCandidateId != null) return
         mutableLinkMemberState.value = current.copy(requestingCandidateId = candidate.id)
-        scope.launch {
+        viewModelScope.launch {
             mutableLinkMemberState.value = try {
                 val result = requestLinkedUserUseCase(candidate.id, isGuardian)
                 if (result.isApproved) {
@@ -242,7 +240,7 @@ class AppViewModel(
         if (token.length != LINK_TOKEN_LENGTH || !token.all(Char::isDigit)) return
         if (current.verifying) return
         mutableLinkMemberState.value = current.copy(verifying = true)
-        scope.launch {
+        viewModelScope.launch {
             mutableLinkMemberState.value = try {
                 verifyLinkedUserUseCase(current.linkId, token)
                 LinkMemberUiState.Linked
@@ -273,7 +271,7 @@ class AppViewModel(
     ) {
         if (mutableUnlinkMemberState.value is UnlinkMemberUiState.Unlinking) return
         mutableUnlinkMemberState.value = UnlinkMemberUiState.Unlinking(linkId)
-        scope.launch {
+        viewModelScope.launch {
             mutableUnlinkMemberState.value = try {
                 unlinkLinkedUserUseCase(linkId)
                 UnlinkMemberUiState.Idle
@@ -294,7 +292,7 @@ class AppViewModel(
     fun updateTheme(
         mode: ThemeMode,
     ) {
-        scope.launch {
+        viewModelScope.launch {
             setThemeMode(mode)
             observability.log(
                 AnalyticsEvent.ThemeSelected(
@@ -311,13 +309,13 @@ class AppViewModel(
     fun updateObservability(
         enabled: Boolean,
     ) {
-        scope.launch { setObservabilityEnabled(enabled) }
+        viewModelScope.launch { setObservabilityEnabled(enabled) }
     }
 
     fun updateAssignmentPollingInterval(
         interval: AssignmentPollingInterval,
     ) {
-        scope.launch { setAssignmentPollingInterval(interval) }
+        viewModelScope.launch { setAssignmentPollingInterval(interval) }
     }
 
     fun trackScreen(
@@ -333,7 +331,7 @@ class AppViewModel(
         profileObservationJob?.cancel()
         profileObservationJob = null
         val authenticated = state as? SessionUiState.Authenticated ?: return
-        profileObservationJob = scope.launch {
+        profileObservationJob = viewModelScope.launch {
             observeProfile().collect { profile ->
                 if (profile?.accountId == authenticated.profile.accountId) {
                     mutableSessionState.value = SessionUiState.Authenticated(profile)

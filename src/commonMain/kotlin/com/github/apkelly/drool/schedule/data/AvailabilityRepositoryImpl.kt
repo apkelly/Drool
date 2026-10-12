@@ -8,6 +8,7 @@ import com.github.apkelly.dribl.model.AvailabilityPeriod
 import com.github.apkelly.dribl.model.CreateRefereeAvailabilityRequest
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
+import com.github.apkelly.drool.common.domain.operation.cancellationSafeResult
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityRecurrence
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
@@ -180,26 +181,30 @@ private fun localTime(
 
 private suspend fun <T> availabilityResult(
     block: suspend () -> T,
-): AvailabilityResult<T> = try {
-    AvailabilityResult.Success(block())
-} catch (error: DriblHttpException) {
-    AvailabilityResult.Failed(
-        when (error.statusCode) {
-            HTTP_UNAUTHORIZED -> AvailabilityFailure.Unauthorized
-            HTTP_FORBIDDEN -> AvailabilityFailure.Forbidden
-            in 500..599 -> AvailabilityFailure.Server
-            else -> AvailabilityFailure.InvalidResponse
-        },
-    )
-} catch (_: DriblResponseException) {
-    AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
-} catch (_: SerializationException) {
-    AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
-} catch (_: IllegalArgumentException) {
-    AvailabilityResult.Failed(AvailabilityFailure.InvalidResponse)
-} catch (_: IOException) {
-    AvailabilityResult.Failed(AvailabilityFailure.Offline)
-}
+): AvailabilityResult<T> = cancellationSafeResult { block() }.fold(
+    onSuccess = AvailabilityResult<T>::Success,
+    onFailure = { error ->
+        AvailabilityResult.Failed(
+            when (error) {
+                is DriblHttpException -> when (error.statusCode) {
+                    HTTP_UNAUTHORIZED -> AvailabilityFailure.Unauthorized
+                    HTTP_FORBIDDEN -> AvailabilityFailure.Forbidden
+                    in 500..599 -> AvailabilityFailure.Server
+                    else -> AvailabilityFailure.InvalidResponse
+                }
+
+                is DriblResponseException,
+                is SerializationException,
+                is IllegalArgumentException,
+                -> AvailabilityFailure.InvalidResponse
+
+                is IOException -> AvailabilityFailure.Offline
+
+                else -> AvailabilityFailure.Unknown
+            },
+        )
+    },
+)
 
 private const val MAX_AVAILABILITY_MONTHS = 6
 private const val HTTP_UNAUTHORIZED = 401

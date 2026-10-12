@@ -23,3 +23,13 @@ enum class RefreshFailure {
     InvalidResponse,
     Unknown,
 }
+
+sealed interface OperationResult<out T> {
+    data class Success<T>(
+        val value: T,
+    ) : OperationResult<T>
+
+    data class Failed(
+        val reason: RefreshFailure,
+    ) : OperationResult<Nothing>
+}

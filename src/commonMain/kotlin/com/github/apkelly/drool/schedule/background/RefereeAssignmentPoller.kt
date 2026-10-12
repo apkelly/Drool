@@ -5,22 +5,22 @@ import com.github.apkelly.drool.common.data.local.entity.FixtureEntity
 import com.github.apkelly.drool.common.data.local.entity.RefereeAssignmentSnapshotEntity
 import com.github.apkelly.drool.common.data.local.inTransaction
 import com.github.apkelly.drool.common.data.repository.SessionDataSource
-import com.github.apkelly.drool.common.data.repository.SportsDataSource
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.RefreshResult
+import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 import kotlinx.coroutines.flow.first
 
 class RefereeAssignmentPoller(
     private val sessionDataSource: SessionDataSource,
-    private val sportsDataSource: SportsDataSource,
+    private val scheduleRepository: ScheduleRepository,
     private val database: DroolDatabase,
     private val store: BearerTokenStore,
 ) {
     suspend fun poll(): AssignmentPollResult {
         val profile = sessionDataSource.observeProfile().first() ?: return AssignmentPollResult.NoSession
         val profiles = profile.linkedProfiles
-        val results = sportsDataSource.refreshLinkedProfiles(profiles, force = true)
+        val results = scheduleRepository.refreshLinkedProfiles(profiles, force = true)
         if (results.values.all { it is RefreshResult.Failed }) {
             return AssignmentPollResult.Retry
         }

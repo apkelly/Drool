@@ -33,14 +33,16 @@ import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
 import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
 import com.github.apkelly.drool.schedule.background.AssignmentPollingScheduler
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -48,7 +50,7 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModelTest {
     @Test
-    fun assignmentPollingIntervalPersistsAndReschedules() = runTest {
+    fun assignmentPollingIntervalPersistsAndReschedules() = runViewModelTest {
         val sessions = FakeViewModelSessionRepository()
         val preferences = FakeViewModelPreferencesRepository()
         val scheduler = FakeAssignmentPollingScheduler()
@@ -71,7 +73,7 @@ class AppViewModelTest {
     }
 
     @Test
-    fun restoreSelectsTheCorrectOfflineSessionState() = runTest {
+    fun restoreSelectsTheCorrectOfflineSessionState() = runViewModelTest {
         val sessionRepository = FakeViewModelSessionRepository()
         val preferences = FakeViewModelPreferencesRepository()
         val viewModel = viewModel(sessionRepository, preferences)
@@ -99,7 +101,7 @@ class AppViewModelTest {
     }
 
     @Test
-    fun signInValidatesAndClassifiesFailures() = runTest {
+    fun signInValidatesAndClassifiesFailures() = runViewModelTest {
         val sessionRepository = FakeViewModelSessionRepository()
         val viewModel = viewModel(sessionRepository, FakeViewModelPreferencesRepository())
         advanceUntilIdle()
@@ -135,7 +137,7 @@ class AppViewModelTest {
     }
 
     @Test
-    fun successfulSignInThemeAndSignOutUpdateState() = runTest {
+    fun successfulSignInThemeAndSignOutUpdateState() = runViewModelTest {
         val profile = Profile("account", "Alex", null)
         val sessionRepository = FakeViewModelSessionRepository().apply {
             signInResult = AuthenticatedSession("token", profile)
@@ -166,7 +168,7 @@ class AppViewModelTest {
     }
 
     @Test
-    fun linkMemberLoadsCandidatesValidatesTokenAndReportsFailures() = runTest {
+    fun linkMemberLoadsCandidatesValidatesTokenAndReportsFailures() = runViewModelTest {
         val sessions = FakeViewModelSessionRepository()
         val viewModel = viewModel(sessions, FakeViewModelPreferencesRepository())
         advanceUntilIdle()
@@ -237,7 +239,7 @@ class AppViewModelTest {
         assertEquals(UnlinkMemberUiState.Idle, viewModel.unlinkMemberState.value)
     }
 
-    private fun kotlinx.coroutines.test.TestScope.viewModel(
+    private fun viewModel(
         sessions: FakeViewModelSessionRepository,
         preferences: FakeViewModelPreferencesRepository,
         scheduler: AssignmentPollingScheduler = AssignmentPollingScheduler {},
@@ -259,8 +261,18 @@ class AppViewModelTest {
         setAssignmentPollingInterval =
         SetAssignmentPollingIntervalUseCase(preferences),
         assignmentPollingScheduler = scheduler,
-        scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler)),
     )
+
+    private fun runViewModelTest(
+        block: suspend TestScope.() -> Unit,
+    ) = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            block()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 private class FakeAssignmentPollingScheduler : AssignmentPollingScheduler {

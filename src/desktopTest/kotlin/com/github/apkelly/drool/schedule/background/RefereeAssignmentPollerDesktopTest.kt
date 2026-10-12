@@ -78,7 +78,7 @@ class RefereeAssignmentPollerDesktopTest {
                 test(
                     RefereeAssignmentPoller(
                         sessionDataSource = session,
-                        sportsDataSource = sports,
+                        scheduleRepository = sports,
                         database = database.database,
                         store = tokenStore.store,
                     ),

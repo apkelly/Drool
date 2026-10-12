@@ -1,13 +1,11 @@
 package com.github.apkelly.drool.app
 
-import com.github.apkelly.drool.app.ui.viewmodel.SportsViewModel
 import com.github.apkelly.drool.auth.data.AuthRepositoryImpl
 import com.github.apkelly.drool.auth.domain.usecase.ObserveProfileUseCase
 import com.github.apkelly.drool.auth.domain.usecase.RestoreSessionUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignInUserUseCase
 import com.github.apkelly.drool.auth.domain.usecase.SignOutUserUseCase
 import com.github.apkelly.drool.common.data.repository.SessionDataSource
-import com.github.apkelly.drool.common.data.repository.SportsDataSource
 import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.AuthCredentials
 import com.github.apkelly.drool.common.domain.model.AuthenticatedSession
@@ -18,6 +16,7 @@ import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.MatchWeather
+import com.github.apkelly.drool.common.domain.model.OperationResult
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileApiEndpoint
 import com.github.apkelly.drool.common.domain.model.ProfileClub
@@ -29,20 +28,21 @@ import com.github.apkelly.drool.common.domain.model.Team
 import com.github.apkelly.drool.common.domain.model.TeamHub
 import com.github.apkelly.drool.common.domain.model.TeamRelationship
 import com.github.apkelly.drool.common.domain.model.ThemeMode
-import com.github.apkelly.drool.discover.data.DiscoverRepositoryImpl
+import com.github.apkelly.drool.discover.domain.repository.DiscoverRepository
 import com.github.apkelly.drool.discover.domain.usecase.ObserveClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamRelationshipsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.ObserveTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshClubsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.RefreshTeamsUseCase
 import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
-import com.github.apkelly.drool.home.data.HomeRepositoryImpl
+import com.github.apkelly.drool.home.domain.repository.HomeRepository
 import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
 import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
-import com.github.apkelly.drool.match.data.MatchRepositoryImpl
-import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
+import com.github.apkelly.drool.match.domain.repository.MatchRepository
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.ui.viewmodel.MatchCache
+import com.github.apkelly.drool.match.ui.viewmodel.MatchViewModel
 import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
 import com.github.apkelly.drool.profile.domain.repository.PreferencesRepository
 import com.github.apkelly.drool.profile.domain.usecase.GetLinkCandidatesUseCase
@@ -55,26 +55,29 @@ import com.github.apkelly.drool.profile.domain.usecase.SetObservabilityEnabledUs
 import com.github.apkelly.drool.profile.domain.usecase.SetThemeModeUseCase
 import com.github.apkelly.drool.profile.domain.usecase.UnlinkLinkedUserUseCase
 import com.github.apkelly.drool.profile.domain.usecase.VerifyLinkedUserUseCase
-import com.github.apkelly.drool.schedule.data.ScheduleRepositoryImpl
+import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.UpdateRefereeAllocationUseCase
-import com.github.apkelly.drool.team.data.TeamRepositoryImpl
+import com.github.apkelly.drool.team.domain.repository.TeamRepository
 import com.github.apkelly.drool.team.domain.usecase.LoadTeamHubUseCase
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import com.github.apkelly.drool.team.ui.viewmodel.TeamViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UseCasesTest {
     @Test
     fun sessionUseCasesDelegateToRepository() = runTest {
@@ -146,9 +149,9 @@ class UseCasesTest {
     @Test
     fun sportsObservationUseCasesDelegateToRepository() {
         val dataSource = FakeSportsDataSource()
-        val discover = DiscoverRepositoryImpl(dataSource)
-        val schedule = ScheduleRepositoryImpl(dataSource)
-        val home = HomeRepositoryImpl(dataSource)
+        val discover = dataSource
+        val schedule = dataSource
+        val home = dataSource
         assertEquals(dataSource.clubs, ObserveClubsUseCase(discover)())
         assertEquals(dataSource.teams, ObserveTeamsUseCase(discover)("club"))
         assertEquals("club", dataSource.lastClubId)
@@ -167,11 +170,10 @@ class UseCasesTest {
     @Test
     fun sportsMutationUseCasesDelegateToRepository() = runTest {
         val dataSource = FakeSportsDataSource()
-        val weatherDataSource = FakeMatchWeatherDataSource()
-        val discover = DiscoverRepositoryImpl(dataSource)
-        val schedule = ScheduleRepositoryImpl(dataSource)
-        val team = TeamRepositoryImpl(dataSource)
-        val match = MatchRepositoryImpl(dataSource, weatherDataSource)
+        val discover = dataSource
+        val schedule = dataSource
+        val team = dataSource
+        val match = dataSource
         assertEquals(RefreshResult.Updated, RefreshClubsUseCase(discover)(false))
         assertEquals(false, dataSource.lastForce)
         assertEquals(RefreshResult.Updated, RefreshClubsUseCase(discover)())
@@ -209,22 +211,25 @@ class UseCasesTest {
         assertEquals("team" to true, dataSource.lastFollow)
         assertEquals(
             dataSource.teamHub,
-            LoadTeamHubUseCase(team)("profile", "team").value,
+            (LoadTeamHubUseCase(team)("profile", "team") as OperationResult.Success).value.value,
         )
         assertEquals("profile" to "team", dataSource.lastTeamHub)
         assertEquals(
             dataSource.matchDetails,
-            LoadMatchDetailsUseCase(match)("profile", "match"),
+            (LoadMatchDetailsUseCase(match)("profile", "match") as OperationResult.Success).value,
         )
         assertEquals("profile" to "match", dataSource.lastMatchDetails)
         assertEquals(
-            weatherDataSource.weather,
-            LoadMatchWeatherUseCase(match)(dataSource.matchDetails),
+            dataSource.weather,
+            (
+                LoadMatchWeatherUseCase(match)(dataSource.matchDetails) as
+                    OperationResult.Success
+                ).value,
         )
-        assertEquals(dataSource.matchDetails, weatherDataSource.lastFixture)
-        assertEquals(false, weatherDataSource.lastForce)
+        assertEquals(dataSource.matchDetails, dataSource.lastWeatherFixture)
+        assertEquals(false, dataSource.lastWeatherForce)
         LoadMatchWeatherUseCase(match)(dataSource.matchDetails, force = true)
-        assertEquals(true, weatherDataSource.lastForce)
+        assertEquals(true, dataSource.lastWeatherForce)
     }
 
     @Test
@@ -237,76 +242,47 @@ class UseCasesTest {
             ladderName = null,
             ladder = emptyList(),
         )
-        val scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
-        val weatherDataSource = FakeMatchWeatherDataSource()
-        val discover = DiscoverRepositoryImpl(dataSource)
-        val schedule = ScheduleRepositoryImpl(dataSource)
-        val home = HomeRepositoryImpl(dataSource)
-        val team = TeamRepositoryImpl(dataSource)
-        val match = MatchRepositoryImpl(dataSource, weatherDataSource)
-        val viewModel = SportsViewModel(
-            observeClubs = ObserveClubsUseCase(discover),
-            observeTeams = ObserveTeamsUseCase(discover),
-            observeFixtures = ObserveFixturesUseCase(schedule),
-            observeProfileTeams = ObserveProfileTeamsUseCase(home),
-            observeProfileClubs = ObserveProfileClubsUseCase(home),
-            observeRelationships = ObserveTeamRelationshipsUseCase(discover),
-            refreshClubsUseCase = RefreshClubsUseCase(discover),
-            refreshTeamsUseCase = RefreshTeamsUseCase(discover),
-            refreshFixturesUseCase = RefreshFixturesUseCase(schedule),
-            refreshLinkedProfiles = RefreshLinkedProfilesUseCase(schedule),
-            updateRefereeAllocationUseCase = UpdateRefereeAllocationUseCase(schedule),
-            setTeamFollowing = SetTeamFollowingUseCase(discover),
-            loadTeamHub = LoadTeamHubUseCase(team),
-            loadMatchDetails = LoadMatchDetailsUseCase(match),
-            loadMatchWeather = LoadMatchWeatherUseCase(match),
-            scope = scope,
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val matchCache = MatchCache()
+        val teamViewModel = TeamViewModel(
+            loadTeamHub = LoadTeamHubUseCase(dataSource),
+            matchCache = matchCache,
+        )
+        val matchViewModel = MatchViewModel(
+            loadMatchDetails = LoadMatchDetailsUseCase(dataSource),
+            loadMatchWeather = LoadMatchWeatherUseCase(dataSource),
+            matchCache = matchCache,
         )
         try {
-            viewModel.loadTeam("profile", "team")
+            teamViewModel.load("profile", "team")
             advanceUntilIdle()
-            viewModel.loadTeam("profile", "team")
+            teamViewModel.load("profile", "team")
             advanceUntilIdle()
             assertEquals(2, dataSource.teamHubCalls)
             assertEquals(false, dataSource.lastTeamHubForce)
 
-            viewModel.refreshTeam("profile", "team")
+            teamViewModel.refresh("profile", "team")
             advanceUntilIdle()
             assertEquals(3, dataSource.teamHubCalls)
             assertEquals(true, dataSource.lastTeamHubForce)
 
-            viewModel.loadMatch("profile", "match")
+            matchViewModel.load("profile", "match")
             advanceUntilIdle()
             assertEquals(1, dataSource.matchDetailsCalls)
 
-            viewModel.refreshMatch("profile", "match")
+            matchViewModel.refresh("profile", "match")
             advanceUntilIdle()
             assertEquals(2, dataSource.matchDetailsCalls)
-            assertEquals(true, weatherDataSource.lastForce)
+            assertEquals(true, dataSource.lastWeatherForce)
 
-            viewModel.loadMatch("profile", "uncached")
+            matchViewModel.load("profile", "uncached")
             advanceUntilIdle()
-            viewModel.loadMatch("profile", "uncached")
+            matchViewModel.load("profile", "uncached")
             advanceUntilIdle()
             assertEquals(3, dataSource.matchDetailsCalls)
         } finally {
-            scope.cancel()
+            Dispatchers.resetMain()
         }
-    }
-}
-
-private class FakeMatchWeatherDataSource : MatchWeatherDataSource {
-    val weather = MatchWeather("Sunny", 16.0, 24.0, 55, 10, 0.0, 6)
-    var lastFixture: Fixture? = null
-    var lastForce = false
-
-    override suspend fun loadMatchWeather(
-        fixture: Fixture,
-        force: Boolean,
-    ): MatchWeather {
-        lastFixture = fixture
-        lastForce = force
-        return weather
     }
 }
 
@@ -393,7 +369,12 @@ private class FakePreferencesRepository : PreferencesRepository {
     }
 }
 
-internal class FakeSportsDataSource : SportsDataSource {
+internal class FakeSportsDataSource :
+    DiscoverRepository,
+    HomeRepository,
+    ScheduleRepository,
+    TeamRepository,
+    MatchRepository {
     val clubs = MutableStateFlow(CachedData<List<Club>>(emptyList(), null, true))
     val teams = MutableStateFlow(CachedData<List<Team>>(emptyList(), null, true))
     val fixtures = MutableStateFlow(CachedData<List<Fixture>>(emptyList(), null, true))
@@ -414,6 +395,9 @@ internal class FakeSportsDataSource : SportsDataSource {
     var teamHub = TeamHub("team", emptyList(), emptyList(), null, emptyList())
     var teamHubCalls = 0
     var matchDetailsCalls = 0
+    val weather = MatchWeather("Sunny", 16.0, 24.0, 55, 10, 0.0, 6)
+    var lastWeatherFixture: Fixture? = null
+    var lastWeatherForce = false
     val matchDetails = Fixture(
         "match",
         null,
@@ -508,19 +492,30 @@ internal class FakeSportsDataSource : SportsDataSource {
         profileId: String,
         teamId: String,
         force: Boolean,
-    ): CachedData<TeamHub> {
+    ): OperationResult<CachedData<TeamHub>> {
         lastTeamHub = profileId to teamId
         lastTeamHubForce = force
         teamHubCalls += 1
-        return CachedData(teamHub, lastUpdatedEpochMillis = 0L, isStale = false)
+        return OperationResult.Success(
+            CachedData(teamHub, lastUpdatedEpochMillis = 0L, isStale = false),
+        )
     }
 
     override suspend fun loadMatchDetails(
         profileId: String,
         matchId: String,
-    ): Fixture {
+    ): OperationResult<Fixture> {
         lastMatchDetails = profileId to matchId
         matchDetailsCalls += 1
-        return matchDetails.copy(id = matchId)
+        return OperationResult.Success(matchDetails.copy(id = matchId))
+    }
+
+    override suspend fun loadMatchWeather(
+        fixture: Fixture,
+        force: Boolean,
+    ): OperationResult<MatchWeather?> {
+        lastWeatherFixture = fixture
+        lastWeatherForce = force
+        return OperationResult.Success(weather)
     }
 }

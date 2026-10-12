@@ -57,4 +57,5 @@ enum class AvailabilityFailure {
     Offline,
     Server,
     InvalidResponse,
+    Unknown,
 }

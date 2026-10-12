@@ -14,19 +14,22 @@ import com.github.apkelly.drool.schedule.domain.usecase.DeleteRefereeAvailabilit
 import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeAvailabilityUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeClubsUseCase
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AvailabilityViewModelTest {
     @Test
-    fun eligibilityAndLoadExposeRefereeAvailability() = runTest {
+    fun eligibilityAndLoadExposeRefereeAvailability() = runViewModelTest {
         val repository = FakeAvailabilityRepository()
         val viewModel = viewModel(repository)
 
@@ -43,7 +46,7 @@ class AvailabilityViewModelTest {
     }
 
     @Test
-    fun createReloadsAndDeleteRemovesTheSelectedAvailability() = runTest {
+    fun createReloadsAndDeleteRemovesTheSelectedAvailability() = runViewModelTest {
         val repository = FakeAvailabilityRepository()
         val viewModel = viewModel(repository)
         viewModel.configureLinkedProfiles("account", listOf(refereeProfile))
@@ -70,7 +73,7 @@ class AvailabilityViewModelTest {
     }
 
     @Test
-    fun operationFailureIsSurfacedAndCanBeCleared() = runTest {
+    fun operationFailureIsSurfacedAndCanBeCleared() = runViewModelTest {
         val repository = FakeAvailabilityRepository()
         val viewModel = viewModel(repository)
         viewModel.configureLinkedProfiles("account", listOf(refereeProfile))
@@ -94,15 +97,25 @@ class AvailabilityViewModelTest {
         )
     }
 
-    private fun TestScope.viewModel(
+    private fun viewModel(
         repository: AvailabilityRepository,
     ) = AvailabilityViewModel(
         getRefereeClubs = GetRefereeClubsUseCase(repository),
         getAvailability = GetRefereeAvailabilityUseCase(repository),
         createAvailability = CreateRefereeAvailabilityUseCase(repository),
         deleteAvailability = DeleteRefereeAvailabilityUseCase(repository),
-        scope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler)),
     )
+
+    private fun runViewModelTest(
+        block: suspend TestScope.() -> Unit,
+    ) = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            block()
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 
     private class FakeAvailabilityRepository : AvailabilityRepository {
         var loadCalls = 0

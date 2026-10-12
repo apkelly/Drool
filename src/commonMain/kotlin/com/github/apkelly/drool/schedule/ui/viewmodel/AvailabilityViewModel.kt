@@ -1,5 +1,7 @@
 package com.github.apkelly.drool.schedule.ui.viewmodel
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityFailure
 import com.github.apkelly.drool.schedule.domain.model.AvailabilityResult
@@ -10,9 +12,6 @@ import com.github.apkelly.drool.schedule.domain.usecase.DeleteRefereeAvailabilit
 import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeAvailabilityUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.GetRefereeClubsUseCase
 import com.github.apkelly.drool.schedule.ui.model.AvailabilityUiState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +23,7 @@ class AvailabilityViewModel(
     private val getAvailability: GetRefereeAvailabilityUseCase,
     private val createAvailability: CreateRefereeAvailabilityUseCase,
     private val deleteAvailability: DeleteRefereeAvailabilityUseCase,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : ViewModel() {
     private val mutableState = MutableStateFlow<AvailabilityUiState>(AvailabilityUiState.Idle)
     val state: StateFlow<AvailabilityUiState> = mutableState.asStateFlow()
 
@@ -70,7 +68,7 @@ class AvailabilityViewModel(
             val profileId = profile.id
             if (!checkedProfileIds.add(profileId)) return@forEach
             val requestVersion = configurationVersion
-            scope.launch {
+            viewModelScope.launch {
                 when (val result = getRefereeClubs(profile)) {
                     is AvailabilityResult.Success -> {
                         if (
@@ -109,7 +107,7 @@ class AvailabilityViewModel(
             }
         mutableState.value = AvailabilityUiState.Loading
         val requestVersion = configurationVersion
-        scope.launch {
+        viewModelScope.launch {
             when (val result = getAvailability(profile)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
@@ -147,7 +145,7 @@ class AvailabilityViewModel(
         }
         mutableState.value = ready.copy(isSaving = true, failure = null)
         val requestVersion = configurationVersion
-        scope.launch {
+        viewModelScope.launch {
             when (val result = createAvailability(profile, draft)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
@@ -195,7 +193,7 @@ class AvailabilityViewModel(
             failure = null,
         )
         val requestVersion = configurationVersion
-        scope.launch {
+        viewModelScope.launch {
             when (val result = deleteAvailability(profile, availabilityId)) {
                 is AvailabilityResult.Success -> {
                     if (configurationVersion != requestVersion) return@launch
