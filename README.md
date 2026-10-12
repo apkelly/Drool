@@ -43,7 +43,27 @@ The shared application uses:
 - Compose Multiplatform resources as the single localization catalog
 - Native Google Maps SDK views on Android and iOS, plus Static Maps previews on desktop
 
-## Google Maps configuration
+## Google API configuration
+
+Enable the APIs used by each target in the Google Cloud project that owns the
+corresponding key:
+
+| Feature | Required API | Target and key |
+| --- | --- | --- |
+| Interactive maps | **Maps SDK for Android** | Android `GOOGLE_MAPS_API_KEY` |
+| Interactive maps | **Maps SDK for iOS** | iOS `GOOGLE_MAPS_API_KEY` |
+| Static map previews | **Maps Static API** | Desktop `GOOGLE_MAPS_STATIC_API_KEY` |
+| Match weather | **Weather API** | Android, iOS, and desktop `GOOGLE_WEATHER_API_KEY` |
+| Opt-in Analytics and Crashlytics | **Firebase Installations API** | Android and iOS Firebase keys from the platform configuration files |
+
+When API restrictions are enabled on the Firebase-generated Android and iOS
+keys, keep **Firebase Management API**, **Cloud Logging API**, and **Firebase
+Installations API** in their allowlists. Blocking Firebase Installations causes
+`API_KEY_SERVICE_BLOCKED` failures when Analytics or Crashlytics requests an
+installation ID. Keep Firebase keys separate from the billable Maps and Weather
+keys.
+
+### Google Maps
 
 Android and iOS require separate billing-enabled API keys with the **Maps SDK
 for Android** and **Maps SDK for iOS** enabled. Restrict the Android key to the
@@ -89,6 +109,16 @@ Alternatively, set the `GOOGLE_MAPS_STATIC_API_KEY` environment variable when
 launching a packaged app. The desktop key is read only at runtime and is not
 embedded in source or native distributions. Static map previews remain
 clickable and open Google Maps driving directions.
+
+### Google Weather
+
+The **Weather API** must be enabled for the key used by match details. Set
+`GOOGLE_WEATHER_API_KEY` using the same Gradle property, environment-variable,
+`local.properties`, or Xcode configuration mechanism described above. Android
+and iOS fall back to their Maps key when a separate Weather key is not supplied,
+in which case that key's API restrictions must allow both the platform Maps API
+and the Weather API. Desktop reads `GOOGLE_WEATHER_API_KEY` at runtime. A
+separate restricted Weather key is recommended for production.
 
 ## Firebase observability
 
