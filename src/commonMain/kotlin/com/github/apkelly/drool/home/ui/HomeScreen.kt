@@ -36,10 +36,10 @@ import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_sign_in
 import com.github.apkelly.drool.common.resources.home_greeting
-import com.github.apkelly.drool.common.resources.home_next_game
 import com.github.apkelly.drool.common.resources.home_no_games
 import com.github.apkelly.drool.common.resources.home_no_games_body
 import com.github.apkelly.drool.common.resources.home_overview
+import com.github.apkelly.drool.common.resources.home_upcoming
 import com.github.apkelly.drool.common.resources.home_view_schedule
 import com.github.apkelly.drool.common.resources.linked_profile_refresh_failed
 import com.github.apkelly.drool.common.resources.linked_profile_session_expired
@@ -53,7 +53,10 @@ import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.common.ui.widgets.ProfileTeamCard
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,14 +183,14 @@ fun HomeScreen(
                         onRetry = onRefresh,
                     )
                 }
-                val next = fixtures.items.firstOrNull()
+                val upcoming = fixtures.items.upcomingOnNextDay()
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            stringResource(Res.string.home_next_game),
+                            stringResource(Res.string.home_upcoming),
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.weight(1f),
                         )
@@ -201,7 +204,7 @@ fun HomeScreen(
                         }
                     }
                 }
-                if (next == null) {
+                if (upcoming.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
@@ -215,18 +218,23 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    items(
+                        items = upcoming,
+                        key = { "upcoming:${it.profileId}:${it.id}:${it.role}" },
+                        span = { GridItemSpan(maxLineSpan) },
+                    ) { fixture ->
                         FixtureCard(
-                            fixture = next,
+                            fixture = fixture,
                             profileName = linkedProfiles.profileNameFor(
-                                next.profileId,
+                                fixture.profileId,
                                 selectedProfileId,
                             ),
                             stackedTeams = true,
-                            onClick = { onFixtureSelect(next) },
+                            onClick = { onFixtureSelect(fixture) },
                         )
                     }
                 }
+
                 if (profileTeams.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Text(
@@ -257,6 +265,21 @@ fun HomeScreen(
             }
         }
     }
+}
+
+internal fun List<Fixture>.upcomingOnNextDay(
+    timeZone: TimeZone = TimeZone.currentSystemDefault(),
+): List<Fixture> {
+    val nextDate = minOfOrNull {
+        Instant.fromEpochMilliseconds(it.kickoffEpochMillis)
+            .toLocalDateTime(timeZone)
+            .date
+    } ?: return emptyList()
+    return filter {
+        Instant.fromEpochMilliseconds(it.kickoffEpochMillis)
+            .toLocalDateTime(timeZone)
+            .date == nextDate
+    }.sortedBy(Fixture::kickoffEpochMillis)
 }
 
 private val HOME_TEAM_CARD_MIN_WIDTH = 240.dp

@@ -68,6 +68,8 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -255,22 +257,33 @@ class DriblSportsApi(
     override suspend fun fetchTeamHub(
         bearerToken: String,
         teamId: String,
-    ): TeamHub {
-        val matchesResponse = getBody<MatchListResponse>(
-            "/universal/matches",
-            bearerToken,
-        ) {
-            parameter("remove_byes", true)
-            parameter("require_adherance", true)
-            parameter("sort", "+date,+home_team")
+        competitionName: String?,
+        leagueId: String?,
+    ): TeamHub = coroutineScope {
+        val matchesRequest = async {
+            getBody<MatchListResponse>(
+                "/universal/matches",
+                bearerToken,
+            ) {
+                leagueId?.let { parameter("league_id", it) }
+                parameter("remove_byes", true)
+                parameter("require_adherance", true)
+                parameter("sort", "+date,+home_team")
+            }
         }
-        var fixtures = matchesResponse.data
+        val laddersRequest = async {
+            getBody<LadderListResponse>("/universal/ladders", bearerToken)
+        }
+        var fixtures = matchesRequest.await().data
             .map(MatchResourceDto::toDomain)
             .filter { it.involves(teamId) }
 
-        val laddersResponse =
-            getBody<LadderListResponse>("/universal/ladders", bearerToken)
-        val ladders = laddersResponse.ladders.ifEmpty { laddersResponse.data }
+        val laddersResponse = laddersRequest.await()
+        val availableLadders = laddersResponse.ladders.ifEmpty { laddersResponse.data }
+        val (preferredLadders, remainingLadders) = availableLadders.partition {
+            it.name?.trim().equals(competitionName?.trim(), ignoreCase = true)
+        }
+        val ladders = preferredLadders + remainingLadders
         var selectedName: String? = null
         var selectedEntries = emptyList<LadderEntry>()
         val identifiedLadders = ladders.mapNotNull { ladder ->
@@ -312,7 +325,7 @@ class DriblSportsApi(
             it.status == FixtureStatus.Completed ||
                 (it.homeScore != null && it.awayScore != null)
         }
-        return TeamHub(
+        TeamHub(
             teamId = teamId,
             matches = matches.sortedBy(Fixture::kickoffEpochMillis),
             results = results.sortedByDescending(Fixture::kickoffEpochMillis),
@@ -886,6 +899,9 @@ private fun MatchAttributesDto.toDomain(
         longitude = longitude?.doubleOrNull,
         role = roles.fixtureRole(),
         leagueName = leagueName,
+        leagueId = leagueId.textValue,
+        seasonId = seasonId.textValue,
+        tenantId = tenantId.textValue,
     )
 }
 

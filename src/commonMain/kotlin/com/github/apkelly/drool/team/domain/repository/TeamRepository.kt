@@ -8,6 +8,8 @@ interface TeamRepository {
     suspend fun loadTeamHub(
         profileId: String,
         teamId: String,
+        competitionName: String? = null,
+        leagueId: String? = null,
         force: Boolean = false,
     ): OperationResult<CachedData<TeamHub>>
 }

@@ -28,6 +28,9 @@ data class Fixture(
     val refereeAllocationId: String? = null,
     val refereeStatus: String? = null,
     val leagueName: String? = null,
+    val leagueId: String? = null,
+    val seasonId: String? = null,
+    val tenantId: String? = null,
 )
 
 @Serializable

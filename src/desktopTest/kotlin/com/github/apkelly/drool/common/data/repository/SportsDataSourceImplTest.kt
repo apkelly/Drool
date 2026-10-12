@@ -160,6 +160,51 @@ class SportsDataSourceImplTest {
     }
 
     @Test
+    fun teamHubCacheRespectsCompetitionContext() = runTest {
+        fixture { repository, remote, store, _, _ ->
+            store.saveBearerToken("root-token")
+            store.setActiveAccountId("root")
+            remote.teamHub = teamHub(
+                teamId = "team",
+                fixtures = emptyList(),
+                ladderName = "Premier League",
+                ladder = emptyList(),
+            )
+
+            repository.loadTeamHub(
+                profileId = "root",
+                teamId = "team",
+                competitionName = "Premier League",
+                leagueId = "premier",
+            ).teamHubData()
+            assertEquals("Premier League", remote.teamHubCompetitionName)
+            assertEquals("premier", remote.teamHubLeagueId)
+            assertEquals(1, remote.teamHubCalls)
+
+            repository.loadTeamHub(
+                profileId = "root",
+                teamId = "team",
+                competitionName = " premier league ",
+                leagueId = "premier",
+            ).teamHubData()
+            assertEquals(1, remote.teamHubCalls)
+
+            remote.failure = IOException("offline")
+            assertEquals(
+                RefreshFailure.Offline,
+                assertIs<OperationResult.Failed>(
+                    repository.loadTeamHub(
+                        profileId = "root",
+                        teamId = "team",
+                        competitionName = "Championship",
+                        leagueId = "championship",
+                    ),
+                ).reason,
+            )
+        }
+    }
+
+    @Test
     fun clubsRefreshAndObserveUseCacheFreshness() = runTest {
         fixture { repository, remote, store, clock, database ->
             store.saveBearerToken("token")

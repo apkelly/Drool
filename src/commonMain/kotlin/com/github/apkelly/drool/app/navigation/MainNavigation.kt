@@ -282,8 +282,22 @@ fun MainNavigation(
                                 currentStack.removeAt(currentStack.lastIndex)
                             }
                         },
-                        onLoad = teamViewModel::load,
-                        onRefresh = teamViewModel::refresh,
+                        onLoad = { profileId, teamId ->
+                            teamViewModel.load(
+                                profileId,
+                                teamId,
+                                route.competitionName,
+                                route.leagueId,
+                            )
+                        },
+                        onRefresh = { profileId, teamId ->
+                            teamViewModel.refresh(
+                                profileId,
+                                teamId,
+                                route.competitionName,
+                                route.leagueId,
+                            )
+                        },
                         onMatchSelect = { fixture ->
                             currentStack.add(
                                 AppRoute.MatchDetails(
@@ -306,13 +320,21 @@ fun MainNavigation(
                         },
                         onLoad = matchViewModel::load,
                         onRefresh = matchViewModel::refresh,
-                        onTeamSelect = { teamId, teamName, logoUrl ->
+                        onTeamSelect = {
+                                teamId,
+                                teamName,
+                                logoUrl,
+                                competitionName,
+                                leagueId,
+                            ->
                             currentStack.add(
                                 AppRoute.Team(
                                     profileId = route.profileId,
                                     teamId = teamId,
                                     teamName = teamName,
                                     logoUrl = logoUrl,
+                                    competitionName = competitionName,
+                                    leagueId = leagueId,
                                 ),
                             )
                         },

@@ -78,8 +78,16 @@ internal class TestSportsRepositories(
     suspend fun loadTeamHub(
         profileId: String,
         teamId: String,
+        competitionName: String? = null,
+        leagueId: String? = null,
         force: Boolean = false,
-    ) = team.loadTeamHub(profileId, teamId, force)
+    ) = team.loadTeamHub(
+        profileId,
+        teamId,
+        competitionName,
+        leagueId,
+        force,
+    )
 
     suspend fun loadMatchDetails(
         profileId: String,

@@ -25,18 +25,30 @@ class TeamRepositoryImpl(
     override suspend fun loadTeamHub(
         profileId: String,
         teamId: String,
+        competitionName: String?,
+        leagueId: String?,
         force: Boolean,
     ): OperationResult<CachedData<TeamHub>> = operationResult {
         val cached = database.teamHubCacheDao().get(profileId, teamId)
-        if (!force && cached != null) {
-            return@operationResult CachedData(
-                value = Json.decodeFromString(cached.payloadJson),
-                lastUpdatedEpochMillis = cached.updatedAtEpochMillis,
-                isStale = timeProvider.nowEpochMillis() - cached.updatedAtEpochMillis >=
-                    TEAM_HUB_TTL,
-            )
+        if (!force) {
+            cached?.let {
+                val cachedHub = Json.decodeFromString<TeamHub>(it.payloadJson)
+                if (cachedHub.ladderName.matchesCompetition(competitionName)) {
+                    return@operationResult CachedData(
+                        value = cachedHub,
+                        lastUpdatedEpochMillis = it.updatedAtEpochMillis,
+                        isStale = timeProvider.nowEpochMillis() - it.updatedAtEpochMillis >=
+                            TEAM_HUB_TTL,
+                    )
+                }
+            }
         }
-        val hub = api.fetchTeamHub(profileToken(api, store, profileId), teamId)
+        val hub = api.fetchTeamHub(
+            profileToken(api, store, profileId),
+            teamId,
+            competitionName,
+            leagueId,
+        )
             .toDomain()
             .let { loaded ->
                 loaded.copy(
@@ -60,3 +72,8 @@ class TeamRepositoryImpl(
         const val TEAM_HUB_TTL = 24L * 60L * 60L * 1_000L
     }
 }
+
+private fun String?.matchesCompetition(
+    competitionName: String?,
+): Boolean = competitionName.isNullOrBlank() ||
+    (!isNullOrBlank() && trim().equals(competitionName.trim(), ignoreCase = true))

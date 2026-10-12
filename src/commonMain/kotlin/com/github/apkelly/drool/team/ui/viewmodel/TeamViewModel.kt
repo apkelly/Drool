@@ -32,16 +32,22 @@ class TeamViewModel(
     fun load(
         profileId: String,
         teamId: String,
-    ) = request(profileId, teamId, force = false)
+        competitionName: String? = null,
+        leagueId: String? = null,
+    ) = request(profileId, teamId, competitionName, leagueId, force = false)
 
     fun refresh(
         profileId: String,
         teamId: String,
-    ) = request(profileId, teamId, force = true)
+        competitionName: String? = null,
+        leagueId: String? = null,
+    ) = request(profileId, teamId, competitionName, leagueId, force = true)
 
     private fun request(
         profileId: String,
         teamId: String,
+        competitionName: String?,
+        leagueId: String?,
         force: Boolean,
     ) {
         val existing = (mutableState.value as? TeamHubUiState.Content)
@@ -59,7 +65,15 @@ class TeamViewModel(
         }
         mutableState.value = request
         viewModelScope.launch {
-            when (val result = loadTeamHub(profileId, teamId, force)) {
+            when (
+                val result = loadTeamHub(
+                    profileId,
+                    teamId,
+                    competitionName,
+                    leagueId,
+                    force,
+                )
+            ) {
                 is OperationResult.Success -> {
                     val data = result.value
                     val hub = data.value

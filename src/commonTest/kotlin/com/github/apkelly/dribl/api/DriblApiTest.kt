@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 
 class DriblApiTest {
     @Test
@@ -796,7 +797,12 @@ class DriblApiTest {
         }
         val api = DriblSportsApi(client, "https://example.test/api")
 
-        val hub = api.fetchTeamHub("token", "team")
+        val hub = api.fetchTeamHub(
+            "token",
+            "team",
+            "Under 13 Mixed White Mixed",
+            "ladder-b",
+        )
         val details = api.fetchMatchDetails("token", "match")
 
         assertEquals(
@@ -822,25 +828,25 @@ class DriblApiTest {
         assertEquals(151.17, details.longitude)
         assertEquals(FixtureStatus.Pending, details.status)
         assertEquals(
-            "/api/universal/matches?remove_byes=true&require_adherance=true&sort=%2Bdate%2C%2Bhome_team",
-            requests[0],
+            setOf(
+                "/api/universal/matches" +
+                    "?league_id=ladder-b&remove_byes=true&require_adherance=true" +
+                    "&sort=%2Bdate%2C%2Bhome_team",
+                "/api/universal/ladders?",
+                "/api/universal/ladders/ladder-b" +
+                    "?require_pools=true&require_form=true&require_adjustments=true" +
+                    "&require_championship=true",
+                "/api/universal/matches/match" +
+                    "?require_season=true&require_adherance=true",
+            ),
+            requests.toSet(),
         )
-        assertEquals("/api/universal/ladders?", requests[1])
-        assertEquals(
-            "/api/universal/ladders/ladder-a" +
-                "?require_pools=true&require_form=true&require_adjustments=true" +
-                "&require_championship=true",
-            requests[2],
-        )
+        assertFalse(requests.any { it.startsWith("/api/universal/ladders/ladder-a?") })
         assertEquals(
             "/api/universal/ladders/ladder-b" +
                 "?require_pools=true&require_form=true&require_adjustments=true" +
                 "&require_championship=true",
-            requests[3],
-        )
-        assertEquals(
-            "/api/universal/matches/match?require_season=true&require_adherance=true",
-            requests[4],
+            requests.first { it.startsWith("/api/universal/ladders/ladder-b?") },
         )
     }
 

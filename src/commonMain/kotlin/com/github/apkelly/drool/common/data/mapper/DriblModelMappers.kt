@@ -121,6 +121,9 @@ internal fun com.github.apkelly.dribl.model.Fixture.toDomain() = com.github.apke
     refereeAllocationId = refereeAllocationId,
     refereeStatus = refereeStatus,
     leagueName = leagueName,
+    leagueId = leagueId,
+    seasonId = seasonId,
+    tenantId = tenantId,
 )
 
 internal fun com.github.apkelly.dribl.model.TeamHub.toDomain() = com.github.apkelly.drool.common.domain.model.TeamHub(

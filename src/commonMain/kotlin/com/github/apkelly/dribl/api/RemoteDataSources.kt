@@ -109,6 +109,8 @@ interface SportsRemoteDataSource {
     suspend fun fetchTeamHub(
         bearerToken: String,
         teamId: String,
+        competitionName: String? = null,
+        leagueId: String? = null,
     ): TeamHub
     suspend fun fetchMatchDetails(
         bearerToken: String,

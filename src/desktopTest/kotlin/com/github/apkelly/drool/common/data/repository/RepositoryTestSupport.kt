@@ -99,6 +99,8 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         status = FixtureStatus.Unknown,
     )
     var teamHubRequest: Pair<String, String>? = null
+    var teamHubCompetitionName: String? = null
+    var teamHubLeagueId: String? = null
     var teamHubCalls = 0
     var matchDetailsRequest: Pair<String, String>? = null
     var refereeClubs: List<DriblRefereeClub> = emptyList()
@@ -296,10 +298,14 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     override suspend fun fetchTeamHub(
         bearerToken: String,
         teamId: String,
+        competitionName: String?,
+        leagueId: String?,
     ): DriblTeamHub {
         failure?.let { throw it }
         teamHubCalls += 1
         teamHubRequest = bearerToken to teamId
+        teamHubCompetitionName = competitionName
+        teamHubLeagueId = leagueId
         return teamHub.toDribl()
     }
 

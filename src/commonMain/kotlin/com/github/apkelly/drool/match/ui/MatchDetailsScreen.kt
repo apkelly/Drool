@@ -93,7 +93,7 @@ fun MatchDetailsScreen(
     onLoad: (String, String) -> Unit,
     onRefresh: (String, String) -> Unit,
     modifier: Modifier = Modifier,
-    onTeamSelect: (String, String, String?) -> Unit,
+    onTeamSelect: (String, String, String?, String?, String?) -> Unit,
 ) {
     val currentOnLoad by rememberUpdatedState(onLoad)
     LaunchedEffect(profileId, matchId) { currentOnLoad(profileId, matchId) }
@@ -158,7 +158,7 @@ private fun MatchDetails(
     refreshFailed: Boolean,
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
     onRefresh: () -> Unit,
-    onTeamSelect: (String, String, String?) -> Unit,
+    onTeamSelect: (String, String, String?, String?, String?) -> Unit,
 ) {
     val locationLauncher = rememberLocationActionLauncher()
     val teamNames = fixture.displayTeamNames()
@@ -194,6 +194,8 @@ private fun MatchDetails(
                     fixture.homeTeamName,
                     teamNames.home,
                     fixture.homeTeamLogoUrl,
+                    fixture.leagueName ?: fixture.competitionName,
+                    fixture.leagueId,
                     onTeamSelect,
                     modifier = Modifier.weight(1f),
                 )
@@ -216,6 +218,8 @@ private fun MatchDetails(
                     fixture.awayTeamName,
                     teamNames.away,
                     fixture.awayTeamLogoUrl,
+                    fixture.leagueName ?: fixture.competitionName,
+                    fixture.leagueId,
                     onTeamSelect,
                     modifier = Modifier.weight(1f),
                 )
@@ -406,7 +410,9 @@ private fun MatchTeam(
     name: String,
     displayName: String,
     logoUrl: String?,
-    onSelect: (String, String, String?) -> Unit,
+    competitionName: String?,
+    leagueId: String?,
+    onSelect: (String, String, String?, String?, String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -415,7 +421,9 @@ private fun MatchTeam(
                 if (teamId == null) {
                     Modifier
                 } else {
-                    Modifier.clickable { onSelect(teamId, name, logoUrl) }
+                    Modifier.clickable {
+                        onSelect(teamId, name, logoUrl, competitionName, leagueId)
+                    }
                 },
             )
             .padding(8.dp),

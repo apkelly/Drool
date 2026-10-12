@@ -36,6 +36,8 @@ sealed interface AppRoute : NavKey {
         val logoUrl: String? = null,
         val primaryColor: String? = null,
         val secondaryColor: String? = null,
+        val competitionName: String? = null,
+        val leagueId: String? = null,
     ) : AppRoute
 
     @Serializable

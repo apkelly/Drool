@@ -491,6 +491,8 @@ internal class FakeSportsDataSource :
     override suspend fun loadTeamHub(
         profileId: String,
         teamId: String,
+        competitionName: String?,
+        leagueId: String?,
         force: Boolean,
     ): OperationResult<CachedData<TeamHub>> {
         lastTeamHub = profileId to teamId

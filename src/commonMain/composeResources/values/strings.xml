@@ -33,7 +33,7 @@
     <string name="nav_discover">Discover</string>
     <string name="nav_profile">Profile</string>
     <string name="home_greeting">Hello, %1$s</string>
-    <string name="home_next_game">Next event</string>
+    <string name="home_upcoming">Upcoming</string>
     <string name="home_view_schedule">Full schedule</string>
     <string name="home_no_games">No upcoming games yet</string>
     <string name="home_no_games_body">Follow a team to build your fixture timeline.</string>

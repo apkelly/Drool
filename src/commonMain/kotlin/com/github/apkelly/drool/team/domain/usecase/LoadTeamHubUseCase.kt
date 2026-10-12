@@ -8,6 +8,8 @@ class LoadTeamHubUseCase(
     suspend operator fun invoke(
         profileId: String,
         teamId: String,
+        competitionName: String? = null,
+        leagueId: String? = null,
         force: Boolean = false,
-    ) = repository.loadTeamHub(profileId, teamId, force)
+    ) = repository.loadTeamHub(profileId, teamId, competitionName, leagueId, force)
 }
