@@ -18,6 +18,8 @@ The original app's `okhttp/4.12.0` user-agent is sent for API compatibility. Ker
   Drool packages and accepts its `HttpClient` and token persistence through
   public interfaces. Its Android target produces an AAR while desktop and iOS
   consume the corresponding KMP variants.
+  `DriblSportsApi` is a compatibility facade over focused discovery, fixture,
+  referee, match-sheet, and profile endpoint clients.
 - `com.github.apkelly.drool.auth`, `.home`, `.schedule`, `.discover`,
   `.profile`, `.team`, and `.match`: vertical feature packages. Each feature
   owns its `data`, `domain`, and `ui` packages.
