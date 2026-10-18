@@ -15,7 +15,7 @@ import kotlin.test.assertNull
 
 class MatchWeatherDataSourceImplTest {
     @Test
-    fun cachesAvailableAndUnavailableForecastsForTwentyFourHours() = runTest {
+    fun cachesAvailableForecastsForTwentyFourHoursAndRetriesUnavailable() = runTest {
         TestDatabase().use { testDatabase ->
             val remote = FakeWeatherRemote()
             val clock = MutableWeatherTimeProvider()
@@ -32,16 +32,20 @@ class MatchWeatherDataSourceImplTest {
 
             remote.weather = null
             clock.now = DAY_MILLIS - 1
-            assertEquals("Fine", repository.loadMatchWeather(fixture)?.condition)
+            assertEquals(
+                "Fine",
+                repository.loadMatchWeather(fixture.copy(latitude = null, longitude = null))?.condition,
+            )
             assertEquals(1, remote.calls)
 
             clock.now = DAY_MILLIS
             assertNull(repository.loadMatchWeather(fixture))
             assertEquals(2, remote.calls)
 
-            clock.now += DAY_MILLIS - 1
-            assertNull(repository.loadMatchWeather(fixture))
-            assertEquals(2, remote.calls)
+            remote.weather = MatchWeather("Sunny", 14.0, 22.0, 45, 5, 0.0, 6)
+            clock.now += 1_000L
+            assertEquals("Sunny", repository.loadMatchWeather(fixture)?.condition)
+            assertEquals(3, remote.calls)
         }
     }
 

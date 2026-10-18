@@ -32,17 +32,22 @@ fun DroolApp(
     var initialSplashFinished by rememberSaveable { mutableStateOf(false) }
     val authenticatedProfile =
         (sessionState as? SessionUiState.Authenticated)?.profile
-    authenticatedProfile?.let { profile ->
-        LaunchedEffect(profile.accountId, profile.linkedProfiles) {
-            scheduleViewModel.configureLinkedProfiles(profile)
-            teamViewModel.configureAccount(profile.accountId)
-            matchViewModel.configureAccount(profile.accountId)
+    if (authenticatedProfile != null) {
+        LaunchedEffect(authenticatedProfile.accountId, authenticatedProfile.linkedProfiles) {
+            scheduleViewModel.configureLinkedProfiles(authenticatedProfile)
+            teamViewModel.configureAccount(authenticatedProfile.accountId)
+            matchViewModel.configureAccount(authenticatedProfile.accountId)
             availabilityViewModel.configureLinkedProfiles(
-                accountId = profile.accountId,
-                profiles = profile.linkedProfiles,
+                accountId = authenticatedProfile.accountId,
+                profiles = authenticatedProfile.linkedProfiles,
             )
             discoverViewModel.refreshClubs(force = false)
             scheduleViewModel.refreshFixtures(force = false)
+        }
+    } else {
+        LaunchedEffect(Unit) {
+            discoverViewModel.selectClub(null)
+            scheduleViewModel.selectLinkedProfile(null)
         }
     }
     if (shouldShowInitialSplash(initialSplashFinished, sessionState)) {

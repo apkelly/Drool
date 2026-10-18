@@ -82,15 +82,15 @@ fun PlayerHeroCard(
     val sensorTilt by rememberPlayerCardTilt()
     var pointerTilt by remember { mutableStateOf<PlayerCardTilt?>(null) }
     val targetTilt = pointerTilt ?: sensorTilt
-    val horizontal by animateFloatAsState(
+    val horizontalState = animateFloatAsState(
         targetValue = targetTilt.horizontal,
         animationSpec = spring(stiffness = 220f, dampingRatio = 0.72f),
     )
-    val vertical by animateFloatAsState(
+    val verticalState = animateFloatAsState(
         targetValue = targetTilt.vertical,
         animationSpec = spring(stiffness = 220f, dampingRatio = 0.72f),
     )
-    val shimmer by rememberInfiniteTransition().animateFloat(
+    val shimmerState = rememberInfiniteTransition().animateFloat(
         initialValue = -1f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -127,8 +127,8 @@ fun PlayerHeroCard(
                 }
             }
             .graphicsLayer {
-                rotationX = -vertical * MAX_TILT_DEGREES
-                rotationY = horizontal * MAX_TILT_DEGREES
+                rotationX = -verticalState.value * MAX_TILT_DEGREES
+                rotationY = horizontalState.value * MAX_TILT_DEGREES
                 cameraDistance = density * CAMERA_DISTANCE
                 transformOrigin = TransformOrigin.Center
             }
@@ -186,9 +186,9 @@ fun PlayerHeroCard(
                 PlayerNamePlate(user, card, role)
             }
             HolographicFoil(
-                horizontal = horizontal,
-                vertical = vertical,
-                shimmer = shimmer,
+                horizontal = { horizontalState.value },
+                vertical = { verticalState.value },
+                shimmer = { shimmerState.value },
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -452,14 +452,14 @@ private fun PlayerNamePlate(
 
 @Composable
 private fun HolographicFoil(
-    horizontal: Float,
-    vertical: Float,
-    shimmer: Float,
+    horizontal: () -> Float,
+    vertical: () -> Float,
+    shimmer: () -> Float,
     modifier: Modifier = Modifier,
 ) {
     Canvas(modifier) {
-        val centerX = size.width * (0.5f + horizontal * 0.42f + shimmer * 0.18f)
-        val centerY = size.height * (0.5f + vertical * 0.32f)
+        val centerX = size.width * (0.5f + horizontal() * 0.42f + shimmer() * 0.18f)
+        val centerY = size.height * (0.5f + vertical() * 0.32f)
         val extent = size.minDimension * 0.75f
         drawRect(
             brush = Brush.linearGradient(

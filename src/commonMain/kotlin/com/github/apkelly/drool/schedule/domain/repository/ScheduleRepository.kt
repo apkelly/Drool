@@ -11,7 +11,7 @@ interface ScheduleRepository {
     fun observeFixtures(): Flow<CachedData<List<Fixture>>>
     fun observeLinkedProfileFixtures(
         profileIds: Set<String>,
-    ): Flow<List<Fixture>>
+    ): Flow<CachedData<List<Fixture>>>
     suspend fun refreshFixtures(
         force: Boolean = false,
     ): RefreshResult

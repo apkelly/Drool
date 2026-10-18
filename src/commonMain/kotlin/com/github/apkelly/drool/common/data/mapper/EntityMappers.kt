@@ -79,6 +79,14 @@ fun Fixture.toEntity(
     awayScore = awayScore,
     homeTeamLogoUrl = homeTeamLogoUrl,
     awayTeamLogoUrl = awayTeamLogoUrl,
+    roundLabel = roundLabel,
+    venueAddress = venueAddress,
+    latitude = latitude,
+    longitude = longitude,
+    leagueId = leagueId,
+    seasonId = seasonId,
+    tenantId = tenantId,
+    matchSheetId = matchSheetId,
 )
 
 fun FixtureEntity.toDomain() = Fixture(
@@ -110,6 +118,10 @@ fun FixtureEntity.toDomain() = Fixture(
         "cancelled", "canceled" -> FixtureStatus.Cancelled
         else -> FixtureStatus.Unknown
     },
+    roundLabel = roundLabel,
+    venueAddress = venueAddress,
+    latitude = latitude,
+    longitude = longitude,
     homeScore = homeScore,
     awayScore = awayScore,
     homeTeamLogoUrl = homeTeamLogoUrl,
@@ -119,6 +131,10 @@ fun FixtureEntity.toDomain() = Fixture(
     refereeAllocationId = refereeAllocationId,
     refereeStatus = refereeStatus,
     leagueName = leagueName,
+    leagueId = leagueId,
+    seasonId = seasonId,
+    tenantId = tenantId,
+    matchSheetId = matchSheetId,
 )
 
 fun Profile.toEntity() = ProfileEntity(accountId, displayName, email, active = true, avatarUrl = avatarUrl)

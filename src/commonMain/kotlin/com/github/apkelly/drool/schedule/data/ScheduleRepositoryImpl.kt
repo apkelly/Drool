@@ -1,7 +1,9 @@
 package com.github.apkelly.drool.schedule.data
 
 import com.github.apkelly.drool.common.data.local.DroolDatabase
+import com.github.apkelly.drool.common.data.local.entity.CacheMetadataEntity
 import com.github.apkelly.drool.common.data.local.entity.ClubRelationshipEntity
+import com.github.apkelly.drool.common.data.local.entity.FixtureEntity
 import com.github.apkelly.drool.common.data.local.entity.TeamRelationshipEntity
 import com.github.apkelly.drool.common.data.local.inTransaction
 import com.github.apkelly.drool.common.data.mapper.mergeEmergencyContacts
@@ -24,6 +26,8 @@ import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.primaryProfileId
 import com.github.apkelly.drool.schedule.domain.repository.ScheduleRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -47,27 +51,19 @@ class ScheduleRepositoryImpl(
                     database.fixtureDao().observeForAccount(accountId),
                     database.cacheMetadataDao().observe(FIXTURES_KEY, accountId),
                 ) { fixtures, metadata ->
-                    CachedData(
-                        value = fixtures.map { it.toDomain() }
-                            .recentAndUpcomingAt(timeProvider.nowEpochMillis()),
-                        lastUpdatedEpochMillis = metadata?.updatedAtEpochMillis,
-                        isStale = metadata.isStale(
-                            timeProvider.nowEpochMillis(),
-                            FIXTURES_TTL,
-                        ),
-                    )
+                    cachedFixtures(fixtures, metadata)
                 }
             }
         }
 
     override fun observeLinkedProfileFixtures(
         profileIds: Set<String>,
-    ): Flow<List<Fixture>> = database.fixtureDao()
-        .observeForAccounts(profileIds.toList())
-        .map { fixtures ->
-            fixtures.map { it.toDomain() }
-                .recentAndUpcomingAt(timeProvider.nowEpochMillis())
-        }
+    ): Flow<CachedData<List<Fixture>>> = combine(
+        database.fixtureDao().observeForAccounts(profileIds.toList()),
+        database.cacheMetadataDao().observeOldestForAccounts(FIXTURES_KEY, profileIds.toList()),
+    ) { fixtures, metadata ->
+        cachedFixtures(fixtures, metadata)
+    }
 
     override suspend fun refreshFixtures(
         force: Boolean,
@@ -86,10 +82,12 @@ class ScheduleRepositoryImpl(
         }
 
         return refreshResult(existingCount > 0) {
-            val fixtures = (
-                api.fetchFixtures(token, accountId) +
-                    loadRefereeFixtures(token, accountId)
-                ).distinctBy { it.id to it.role }
+            val fixtures = coroutineScope {
+                val playerFixtures = async { api.fetchFixtures(token, accountId) }
+                val refereeFixtures = async { loadRefereeFixtures(token, accountId) }
+                (playerFixtures.await() + refereeFixtures.await())
+                    .distinctBy { it.id to it.role }
+            }
             database.inTransaction {
                 database.fixtureDao().deleteForAccount(accountId)
                 database.fixtureDao().upsertAll(fixtures.map { it.toEntity(accountId) })
@@ -119,67 +117,68 @@ class ScheduleRepositoryImpl(
         return profiles.associate { profile ->
             val existingCount = database.fixtureDao().countForAccount(profile.id)
             val metadata = database.cacheMetadataDao().get(FIXTURES_KEY, profile.id)
-            val refreshSports = force ||
+            val refreshProfile = force ||
                 metadata.isStale(timeProvider.nowEpochMillis(), FIXTURES_TTL)
-            val hydrateProfile = !profile.isPrimary
-            val result = if (!refreshSports && !hydrateProfile) {
+            val result = if (!refreshProfile) {
                 RefreshResult.NotModified
             } else {
-                val result = refreshResult(existingCount > 0) {
+                refreshResult(existingCount > 0) {
                     val token = if (profile.isPrimary) {
                         rootToken
                     } else {
                         api.createProfileSession(rootToken, profile.id)
                     }
-                    if (refreshSports) {
-                        val teams = api.fetchProfileTeams(token)
-                        val fixtures = (
-                            api.fetchFixtures(token, profile.subjectUserId) +
-                                loadRefereeFixtures(token, profile.subjectUserId)
-                            ).distinctBy { it.id to it.role }
-                        val clubs = api.fetchProfileClubs(token)
-                        database.inTransaction {
-                            database.fixtureDao().deleteForAccount(profile.id)
-                            database.fixtureDao().upsertAll(
-                                fixtures.map { it.toEntity(profile.id) },
-                            )
-                            database.teamDao().deleteRelationships(profile.id)
-                            database.teamDao().upsertAll(teams.map { it.team.toEntity() })
-                            teams.forEach { team ->
-                                database.teamDao().upsertRelationship(
-                                    TeamRelationshipEntity(
-                                        accountId = profile.id,
-                                        teamId = team.team.id,
-                                        relationship = team.relationship.name,
-                                    ),
-                                )
-                            }
-                            database.clubDao().deleteRelationships(profile.id)
-                            database.clubDao().upsertAll(clubs.map { it.toEntity() })
-                            database.clubDao().upsertRelationships(
-                                clubs.map { ClubRelationshipEntity(profile.id, it.id) },
-                            )
-                            database.markUpdated(
-                                FIXTURES_KEY,
-                                profile.id,
-                                timeProvider.nowEpochMillis(),
-                            )
+                    val (teams, fixtures, clubs) = coroutineScope {
+                        val teamsDeferred = async { api.fetchProfileTeams(token) }
+                        val playerFixturesDeferred = async {
+                            api.fetchFixtures(token, profile.subjectUserId)
                         }
+                        val refereeFixturesDeferred = async {
+                            loadRefereeFixtures(token, profile.subjectUserId)
+                        }
+                        val clubsDeferred = async { api.fetchProfileClubs(token) }
+                        Triple(
+                            teamsDeferred.await(),
+                            (playerFixturesDeferred.await() + refereeFixturesDeferred.await())
+                                .distinctBy { it.id to it.role },
+                            clubsDeferred.await(),
+                        )
+                    }
+                    database.inTransaction {
+                        database.fixtureDao().deleteForAccount(profile.id)
+                        database.fixtureDao().upsertAll(
+                            fixtures.map { it.toEntity(profile.id) },
+                        )
+                        database.teamDao().deleteServerRelationships(profile.id)
+                        database.teamDao().upsertAll(teams.map { it.team.toEntity() })
+                        database.teamDao().upsertRelationships(
+                            teams.map { team ->
+                                TeamRelationshipEntity(
+                                    accountId = profile.id,
+                                    teamId = team.team.id,
+                                    relationship = team.relationship.name,
+                                )
+                            },
+                        )
+                        database.clubDao().deleteRelationships(profile.id)
+                        database.clubDao().upsertAll(clubs.map { it.toEntity() })
+                        database.clubDao().upsertRelationships(
+                            clubs.map { ClubRelationshipEntity(profile.id, it.id) },
+                        )
+                        database.markUpdated(
+                            FIXTURES_KEY,
+                            profile.id,
+                            timeProvider.nowEpochMillis(),
+                        )
                     }
 
-                    if (hydrateProfile) {
+                    if (!profile.isPrimary) {
                         hydratePersonalInformation(
                             rootAccountId = rootAccountId,
                             profileId = profile.id,
                             bearerToken = token,
                         )
                     }
-                }
-
-                if (!refreshSports && result == RefreshResult.Updated) {
-                    RefreshResult.NotModified
-                } else {
-                    result
                 }
             }
             profile.id to result
@@ -210,46 +209,60 @@ class ScheduleRepositoryImpl(
         }
     }
 
+    private fun cachedFixtures(
+        fixtures: List<FixtureEntity>,
+        metadata: CacheMetadataEntity?,
+    ): CachedData<List<Fixture>> {
+        val now = timeProvider.nowEpochMillis()
+        return CachedData(
+            value = fixtures.map { it.toDomain() }
+                .recentAndUpcomingAt(now),
+            lastUpdatedEpochMillis = metadata?.updatedAtEpochMillis,
+            isStale = metadata.isStale(now, FIXTURES_TTL),
+        )
+    }
+
     private suspend fun loadRefereeFixtures(
         bearerToken: String,
         userId: String,
-    ): List<Fixture> {
-        if (api.fetchActiveRefereeClubs(bearerToken).isEmpty()) return emptyList()
-        return api.fetchRefereeFixtures(bearerToken, userId)
-    }
+    ): List<Fixture> = api.fetchRefereeFixtures(bearerToken, userId)
 
     private suspend fun hydratePersonalInformation(
         rootAccountId: String,
         profileId: String,
         bearerToken: String,
     ) {
-        val personal = api.fetchPersonalInformation(bearerToken, profileId)
+        val (personal, contactEndpointContacts) = coroutineScope {
+            val personalDeferred = async { api.fetchPersonalInformation(bearerToken, profileId) }
+            val contactsDeferred = async { api.fetchEmergencyContacts(bearerToken) }
+            personalDeferred.await() to contactsDeferred.await()
+        }
         val personalEntity = personal.toLinkedEntity(rootAccountId)
-        val contactEndpointContacts =
-            api.fetchEmergencyContacts(bearerToken)
-        val existing = database.profileDao().getRelatedUser(rootAccountId, profileId)
-            ?: return
-        val emergencyContacts = mergeEmergencyContacts(
-            personalInformationContacts = personal.emergencyContacts,
-            contactEndpointContacts = contactEndpointContacts,
-            existingContacts = existing.emergencyContactsJson,
-        )
-        database.profileDao().upsertRelatedUsers(
-            listOf(
-                existing.copy(
-                    displayName = personalEntity.displayName.takeUnless {
-                        it == personalEntity.id
-                    } ?: existing.displayName,
-                    email = personalEntity.email ?: existing.email,
-                    avatarUrl = personalEntity.avatarUrl ?: existing.avatarUrl,
-                    gender = personalEntity.gender ?: existing.gender,
-                    dateOfBirth = personalEntity.dateOfBirth ?: existing.dateOfBirth,
-                    phoneNumber = personalEntity.phoneNumber ?: existing.phoneNumber,
-                    address = personalEntity.address ?: existing.address,
-                    emergencyContactsJson = emergencyContacts,
+        database.inTransaction {
+            val existing = database.profileDao().getRelatedUser(rootAccountId, profileId)
+                ?: return@inTransaction
+            val emergencyContacts = mergeEmergencyContacts(
+                personalInformationContacts = personal.emergencyContacts,
+                contactEndpointContacts = contactEndpointContacts,
+                existingContacts = existing.emergencyContactsJson,
+            )
+            database.profileDao().upsertRelatedUsers(
+                listOf(
+                    existing.copy(
+                        displayName = personalEntity.displayName.takeUnless {
+                            it == personalEntity.id
+                        } ?: existing.displayName,
+                        email = personalEntity.email ?: existing.email,
+                        avatarUrl = personalEntity.avatarUrl ?: existing.avatarUrl,
+                        gender = personalEntity.gender ?: existing.gender,
+                        dateOfBirth = personalEntity.dateOfBirth ?: existing.dateOfBirth,
+                        phoneNumber = personalEntity.phoneNumber ?: existing.phoneNumber,
+                        address = personalEntity.address ?: existing.address,
+                        emergencyContactsJson = emergencyContacts,
+                    ),
                 ),
-            ),
-        )
+            )
+        }
     }
 
     private companion object {

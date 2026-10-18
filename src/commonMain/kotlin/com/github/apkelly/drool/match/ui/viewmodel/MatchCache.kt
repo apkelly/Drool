@@ -23,6 +23,12 @@ class MatchCache {
         resolved.value = emptySet()
     }
 
+    fun clear() {
+        ownerAccountId = null
+        entries.value = emptyMap()
+        resolved.value = emptySet()
+    }
+
     internal fun get(
         key: MatchCacheKey,
     ): Fixture? = entries.value[key]
@@ -36,14 +42,22 @@ class MatchCache {
         fixture: Fixture,
         resolvedDetails: Boolean = false,
     ) {
+        val evictedKeys = mutableSetOf<MatchCacheKey>()
         entries.update { cached ->
             LinkedHashMap(cached).apply {
                 remove(key)
                 put(key, fixture)
-                while (size > MAXIMUM_SIZE) remove(keys.first())
+                while (size > MAXIMUM_SIZE) {
+                    val evicted = keys.first()
+                    remove(evicted)
+                    evictedKeys += evicted
+                }
             }
         }
-        if (resolvedDetails) resolved.update { it + key }
+        resolved.update { current ->
+            val cleaned = if (evictedKeys.isEmpty()) current else current - evictedKeys
+            if (resolvedDetails) cleaned + key else cleaned
+        }
     }
 
     fun putAll(

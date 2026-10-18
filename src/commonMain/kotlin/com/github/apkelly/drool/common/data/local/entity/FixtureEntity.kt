@@ -5,7 +5,12 @@ import androidx.room.Index
 
 @Entity(
     primaryKeys = ["accountId", "id", "role"],
-    indices = [Index("kickoffEpochMillis"), Index("userTeamId")],
+    indices = [
+        Index("kickoffEpochMillis"),
+        Index("userTeamId"),
+        Index(value = ["accountId", "kickoffEpochMillis"]),
+        Index(value = ["accountId", "role", "kickoffEpochMillis"]),
+    ],
 )
 data class FixtureEntity(
     val id: String,
@@ -28,4 +33,12 @@ data class FixtureEntity(
     val awayScore: Int? = null,
     val homeTeamLogoUrl: String? = null,
     val awayTeamLogoUrl: String? = null,
+    val roundLabel: String? = null,
+    val venueAddress: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val leagueId: String? = null,
+    val seasonId: String? = null,
+    val tenantId: String? = null,
+    val matchSheetId: String? = null,
 )

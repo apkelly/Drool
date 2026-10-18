@@ -15,38 +15,59 @@ import platform.Foundation.NSOperationQueue
 internal actual val playerCardMaximumWidth: Dp = 360.dp
 
 @OptIn(ExperimentalForeignApi::class)
+private object SharedMotionManager {
+    private val manager by lazy { CMMotionManager() }
+    private val listeners = linkedSetOf<(Double, Double) -> Unit>()
+
+    fun register(
+        listener: (Double, Double) -> Unit,
+    ) {
+        val shouldStart = listeners.isEmpty()
+        listeners.add(listener)
+        if (shouldStart && manager.accelerometerAvailable) {
+            manager.accelerometerUpdateInterval = SENSOR_UPDATE_SECONDS
+            manager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue) { data, _ ->
+                data?.acceleration?.let { acceleration ->
+                    val (rawX, rawY) = acceleration.useContents { x to y }
+                    listeners.toList().forEach { callback ->
+                        callback(rawX, rawY)
+                    }
+                }
+            }
+        }
+    }
+
+    fun unregister(
+        listener: (Double, Double) -> Unit,
+    ) {
+        listeners.remove(listener)
+        if (listeners.isEmpty()) {
+            manager.stopAccelerometerUpdates()
+        }
+    }
+}
+
 @Composable
 actual fun rememberPlayerCardTilt(): State<PlayerCardTilt> {
     val tilt = remember { mutableStateOf(PlayerCardTilt.Zero) }
-    val motionManager = remember { CMMotionManager() }
 
-    DisposableEffect(motionManager) {
+    DisposableEffect(Unit) {
         var baselineX: Double? = null
         var baselineY: Double? = null
         var filteredX = 0.0
         var filteredY = 0.0
-        if (motionManager.accelerometerAvailable) {
-            motionManager.accelerometerUpdateInterval = SENSOR_UPDATE_SECONDS
-            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue) {
-                    data,
-                    _,
-                ->
-                data?.acceleration?.let { acceleration ->
-                    val (rawX, rawY) = acceleration.useContents { x to y }
-                    if (baselineX == null || baselineY == null) {
-                        filteredX = rawX
-                        filteredY = rawY
-                        baselineX = filteredX
-                        baselineY = filteredY
-                        return@let
-                    }
-                    filteredX += SENSOR_FILTER * (rawX - filteredX)
-                    filteredY += SENSOR_FILTER * (rawY - filteredY)
-                    val originX = baselineX
-                    val originY = baselineY
-                    if (originX == null || originY == null) {
-                        return@let
-                    }
+        val listener: (Double, Double) -> Unit = { rawX, rawY ->
+            if (baselineX == null || baselineY == null) {
+                filteredX = rawX
+                filteredY = rawY
+                baselineX = filteredX
+                baselineY = filteredY
+            } else {
+                filteredX += SENSOR_FILTER * (rawX - filteredX)
+                filteredY += SENSOR_FILTER * (rawY - filteredY)
+                val originX = baselineX
+                val originY = baselineY
+                if (originX != null && originY != null) {
                     tilt.value = PlayerCardTilt(
                         horizontal = ((filteredX - originX) / TILT_GRAVITY_RANGE)
                             .toFloat()
@@ -58,8 +79,9 @@ actual fun rememberPlayerCardTilt(): State<PlayerCardTilt> {
                 }
             }
         }
+        SharedMotionManager.register(listener)
         onDispose {
-            motionManager.stopAccelerometerUpdates()
+            SharedMotionManager.unregister(listener)
             tilt.value = PlayerCardTilt.Zero
         }
     }

@@ -15,8 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -88,35 +88,6 @@ fun MainNavigation(
     availabilityViewModel: AvailabilityViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val clubs by discoverViewModel.clubs.collectAsState()
-    val teams by discoverViewModel.teams.collectAsState()
-    val fixtures by scheduleViewModel.fixtures.collectAsState()
-    val linkedProfiles by scheduleViewModel.linkedProfiles.collectAsState()
-    val selectedProfileId by scheduleViewModel.selectedProfileId.collectAsState()
-    val allocationUpdatingId by scheduleViewModel.allocationUpdatingId.collectAsState()
-    val allocationFailure by scheduleViewModel.allocationFailure.collectAsState()
-    val profileTeams by scheduleViewModel.profileTeams.collectAsState()
-    val allProfileTeams by scheduleViewModel.allProfileTeams.collectAsState()
-    val linkedProfileRefreshResults by
-        scheduleViewModel.linkedProfileRefreshResults.collectAsState()
-    val linkMemberState by appViewModel.linkMemberState.collectAsState()
-    val unlinkMemberState by appViewModel.unlinkMemberState.collectAsState()
-    val relationships by discoverViewModel.relationships.collectAsState()
-    val themeMode by appViewModel.themeMode.collectAsState()
-    val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
-    val assignmentPollingInterval by
-        appViewModel.assignmentPollingInterval.collectAsState()
-    val teamHubState by teamViewModel.state.collectAsState()
-    val matchDetailsState by matchViewModel.state.collectAsState()
-    val matchSheetState by matchViewModel.matchSheetState.collectAsState()
-    val availabilityState by availabilityViewModel.state.collectAsState()
-    val availabilityProfileId by availabilityViewModel.activeProfileId.collectAsState()
-    val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
-    val shouldRequestNotificationPermission by
-        availabilityViewModel.shouldRequestNotificationPermission.collectAsState()
-    val requestAssignmentNotificationPermission =
-        rememberAssignmentNotificationPermissionRequester()
-
     val homeStack = rememberNavBackStack(navigationStateConfiguration, AppRoute.Home as NavKey)
     val scheduleStack = rememberNavBackStack(
         navigationStateConfiguration,
@@ -130,7 +101,12 @@ fun MainNavigation(
         navigationStateConfiguration,
         AppRoute.Profile as NavKey,
     )
-    var selected by remember { mutableStateOf(TopLevelDestination.Home) }
+    var selectedOrdinal by rememberSaveable {
+        mutableIntStateOf(TopLevelDestination.Home.ordinal)
+    }
+    val selected = TopLevelDestination.entries.getOrElse(selectedOrdinal) {
+        TopLevelDestination.Home
+    }
     val currentStack = when (selected) {
         TopLevelDestination.Home -> homeStack
         TopLevelDestination.Schedule -> scheduleStack
@@ -163,6 +139,12 @@ fun MainNavigation(
             },
             entryProvider = entryProvider {
                 entry<AppRoute.Home> {
+                    val linkedProfiles by scheduleViewModel.linkedProfiles.collectAsState()
+                    val selectedProfileId by scheduleViewModel.selectedProfileId.collectAsState()
+                    val profileTeams by scheduleViewModel.profileTeams.collectAsState()
+                    val linkedProfileRefreshResults by
+                        scheduleViewModel.linkedProfileRefreshResults.collectAsState()
+                    val fixtures by scheduleViewModel.fixtures.collectAsState()
                     HomeScreen(
                         model = HomeUiModel(
                             profile = profile,
@@ -186,7 +168,7 @@ fun MainNavigation(
                             }
                         },
                         onViewSchedule = {
-                            selected = TopLevelDestination.Schedule
+                            selectedOrdinal = TopLevelDestination.Schedule.ordinal
                         },
                         onTeamSelect = { profileTeam ->
                             val team = profileTeam.team
@@ -204,6 +186,13 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.Schedule> {
+                    val fixtures by scheduleViewModel.fixtures.collectAsState()
+                    val linkedProfiles by scheduleViewModel.linkedProfiles.collectAsState()
+                    val selectedProfileId by scheduleViewModel.selectedProfileId.collectAsState()
+                    val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
+                    val allocationUpdatingId by
+                        scheduleViewModel.allocationUpdatingId.collectAsState()
+                    val allocationFailure by scheduleViewModel.allocationFailure.collectAsState()
                     ScheduleScreen(
                         model = ScheduleUiModel(
                             fixtures = fixtures,
@@ -235,6 +224,7 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.Discover> {
+                    val clubs by discoverViewModel.clubs.collectAsState()
                     DiscoverScreen(
                         model = DiscoverUiModel(clubs),
                         onRefresh = discoverViewModel::refreshClubs,
@@ -245,6 +235,9 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.Club> { route ->
+                    val clubs by discoverViewModel.clubs.collectAsState()
+                    val teams by discoverViewModel.teams.collectAsState()
+                    val relationships by discoverViewModel.relationships.collectAsState()
                     val club = clubs.items.firstOrNull { it.id == route.clubId }
                     if (club != null) {
                         ClubScreen(
@@ -274,6 +267,7 @@ fun MainNavigation(
                     }
                 }
                 entry<AppRoute.Team> { route ->
+                    val teamHubState by teamViewModel.state.collectAsState()
                     TeamHubScreen(
                         profileId = route.profileId,
                         teamId = route.teamId,
@@ -314,6 +308,9 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.MatchDetails> { route ->
+                    val matchDetailsState by matchViewModel.state.collectAsState()
+                    val matchSheetState by matchViewModel.matchSheetState.collectAsState()
+                    val allProfileTeams by scheduleViewModel.allProfileTeams.collectAsState()
                     val details = matchDetailsState as? MatchDetailsUiState.Content
                     val fixture = details?.takeIf {
                         it.profileId == route.profileId && it.matchId == route.matchId
@@ -381,6 +378,9 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.TeamAvailability> { route ->
+                    val matchDetailsState by matchViewModel.state.collectAsState()
+                    val matchSheetState by matchViewModel.matchSheetState.collectAsState()
+                    val allProfileTeams by scheduleViewModel.allProfileTeams.collectAsState()
                     val details = matchDetailsState as? MatchDetailsUiState.Content
                     val fixture = details?.takeIf {
                         it.profileId == route.profileId && it.matchId == route.matchId
@@ -458,9 +458,37 @@ fun MainNavigation(
                                 teamAction,
                             )
                         },
+                        memberCard = { member, cardModifier ->
+                            com.github.apkelly.drool.profile.ui.PlayerHeroCard(
+                                user = com.github.apkelly.drool.common.domain.model.RelatedUser(
+                                    id = member.userId ?: member.id,
+                                    subjectUserId = member.userId ?: member.id,
+                                    displayName = member.displayName,
+                                    email = null,
+                                    avatarUrl = member.imageUrl,
+                                    firstName = member.firstName,
+                                ),
+                                role = when (member.roleName.lowercase()) {
+                                    "manager" ->
+                                        com.github.apkelly.drool.profile.ui.PlayerCardRole.Manager
+
+                                    "coach" ->
+                                        com.github.apkelly.drool.profile.ui.PlayerCardRole.Coach
+
+                                    else ->
+                                        com.github.apkelly.drool.profile.ui.PlayerCardRole.Player
+                                },
+                                modifier = cardModifier,
+                            )
+                        },
                     )
                 }
                 entry<AppRoute.Profile> {
+                    val themeMode by appViewModel.themeMode.collectAsState()
+                    val observabilityEnabled by appViewModel.observabilityEnabled.collectAsState()
+                    val assignmentPollingInterval by
+                        appViewModel.assignmentPollingInterval.collectAsState()
+                    val unlinkMemberState by appViewModel.unlinkMemberState.collectAsState()
                     ProfileScreen(
                         model = ProfileUiModel(
                             profile = profile,
@@ -485,6 +513,15 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.PersonalInformation> { route ->
+                    val allProfileTeams by scheduleViewModel.allProfileTeams.collectAsState()
+                    val refereeProfileIds by availabilityViewModel.refereeProfileIds.collectAsState()
+                    val availabilityState by availabilityViewModel.state.collectAsState()
+                    val availabilityProfileId by
+                        availabilityViewModel.activeProfileId.collectAsState()
+                    val shouldRequestNotificationPermission by
+                        availabilityViewModel.shouldRequestNotificationPermission.collectAsState()
+                    val requestAssignmentNotificationPermission =
+                        rememberAssignmentNotificationPermissionRequester()
                     profile.relatedUsers
                         .firstOrNull {
                             it.isLinked && it.subjectUserId == route.userId
@@ -561,6 +598,14 @@ fun MainNavigation(
                         }
                 }
                 entry<AppRoute.Availability> { route ->
+                    val linkedProfiles by scheduleViewModel.linkedProfiles.collectAsState()
+                    val availabilityState by availabilityViewModel.state.collectAsState()
+                    val availabilityProfileId by
+                        availabilityViewModel.activeProfileId.collectAsState()
+                    val shouldRequestNotificationPermission by
+                        availabilityViewModel.shouldRequestNotificationPermission.collectAsState()
+                    val requestAssignmentNotificationPermission =
+                        rememberAssignmentNotificationPermissionRequester()
                     AvailabilityDestination(
                         model = AvailabilityUiModel(
                             profileId = route.profileId,
@@ -599,6 +644,7 @@ fun MainNavigation(
                     )
                 }
                 entry<AppRoute.LinkMember> {
+                    val linkMemberState by appViewModel.linkMemberState.collectAsState()
                     LinkMemberScreen(
                         state = linkMemberState,
                         onBack = {
@@ -631,7 +677,7 @@ fun MainNavigation(
                         topLevelItems().forEach { item ->
                             NavigationBarItem(
                                 selected = selected == item.destination,
-                                onClick = { selected = item.destination },
+                                onClick = { selectedOrdinal = item.destination.ordinal },
                                 icon = {
                                     MaterialSymbolIcon(
                                         item.symbol,
@@ -659,7 +705,7 @@ fun MainNavigation(
                     topLevelItems().forEach { item ->
                         NavigationRailItem(
                             selected = selected == item.destination,
-                            onClick = { selected = item.destination },
+                            onClick = { selectedOrdinal = item.destination.ordinal },
                             icon = {
                                 MaterialSymbolIcon(
                                     item.symbol,

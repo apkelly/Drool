@@ -47,6 +47,7 @@ class DiscoverViewModel(
     private val clubsFailure = MutableStateFlow<RefreshFailure?>(null)
     private val teamsFailure = MutableStateFlow<RefreshFailure?>(null)
     private val selectedClubId = MutableStateFlow<String?>(null)
+    private val clubsRefreshMutex = Mutex()
     private val teamsRefreshMutex = Mutex()
 
     val clubs: StateFlow<CollectionUiState<Club>> =
@@ -71,7 +72,10 @@ class DiscoverViewModel(
     ) {
         val changed = selectedClubId.value != clubId
         selectedClubId.value = clubId
-        if (changed && clubId != null) refreshTeams(force = false)
+        if (changed) {
+            teamsFailure.value = null
+            if (clubId != null) refreshTeams(force = false)
+        }
     }
 
     fun refreshClubs(
@@ -79,15 +83,20 @@ class DiscoverViewModel(
     ) {
         if (clubsRefreshing.value) return
         viewModelScope.launch {
-            clubsRefreshing.value = true
-            clubsFailure.value = null
-            val result = refreshClubsUseCase(force)
-            observability.trackRefresh(RefreshArea.Clubs, result)
-            if (result is RefreshResult.Failed) {
-                logger.w { "Refresh failed: ${result.reason}" }
-                clubsFailure.value = result.reason
+            clubsRefreshMutex.withLock {
+                clubsRefreshing.value = true
+                clubsFailure.value = null
+                try {
+                    val result = refreshClubsUseCase(force)
+                    observability.trackRefresh(RefreshArea.Clubs, result)
+                    if (result is RefreshResult.Failed) {
+                        logger.w { "Refresh failed: ${result.reason}" }
+                        clubsFailure.value = result.reason
+                    }
+                } finally {
+                    clubsRefreshing.value = false
+                }
             }
-            clubsRefreshing.value = false
         }
     }
 
@@ -102,7 +111,7 @@ class DiscoverViewModel(
                 try {
                     val result = refreshTeamsUseCase(force, clubId)
                     observability.trackRefresh(RefreshArea.Teams, result)
-                    if (result is RefreshResult.Failed) {
+                    if (result is RefreshResult.Failed && selectedClubId.value == clubId) {
                         logger.w { "Refresh failed: ${result.reason}" }
                         teamsFailure.value = result.reason
                     }

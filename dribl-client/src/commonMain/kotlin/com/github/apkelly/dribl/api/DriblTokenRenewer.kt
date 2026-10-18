@@ -22,12 +22,20 @@ class DriblTokenRenewer(
     suspend fun currentToken(
         token: String,
     ): String = mutex.withLock {
+        if (store.getBearerToken() == null) {
+            replacements.clear()
+            return@withLock token
+        }
         resolveReplacement(token)
     }
 
     suspend fun renew(
         token: String,
     ): String? = mutex.withLock {
+        if (store.getBearerToken() == null) {
+            replacements.clear()
+            return@withLock null
+        }
         val current = resolveReplacement(token)
         if (current != token) return current
 
@@ -40,11 +48,18 @@ class DriblTokenRenewer(
 
         val renewed = response.bodyAsText().trim().trim('"')
             .takeIf(::isJwt) ?: return null
+        while (replacements.size >= MAX_REPLACEMENTS) {
+            replacements.remove(replacements.keys.first())
+        }
         replacements[token] = renewed
         if (store.getBearerToken() == token) {
             store.saveBearerToken(renewed)
         }
         renewed
+    }
+
+    suspend fun clear() = mutex.withLock {
+        replacements.clear()
     }
 
     private fun resolveReplacement(
@@ -71,3 +86,4 @@ private fun isJwt(
 private const val TOKEN_REFRESH_URL = "https://api.dribl.com/api/auth/token/refresh"
 private const val MINIMUM_JWT_LENGTH = 32
 private const val JWT_SEGMENT_COUNT = 3
+private const val MAX_REPLACEMENTS = 32

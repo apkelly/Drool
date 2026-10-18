@@ -113,6 +113,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     var refereeClubs: List<RefereeClub> = emptyList()
     var refereeClubsByToken: Map<String, List<RefereeClub>> = emptyMap()
     var refereeFixtures: List<Fixture> = emptyList()
+    var refereeFixturesByUser: Map<String, List<Fixture>> = emptyMap()
     var refereeAvailabilities: List<RefereeAvailability> = emptyList()
     var refereeAvailabilityQuery: Pair<String, String>? = null
     var createAvailabilityRequest: CreateRefereeAvailabilityRequest? = null
@@ -168,7 +169,7 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
         failure?.let { throw it }
         refereeFixtureTokens += bearerToken
         refereeFixtureUserIds += userId
-        return refereeFixtures.map { it }
+        return (refereeFixturesByUser[userId] ?: refereeFixtures).map { it }
     }
 
     override suspend fun updateRefereeAllocation(

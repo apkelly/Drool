@@ -27,7 +27,8 @@ class GoogleWeatherApiTest {
     @Test
     fun dailyForecastMapsMatchPeriodAndWholeDayRainfall() = runTest {
         val client = weatherClient { request ->
-            assertEquals("api-key", request.url.parameters["key"])
+            assertNull(request.url.parameters["key"])
+            assertEquals("api-key", request.headers["X-Goog-Api-Key"])
             assertEquals("-33.9", request.url.parameters["location.latitude"])
             assertEquals("151.17", request.url.parameters["location.longitude"])
             assertEquals("10", request.url.parameters["days"])

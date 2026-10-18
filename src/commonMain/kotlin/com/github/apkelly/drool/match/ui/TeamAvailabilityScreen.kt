@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
-import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.content_profile_image
@@ -52,8 +51,6 @@ import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
 import com.github.apkelly.drool.match.ui.model.MatchSheetUiState
-import com.github.apkelly.drool.profile.ui.PlayerCardRole
-import com.github.apkelly.drool.profile.ui.PlayerHeroCard
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +64,7 @@ fun TeamAvailabilityScreen(
     onAvailabilityChange: (String, Boolean) -> Unit,
     onTeamAction: (TeamSheetAction) -> Unit,
     modifier: Modifier = Modifier,
+    memberCard: @Composable (MatchSheetMember, Modifier) -> Unit = { _, _ -> },
 ) {
     val content = state as? MatchSheetUiState.Content
     val sheet = content?.matchSheet
@@ -183,10 +181,9 @@ fun TeamAvailabilityScreen(
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                PlayerHeroCard(
-                    user = member.toRelatedUser(),
-                    role = member.cardRole(),
-                    modifier = Modifier
+                memberCard(
+                    member,
+                    Modifier
                         .fillMaxWidth(MATCH_SHEET_CARD_WIDTH_FRACTION)
                         .widthIn(max = 360.dp)
                         .clickable(
@@ -249,21 +246,6 @@ private fun teamActionLabel(
         TeamSheetAction.Unconfirm -> Res.string.match_sheet_unconfirm
     },
 )
-
-private fun MatchSheetMember.toRelatedUser() = RelatedUser(
-    id = userId ?: id,
-    subjectUserId = userId ?: id,
-    displayName = displayName,
-    email = null,
-    avatarUrl = imageUrl,
-    firstName = firstName,
-)
-
-private fun MatchSheetMember.cardRole() = when (roleName.lowercase()) {
-    "manager" -> PlayerCardRole.Manager
-    "coach" -> PlayerCardRole.Coach
-    else -> PlayerCardRole.Player
-}
 
 private fun com.github.apkelly.drool.common.domain.model.TeamSheetStatus.label() = when (this) {
     com.github.apkelly.drool.common.domain.model.TeamSheetStatus.Open ->

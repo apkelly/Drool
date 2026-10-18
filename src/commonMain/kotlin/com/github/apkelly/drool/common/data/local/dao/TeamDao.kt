@@ -44,6 +44,19 @@ interface TeamDao {
         clubId: String,
     )
 
+    @Query(
+        """
+        SELECT * FROM TeamEntity
+        WHERE id IN (
+            SELECT teamId FROM TeamRelationshipEntity WHERE accountId IN (:accountIds)
+        )
+        ORDER BY name COLLATE NOCASE
+        """,
+    )
+    fun observeForAccounts(
+        accountIds: List<String>,
+    ): Flow<List<TeamEntity>>
+
     @Query("SELECT * FROM TeamRelationshipEntity WHERE accountId = :accountId")
     fun observeRelationships(
         accountId: String,
@@ -59,10 +72,27 @@ interface TeamDao {
         relationship: TeamRelationshipEntity,
     )
 
+    @Upsert
+    suspend fun upsertRelationships(
+        relationships: List<TeamRelationshipEntity>,
+    )
+
     @Query("DELETE FROM TeamRelationshipEntity WHERE accountId = :accountId AND teamId = :teamId")
     suspend fun deleteRelationship(
         accountId: String,
         teamId: String,
+    )
+
+    @Query(
+        """
+        DELETE FROM TeamRelationshipEntity
+        WHERE accountId = :accountId
+          AND relationship != :preservedRelationship
+        """,
+    )
+    suspend fun deleteServerRelationships(
+        accountId: String,
+        preservedRelationship: String = "Following",
     )
 
     @Query("DELETE FROM TeamRelationshipEntity WHERE accountId = :accountId")

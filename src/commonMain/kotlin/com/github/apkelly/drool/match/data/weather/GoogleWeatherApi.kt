@@ -29,7 +29,7 @@ class GoogleWeatherApi(
         val url = "$baseUrl/forecast/days:lookup"
         val response = client.get(url) {
             requestHeaders.forEach { (name, value) -> header(name, value) }
-            parameter("key", apiKey)
+            header("X-Goog-Api-Key", apiKey)
             parameter("location.latitude", latitude)
             parameter("location.longitude", longitude)
             parameter("days", FORECAST_DAYS)

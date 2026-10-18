@@ -82,7 +82,7 @@ class DiscoverRepositoryImpl(
     ) { token ->
         val clubs = api.fetchClubs(token)
         database.inTransaction {
-            database.clubDao().deleteAll()
+            database.clubDao().deleteUnreferenced()
             database.clubDao().upsertAll(clubs.map { it.toEntity() })
             database.markUpdated(CLUBS_KEY, PUBLIC_SCOPE, timeProvider.nowEpochMillis())
         }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,6 +59,8 @@ fun MaterialSymbolIcon(
     tint: Color = LocalContentColor.current,
 ) {
     val fontSize = with(LocalDensity.current) { size.toSp() }
+    val font = Font(Res.font.material_symbols_outlined)
+    val fontFamily = remember(font) { FontFamily(font) }
     Text(
         text = symbol.glyph,
         modifier = modifier
@@ -70,7 +73,7 @@ fun MaterialSymbolIcon(
                 }
             },
         color = tint,
-        fontFamily = FontFamily(Font(Res.font.material_symbols_outlined)),
+        fontFamily = fontFamily,
         fontSize = fontSize,
         lineHeight = fontSize,
         textAlign = TextAlign.Center,

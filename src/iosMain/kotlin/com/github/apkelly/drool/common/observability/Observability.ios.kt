@@ -1,5 +1,7 @@
 package com.github.apkelly.drool.common.observability
 
+import kotlin.concurrent.Volatile
+
 interface IosObservabilityHandler {
     fun setCollectionEnabled(
         enabled: Boolean,
@@ -28,15 +30,20 @@ object IosObservabilityRegistry {
 }
 
 private object IosObservability : Observability {
+    @Volatile
+    private var collectionEnabled = false
+
     override fun setCollectionEnabled(
         enabled: Boolean,
     ) {
+        collectionEnabled = enabled
         IosObservabilityRegistry.current()?.setCollectionEnabled(enabled)
     }
 
     override fun log(
         event: AnalyticsEvent,
     ) {
+        if (!collectionEnabled) return
         val payload = event.toPayload()
         IosObservabilityRegistry.current()?.logEvent(
             name = payload.name,
@@ -49,6 +56,7 @@ private object IosObservability : Observability {
         error: Throwable,
         operation: NonFatalOperation,
     ) {
+        if (!collectionEnabled) return
         IosObservabilityRegistry.current()?.recordNonFatal(
             errorType = error::class.simpleName ?: "Exception",
             operation = operation.eventValue,

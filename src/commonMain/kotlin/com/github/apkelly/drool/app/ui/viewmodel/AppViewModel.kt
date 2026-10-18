@@ -41,6 +41,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -80,11 +81,13 @@ class AppViewModel(
 
     val observabilityEnabled: StateFlow<Boolean> =
         observeObservabilityEnabled()
+            .distinctUntilChanged()
             .onEach(observability::setCollectionEnabled)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val assignmentPollingInterval: StateFlow<AssignmentPollingInterval> =
         observeAssignmentPollingInterval()
+            .distinctUntilChanged()
             .onEach(assignmentPollingScheduler::schedule)
             .stateIn(viewModelScope, SharingStarted.Eagerly, AssignmentPollingInterval.Off)
 
@@ -188,6 +191,8 @@ class AppViewModel(
         viewModelScope.launch {
             signOutUser()
             observability.log(AnalyticsEvent.SignedOut)
+            mutableLinkMemberState.value = LinkMemberUiState.Idle
+            mutableUnlinkMemberState.value = UnlinkMemberUiState.Idle
             updateSessionState(SessionUiState.AuthenticationRequired)
         }
     }

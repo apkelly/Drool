@@ -2,7 +2,6 @@ package com.github.apkelly.drool.schedule.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.Profile
@@ -18,8 +17,6 @@ import com.github.apkelly.drool.common.observability.RefreshArea
 import com.github.apkelly.drool.common.ui.model.CollectionUiState
 import com.github.apkelly.drool.common.ui.viewmodel.collectionState
 import com.github.apkelly.drool.common.ui.viewmodel.trackRefresh
-import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
-import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.ObserveFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshFixturesUseCase
 import com.github.apkelly.drool.schedule.domain.usecase.RefreshLinkedProfilesUseCase
@@ -40,8 +37,8 @@ import kotlinx.coroutines.sync.withLock
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScheduleViewModel(
     private val observeFixtures: ObserveFixturesUseCase,
-    private val observeProfileTeams: ObserveProfileTeamsUseCase,
-    private val observeProfileClubs: ObserveProfileClubsUseCase,
+    private val observeProfileTeams: com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase,
+    private val observeProfileClubs: com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase,
     private val refreshFixturesUseCase: RefreshFixturesUseCase,
     private val refreshLinkedProfiles: RefreshLinkedProfilesUseCase,
     private val updateRefereeAllocationUseCase: UpdateRefereeAllocationUseCase,
@@ -72,15 +69,8 @@ class ScheduleViewModel(
             if (profiles.isEmpty()) {
                 observeFixtures()
             } else {
-                observeFixtures(profiles.map { it.id }.toSet()).map { fixtures ->
-                    CachedData(
-                        value = fixtures.filter {
-                            selected == null || it.profileId == selected
-                        },
-                        lastUpdatedEpochMillis = null,
-                        isStale = fixtures.isEmpty(),
-                    )
-                }
+                val activeIds = selected?.let(::setOf) ?: profiles.map { it.id }.toSet()
+                observeFixtures(activeIds)
             }
         }.combine(fixturesRefreshing) { data, refreshing -> data to refreshing }
             .combine(fixturesFailure) { (data, refreshing), failure ->
@@ -113,7 +103,7 @@ class ScheduleViewModel(
                     clubs.filter { selected == null || it.profileId == selected }
                 }
             }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun configureLinkedProfiles(
         profile: Profile,
@@ -175,10 +165,9 @@ class ScheduleViewModel(
         val allocationId = fixture.refereeAllocationId ?: return
         val profile = mutableLinkedProfiles.value.firstOrNull { it.id == fixture.profileId }
             ?: return
-        if (mutableAllocationUpdatingId.value != null) return
+        if (!mutableAllocationUpdatingId.compareAndSet(null, allocationId)) return
 
         viewModelScope.launch {
-            mutableAllocationUpdatingId.value = allocationId
             mutableAllocationFailure.value = null
             try {
                 when (

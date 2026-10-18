@@ -155,9 +155,9 @@ class SessionDataSourceImpl(
                 relatedUsers = authSession.relatedUsers,
                 accounts = authSession.accounts,
                 replaceAssociations = true,
+                bearerToken = token,
             )
             refreshAssociations(token, profileDto.accountId, credentials.username.trim())
-            store.saveBearerToken(token)
             return AuthenticatedSession(
                 token,
                 attachAssociations(profileDto),
@@ -416,7 +416,13 @@ class SessionDataSourceImpl(
         relatedUsers: List<RelatedUser> = emptyList(),
         accounts: List<Account> = emptyList(),
         replaceAssociations: Boolean = false,
+        bearerToken: String? = null,
     ) {
+        if (bearerToken != null) {
+            store.saveSession(bearerToken, profileDto.accountId)
+        } else {
+            store.setActiveAccountId(profileDto.accountId)
+        }
         database.inTransaction {
             database.profileDao().deactivateAll()
             database.profileDao().upsert(profileDto.toEntity())
@@ -431,7 +437,6 @@ class SessionDataSourceImpl(
                 )
             }
         }
-        store.setActiveAccountId(profileDto.accountId)
     }
 
     override suspend fun signOut() {

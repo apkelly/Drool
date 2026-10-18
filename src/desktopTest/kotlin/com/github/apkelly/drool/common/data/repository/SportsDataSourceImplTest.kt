@@ -462,7 +462,7 @@ class SportsDataSourceImplTest {
     }
 
     @Test
-    fun linkedProfilesRefreshAndObserveAttributedFixturesAndTeams() = runTest {
+    fun linkedProfilesLoadUserScopedAllocationsWithoutActiveRefereeClubs() = runTest {
         fixture { repository, remote, store, clock, database ->
             store.saveBearerToken("root-token")
             remote.fixtures = listOf(
@@ -497,31 +497,23 @@ class SportsDataSourceImplTest {
             remote.profileClubs = listOf(
                 Club("club", "United", "U", null, "#008000", "#FFFFFF"),
             )
-            remote.refereeClubsByToken = mapOf(
-                "profile-token-child" to listOf(
-                    com.github.apkelly.drool.common.domain.model.RefereeClub(
-                        id = "referee-club",
-                        name = "Referee Club",
-                        logoUrl = null,
-                        timeZone = "Australia/Sydney",
+            remote.refereeFixturesByUser = mapOf(
+                "child" to listOf(
+                    Fixture(
+                        id = "referee-match",
+                        kickoffEpochMillis = 2_000L,
+                        homeTeamId = "home",
+                        homeTeamName = "Home",
+                        awayTeamId = "away",
+                        awayTeamName = "Away",
+                        competitionName = "Competition",
+                        venueName = "Field",
+                        userTeamId = null,
+                        status = FixtureStatus.Scheduled,
+                        role = FixtureRole.Referee,
+                        refereeAllocationId = "allocation",
+                        refereeStatus = "accepted",
                     ),
-                ),
-            )
-            remote.refereeFixtures = listOf(
-                Fixture(
-                    id = "referee-match",
-                    kickoffEpochMillis = 2_000L,
-                    homeTeamId = "home",
-                    homeTeamName = "Home",
-                    awayTeamId = "away",
-                    awayTeamName = "Away",
-                    competitionName = "Competition",
-                    venueName = "Field",
-                    userTeamId = null,
-                    status = FixtureStatus.Scheduled,
-                    role = FixtureRole.Referee,
-                    refereeAllocationId = "allocation",
-                    refereeStatus = "accepted",
                 ),
             )
             val profiles = listOf(
@@ -572,11 +564,19 @@ class SportsDataSourceImplTest {
             )
             assertEquals(listOf("child"), remote.profileSessionUsers)
             assertEquals(listOf<String?>("root", "child"), remote.fixtureUserIds)
-            assertEquals(listOf("profile-token-child"), remote.refereeFixtureTokens)
-            assertEquals(listOf("child"), remote.refereeFixtureUserIds)
+            assertEquals(
+                listOf("root-token", "profile-token-child"),
+                remote.refereeFixtureTokens,
+            )
+            assertEquals(listOf("root", "child"), remote.refereeFixtureUserIds)
 
-            val fixtures =
+            assertTrue(
+                repository.observeLinkedProfileFixtures(emptySet()).first().value.isEmpty(),
+            )
+            val cachedFixtures =
                 repository.observeLinkedProfileFixtures(setOf("root", "child")).first()
+            assertFalse(cachedFixtures.isStale)
+            val fixtures = cachedFixtures.value
             assertEquals(3, fixtures.size)
             assertEquals(setOf("root", "child"), fixtures.mapNotNull { it.profileId }.toSet())
             assertEquals(
@@ -643,18 +643,21 @@ class SportsDataSourceImplTest {
                 RefreshResult.NotModified,
                 repository.refreshLinkedProfiles(profiles, force = false)["child"],
             )
-            val hydratedFromCachedRefresh =
+            val unhydratedWhileFresh =
                 database.profileDao().getRelatedUser("root", "child")
-            assertEquals("0400 999 999", hydratedFromCachedRefresh?.phoneNumber)
-            assertEquals(
-                listOf(EmergencyContact("Bukayo Saka", "0400 444 444")),
-                hydratedFromCachedRefresh?.toDomain()?.emergencyContacts,
-            )
+            assertEquals("0400 000 000", unhydratedWhileFresh?.phoneNumber)
             clock.now = 7L * 60L * 60L * 1_000L
             assertTrue(
                 repository.refreshLinkedProfiles(profiles, force = false)
                     .values
                     .all { it == RefreshResult.Updated },
+            )
+            val hydratedAfterStale =
+                database.profileDao().getRelatedUser("root", "child")
+            assertEquals("0400 999 999", hydratedAfterStale?.phoneNumber)
+            assertEquals(
+                listOf(EmergencyContact("Bukayo Saka", "0400 444 444")),
+                hydratedAfterStale?.toDomain()?.emergencyContacts,
             )
             assertTrue(
                 repository.refreshLinkedProfiles(profiles, force = true)
@@ -745,15 +748,15 @@ class SportsDataSourceImplTest {
                 invalidProfiles["child"],
             )
             remote.profileSessionFailureUsers += "child"
+            assertEquals(
+                RefreshResult.NotModified,
+                repository.refreshLinkedProfiles(profiles, force = false)["child"],
+            )
             val results = repository.refreshLinkedProfiles(profiles, force = true)
             assertEquals(RefreshResult.Updated, results["root"])
             assertEquals(
                 RefreshResult.Failed(RefreshFailure.Unknown, false),
                 results["child"],
-            )
-            assertEquals(
-                RefreshResult.Failed(RefreshFailure.Unknown, false),
-                repository.refreshLinkedProfiles(profiles, force = false)["child"],
             )
         }
     }

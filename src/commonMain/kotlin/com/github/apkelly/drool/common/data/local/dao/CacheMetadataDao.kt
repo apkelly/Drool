@@ -14,6 +14,20 @@ interface CacheMetadataDao {
         accountScope: String,
     ): Flow<CacheMetadataEntity?>
 
+    @Query(
+        """
+        SELECT * FROM CacheMetadataEntity
+        WHERE cacheKey = :cacheKey
+          AND accountScope IN (:accountScopes)
+        ORDER BY updatedAtEpochMillis ASC
+        LIMIT 1
+        """,
+    )
+    fun observeOldestForAccounts(
+        cacheKey: String,
+        accountScopes: List<String>,
+    ): Flow<CacheMetadataEntity?>
+
     @Query("SELECT * FROM CacheMetadataEntity WHERE cacheKey = :cacheKey AND accountScope = :accountScope LIMIT 1")
     suspend fun get(
         cacheKey: String,

@@ -14,7 +14,7 @@ class HomeRepositoryImpl(
     override fun observeProfileTeams(
         profileIds: Set<String>,
     ) = combine(
-        database.teamDao().observeAll(),
+        database.teamDao().observeForAccounts(profileIds.toList()),
         database.teamDao().observeRelationships(profileIds.toList()),
     ) { teams, relationships ->
         val teamsById = teams.associateBy { it.id }
@@ -32,7 +32,7 @@ class HomeRepositoryImpl(
     override fun observeProfileClubs(
         profileIds: Set<String>,
     ) = combine(
-        database.clubDao().observeAll(),
+        database.clubDao().observeForAccounts(profileIds.toList()),
         database.clubDao().observeRelationships(profileIds.toList()),
     ) { clubs, relationships ->
         val clubsById = clubs.associateBy { it.id }

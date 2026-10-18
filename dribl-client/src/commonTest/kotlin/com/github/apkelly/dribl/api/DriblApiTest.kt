@@ -29,6 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.time.Instant
 
 class DriblApiTest {
     @Test
@@ -1194,6 +1195,47 @@ class DriblApiTest {
         assertEquals("user-42", parameters?.get("user_id"))
         assertEquals("2025-10-04T12:00:00Z", parameters?.get("start_date"))
         assertEquals("2026-01-16T12:00:00Z", parameters?.get("end_date"))
+    }
+
+    @Test
+    fun pendingRefereeAllocationAcceptsMatchAndStartDateFields() = runTest {
+        val client = HttpClient(MockEngine) {
+            install(ContentNegotiation) { json(driblJson) }
+            engine {
+                addHandler {
+                    respond(
+                        content = """
+                            {
+                              "data": [{
+                                "type": "allocations",
+                                "id": 789,
+                                "attributes": {
+                                  "match_id": 654,
+                                  "start_date": "2026-11-03T07:00:00Z",
+                                  "home_club_name": "Home FC",
+                                  "away_club_name": "Away FC",
+                                  "referee_status": "pending"
+                                }
+                              }]
+                            }
+                        """.trimIndent(),
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            }
+        }
+
+        val fixture = DriblSportsApi(client, "https://example.test/api")
+            .fetchRefereeFixtures("token", "user-42")
+            .single()
+
+        assertEquals("654", fixture.id)
+        assertEquals(
+            Instant.parse("2026-11-03T07:00:00Z").toEpochMilliseconds(),
+            fixture.kickoffEpochMillis,
+        )
+        assertEquals("789", fixture.refereeAllocationId)
+        assertEquals("pending", fixture.refereeStatus)
     }
 
     @Test

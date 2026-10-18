@@ -33,3 +33,7 @@ kotlin {
         }
     }
 }
+
+tasks.matching { it.name == "desktopRun" }.configureEach {
+    enabled = false
+}

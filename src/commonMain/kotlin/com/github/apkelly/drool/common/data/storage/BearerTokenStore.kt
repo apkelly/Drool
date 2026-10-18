@@ -33,6 +33,16 @@ class BearerTokenStore(
         }
     }
 
+    suspend fun saveSession(
+        token: String,
+        accountId: String,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[BearerTokenKey] = token
+            preferences[ActiveAccountKey] = accountId
+        }
+    }
+
     suspend fun clearBearerToken() {
         dataStore.edit { preferences ->
             preferences.remove(BearerTokenKey)

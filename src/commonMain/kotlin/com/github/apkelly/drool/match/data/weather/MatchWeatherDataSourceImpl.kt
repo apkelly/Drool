@@ -18,28 +18,30 @@ class MatchWeatherDataSourceImpl(
         fixture: Fixture,
         force: Boolean,
     ): MatchWeather? {
-        val latitude = fixture.latitude ?: return null
-        val longitude = fixture.longitude ?: return null
-        val key = apiKey?.takeIf(String::isNotBlank) ?: return null
         val now = timeProvider.nowEpochMillis()
         val cacheKey = "$CACHE_VERSION:${fixture.id}"
         val cached = database.matchWeatherCacheDao().get(cacheKey)
         if (!force && cached != null && now - cached.updatedAtEpochMillis < WEATHER_CACHE_TTL) {
             return cached.payloadJson?.let(Json::decodeFromString)
         }
+        val latitude = fixture.latitude ?: return null
+        val longitude = fixture.longitude ?: return null
+        val key = apiKey?.takeIf(String::isNotBlank) ?: return null
         val weather = api.fetchMatchWeather(
             apiKey = key,
             latitude = latitude,
             longitude = longitude,
             kickoffEpochMillis = fixture.kickoffEpochMillis,
         )
-        database.matchWeatherCacheDao().upsert(
-            MatchWeatherCacheEntity(
-                matchId = cacheKey,
-                payloadJson = weather?.let { Json.encodeToString(it) },
-                updatedAtEpochMillis = now,
-            ),
-        )
+        if (weather != null) {
+            database.matchWeatherCacheDao().upsert(
+                MatchWeatherCacheEntity(
+                    matchId = cacheKey,
+                    payloadJson = Json.encodeToString(weather),
+                    updatedAtEpochMillis = now,
+                ),
+            )
+        }
         return weather
     }
 

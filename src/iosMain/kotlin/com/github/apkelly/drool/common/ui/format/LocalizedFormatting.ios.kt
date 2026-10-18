@@ -7,53 +7,94 @@ import platform.Foundation.NSDateFormatterFullStyle
 import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDateFormatterShortStyle
+import platform.Foundation.NSLock
+
+private val formatterLock = NSLock()
+
+private val dateTimeFormatter by lazy {
+    NSDateFormatter().apply {
+        dateStyle = NSDateFormatterMediumStyle
+        timeStyle = NSDateFormatterShortStyle
+    }
+}
+
+private val dateHeadingFormatter by lazy {
+    NSDateFormatter().apply {
+        dateStyle = NSDateFormatterFullStyle
+        timeStyle = NSDateFormatterNoStyle
+    }
+}
+
+private val dayFormatter by lazy {
+    NSDateFormatter().apply {
+        dateFormat = "EEEE"
+    }
+}
+
+private val dateFormatter by lazy {
+    NSDateFormatter().apply {
+        dateStyle = NSDateFormatterMediumStyle
+        timeStyle = NSDateFormatterNoStyle
+    }
+}
+
+private val timeFormatter by lazy {
+    NSDateFormatter().apply {
+        dateStyle = NSDateFormatterNoStyle
+        timeStyle = NSDateFormatterShortStyle
+    }
+}
 
 @Composable
 actual fun formatFixtureDateTime(
     epochMillis: Long,
-): String = NSDateFormatter().apply {
-    dateStyle = NSDateFormatterMediumStyle
-    timeStyle = NSDateFormatterShortStyle
-}.stringFromDate(
-    NSDate(timeIntervalSinceReferenceDate = epochMillis / 1_000.0 - 978_307_200.0),
-)
+): String = withFormatterLock {
+    dateTimeFormatter.stringFromDate(epochMillis.toDate())
+}
 
 actual fun formatFixtureDateHeading(
     epochMillis: Long,
-): String = NSDateFormatter().apply {
-    dateStyle = NSDateFormatterFullStyle
-    timeStyle = NSDateFormatterNoStyle
-}.stringFromDate(
-    NSDate(timeIntervalSinceReferenceDate = epochMillis / 1_000.0 - 978_307_200.0),
-)
+): String = withFormatterLock {
+    dateHeadingFormatter.stringFromDate(epochMillis.toDate())
+}
 
 @Composable
 actual fun formatFixtureDay(
     epochMillis: Long,
-): String = NSDateFormatter().apply {
-    dateFormat = "EEEE"
-}.stringFromDate(epochMillis.toDate())
+): String = withFormatterLock {
+    dayFormatter.stringFromDate(epochMillis.toDate())
+}
 
 @Composable
 actual fun formatFixtureDate(
     epochMillis: Long,
-): String = NSDateFormatter().apply {
-    dateStyle = NSDateFormatterMediumStyle
-    timeStyle = NSDateFormatterNoStyle
-}.stringFromDate(epochMillis.toDate())
+): String = withFormatterLock {
+    dateFormatter.stringFromDate(epochMillis.toDate())
+}
 
 @Composable
 actual fun formatFixtureTime(
     epochMillis: Long,
-): String = NSDateFormatter().apply {
-    dateStyle = NSDateFormatterNoStyle
-    timeStyle = NSDateFormatterShortStyle
-}.stringFromDate(epochMillis.toDate())
+): String = withFormatterLock {
+    timeFormatter.stringFromDate(epochMillis.toDate())
+}
 
 @Composable
-actual fun platformUses24HourClock(): Boolean = NSDateFormatter().apply {
-    dateStyle = NSDateFormatterNoStyle
-    timeStyle = NSDateFormatterShortStyle
-}.dateFormat.any { it == 'H' || it == 'k' }
+actual fun platformUses24HourClock(): Boolean = withFormatterLock {
+    timeFormatter.dateFormat.any { it == 'H' || it == 'k' }
+}
 
-private fun Long.toDate(): NSDate = NSDate(timeIntervalSinceReferenceDate = this / 1_000.0 - 978_307_200.0)
+private inline fun <T> withFormatterLock(
+    block: () -> T,
+): T {
+    formatterLock.lock()
+    return try {
+        block()
+    } finally {
+        formatterLock.unlock()
+    }
+}
+
+private fun Long.toDate(): NSDate = NSDate(
+    timeIntervalSinceReferenceDate = this / 1_000.0 - 978_307_200.0,
+)

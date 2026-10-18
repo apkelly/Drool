@@ -80,10 +80,34 @@ private final class AssignmentPollingHandler:
     }
 
     func schedule(intervalSeconds: Double) {
+        let previousInterval = UserDefaults.standard.double(
+            forKey: Self.intervalDefaultsKey
+        )
         UserDefaults.standard.set(
             intervalSeconds,
             forKey: Self.intervalDefaultsKey
         )
+        guard intervalSeconds > 0 else {
+            BGTaskScheduler.shared.cancel(
+                taskRequestWithIdentifier: Self.taskIdentifier
+            )
+            return
+        }
+        if previousInterval == intervalSeconds {
+            BGTaskScheduler.shared.getPendingTaskRequests { requests in
+                let alreadyPending = requests.contains {
+                    $0.identifier == Self.taskIdentifier
+                }
+                if !alreadyPending {
+                    self.submitRefreshRequest(intervalSeconds: intervalSeconds)
+                }
+            }
+            return
+        }
+        submitRefreshRequest(intervalSeconds: intervalSeconds)
+    }
+
+    private func submitRefreshRequest(intervalSeconds: Double) {
         BGTaskScheduler.shared.cancel(
             taskRequestWithIdentifier: Self.taskIdentifier
         )
@@ -111,7 +135,7 @@ private final class AssignmentPollingHandler:
         let interval = UserDefaults.standard.double(
             forKey: Self.intervalDefaultsKey
         )
-        schedule(intervalSeconds: interval)
+        submitRefreshRequest(intervalSeconds: interval)
         task.expirationHandler = {
             IosAssignmentPollBridge.shared.cancel()
             completion.finish(success: false)

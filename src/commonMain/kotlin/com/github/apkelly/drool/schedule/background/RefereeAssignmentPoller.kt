@@ -1,6 +1,7 @@
 package com.github.apkelly.drool.schedule.background
 
 import com.github.apkelly.drool.common.data.local.DroolDatabase
+import com.github.apkelly.drool.common.data.local.entity.CacheMetadataEntity
 import com.github.apkelly.drool.common.data.local.entity.FixtureEntity
 import com.github.apkelly.drool.common.data.local.entity.RefereeAssignmentSnapshotEntity
 import com.github.apkelly.drool.common.data.local.inTransaction
@@ -21,14 +22,20 @@ class RefereeAssignmentPoller(
         val profile = sessionDataSource.observeProfile().first() ?: return AssignmentPollResult.NoSession
         val profiles = profile.linkedProfiles
         val results = scheduleRepository.refreshLinkedProfiles(profiles, force = true)
-        if (results.values.all { it is RefreshResult.Failed }) {
+        val baselineReady = store.getAssignmentBaselineAccountId() == profile.accountId &&
+            database.cacheMetadataDao().get(ASSIGNMENT_BASELINE_KEY, profile.accountId) != null
+        val failedProfileIds = results.filterValues { it is RefreshResult.Failed }.keys
+        if (
+            results.values.all { it is RefreshResult.Failed } ||
+            (!baselineReady && failedProfileIds.isNotEmpty())
+        ) {
             return AssignmentPollResult.Retry
         }
 
+        val succeededProfileIds = profiles.map { it.id }.filterNot { it in failedProfileIds }
         val assignments = database.fixtureDao()
-            .getRefereeFixtures(profiles.map { it.id })
+            .getRefereeFixtures(succeededProfileIds)
             .map { it.toAssignmentSnapshot(profile.accountId) }
-        val baselineReady = store.getAssignmentBaselineAccountId() == profile.accountId
         val previous = if (baselineReady) {
             database.refereeAssignmentSnapshotDao().getForOwner(profile.accountId)
                 .associateBy(RefereeAssignmentSnapshotEntity::assignmentKey)
@@ -40,7 +47,11 @@ class RefereeAssignmentPoller(
             previous = previous,
             current = assignments,
         )
-        database.replaceAssignmentSnapshots(profile.accountId, assignments)
+        val preservedFromFailed = previous.values.filter { it.profileId in failedProfileIds }
+        database.replaceAssignmentSnapshots(
+            ownerAccountId = profile.accountId,
+            assignments = assignments + preservedFromFailed,
+        )
         store.setAssignmentBaselineAccountId(profile.accountId)
         return AssignmentPollResult.Completed(notifications)
     }
@@ -117,6 +128,8 @@ private fun String?.displayStatus(): String = this
     ?.replaceFirstChar(Char::uppercase)
     ?: "Status changed"
 
+private const val ASSIGNMENT_BASELINE_KEY = "referee_assignment_baseline"
+
 private suspend fun DroolDatabase.replaceAssignmentSnapshots(
     ownerAccountId: String,
     assignments: List<RefereeAssignmentSnapshotEntity>,
@@ -124,5 +137,12 @@ private suspend fun DroolDatabase.replaceAssignmentSnapshots(
     inTransaction {
         refereeAssignmentSnapshotDao().deleteForOwner(ownerAccountId)
         refereeAssignmentSnapshotDao().upsertAll(assignments)
+        cacheMetadataDao().upsert(
+            CacheMetadataEntity(
+                cacheKey = ASSIGNMENT_BASELINE_KEY,
+                accountScope = ownerAccountId,
+                updatedAtEpochMillis = 0L,
+            ),
+        )
     }
 }

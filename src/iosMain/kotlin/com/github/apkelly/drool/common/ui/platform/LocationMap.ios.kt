@@ -12,6 +12,8 @@ import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSURL
+import platform.Foundation.NSURLComponents
+import platform.Foundation.NSURLQueryItem
 import platform.UIKit.UIApplication
 import platform.UIKit.UIView
 
@@ -47,14 +49,20 @@ actual fun rememberLocationActionLauncher(): LocationActionLauncher = remember {
         ) {
             val destination = destination(latitude, longitude, address)
             val application = UIApplication.sharedApplication
-            val appUrl = NSURL.URLWithString(
-                "comgooglemaps://?daddr=${destination.urlQueryValue()}" +
-                    "&directionsmode=driving",
+            val appUrl = buildUrl(
+                baseUrl = "comgooglemaps://",
+                queryItems = listOf(
+                    NSURLQueryItem(name = "daddr", value = destination),
+                    NSURLQueryItem(name = "directionsmode", value = "driving"),
+                ),
             )
-            val webUrl = NSURL.URLWithString(
-                "https://www.google.com/maps/dir/" +
-                    "?api=1&destination=${destination.urlQueryValue()}" +
-                    "&travelmode=driving",
+            val webUrl = buildUrl(
+                baseUrl = "https://www.google.com/maps/dir/",
+                queryItems = listOf(
+                    NSURLQueryItem(name = "api", value = "1"),
+                    NSURLQueryItem(name = "destination", value = destination),
+                    NSURLQueryItem(name = "travelmode", value = "driving"),
+                ),
             )
             when {
                 appUrl != null && application.canOpenURL(appUrl) ->
@@ -105,8 +113,9 @@ private fun destination(
     address: String,
 ): String = if (latitude != null && longitude != null) "$latitude,$longitude" else address
 
-private fun String.urlQueryValue(): String = replace("%", "%25")
-    .replace(" ", "%20")
-    .replace("#", "%23")
-    .replace("&", "%26")
-    .replace(",", "%2C")
+private fun buildUrl(
+    baseUrl: String,
+    queryItems: List<NSURLQueryItem>,
+): NSURL? = NSURLComponents.componentsWithString(baseUrl)?.apply {
+    setQueryItems(queryItems)
+}?.URL

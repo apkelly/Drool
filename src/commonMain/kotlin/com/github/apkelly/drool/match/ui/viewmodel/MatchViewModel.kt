@@ -57,23 +57,28 @@ class MatchViewModel(
         force: Boolean = false,
     ) {
         val details = mutableState.value as? MatchDetailsUiState.Content ?: return
+        val matchId = details.matchId
         val current = mutableMatchSheetState.value as? MatchSheetUiState.Content
-        if (!force && current?.profileId == profileId && current.matchId == details.matchId) return
-        mutableMatchSheetState.value = MatchSheetUiState.Loading(profileId, details.matchId)
+        if (!force && current?.profileId == profileId && current.matchId == matchId) return
+        val loadingState = MatchSheetUiState.Loading(profileId, matchId)
+        mutableMatchSheetState.value = loadingState
         viewModelScope.launch {
-            mutableMatchSheetState.value = when (
+            val nextState = when (
                 val result = loadMatchSheetUseCase(profileId, details.fixture)
             ) {
                 is OperationResult.Success -> MatchSheetUiState.Content(
                     profileId = profileId,
-                    matchId = details.matchId,
+                    matchId = matchId,
                     matchSheet = result.value,
                 )
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to load match sheet: ${result.reason}" }
-                    MatchSheetUiState.Failed(profileId, details.matchId)
+                    MatchSheetUiState.Failed(profileId, matchId)
                 }
+            }
+            if (mutableMatchSheetState.value == loadingState) {
+                mutableMatchSheetState.value = nextState
             }
         }
     }
@@ -106,7 +111,12 @@ class MatchViewModel(
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to update match sheet member: ${result.reason}" }
-                    mutableMatchSheetState.value = current.copy(updateFailed = true)
+                    val latest = mutableMatchSheetState.value as? MatchSheetUiState.Content
+                        ?: return@launch
+                    mutableMatchSheetState.value = latest.copy(
+                        updatingMemberId = null,
+                        updateFailed = true,
+                    )
                 }
             }
         }
@@ -149,7 +159,12 @@ class MatchViewModel(
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to update team sheet status: ${result.reason}" }
-                    mutableMatchSheetState.value = current.copy(updateFailed = true)
+                    val latest = mutableMatchSheetState.value as? MatchSheetUiState.Content
+                        ?: return@launch
+                    mutableMatchSheetState.value = latest.copy(
+                        updatingTeamId = null,
+                        updateFailed = true,
+                    )
                 }
             }
         }
@@ -166,6 +181,10 @@ class MatchViewModel(
         if (!force && matchCache.isResolved(key) && current != null) return
         if (force && current?.isRefreshing == true) return
         if (mutableState.value == MatchDetailsUiState.Loading(profileId, matchId)) return
+
+        if (!isMatchSheetFor(profileId, matchId)) {
+            mutableMatchSheetState.value = MatchSheetUiState.Idle
+        }
 
         val cached = current?.fixture ?: matchCache.get(key)
         when {
@@ -191,13 +210,16 @@ class MatchViewModel(
                 is OperationResult.Failed -> {
                     logger.w { "Unable to load match details: ${result.reason}" }
                     if (cached == null) {
-                        mutableState.value = MatchDetailsUiState.Failed(profileId, matchId)
+                        if (isDetailsTarget(profileId, matchId)) {
+                            mutableState.value = MatchDetailsUiState.Failed(profileId, matchId)
+                        }
                         return@launch
                     }
                     refreshFailed = true
                     cached
                 }
             }
+            if (!isDetailsTarget(profileId, matchId)) return@launch
             mutableState.value = MatchDetailsUiState.Content(
                 profileId = profileId,
                 matchId = matchId,
@@ -212,7 +234,9 @@ class MatchViewModel(
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to load match weather: ${result.reason}" }
-                    refreshFailed = true
+                    if (force) {
+                        refreshFailed = true
+                    }
                     current?.weather
                 }
             }
@@ -227,5 +251,36 @@ class MatchViewModel(
                 )
             }
         }
+    }
+
+    private fun isDetailsTarget(
+        profileId: String,
+        matchId: String,
+    ): Boolean = when (val current = mutableState.value) {
+        is MatchDetailsUiState.Loading ->
+            current.profileId == profileId && current.matchId == matchId
+
+        is MatchDetailsUiState.Content ->
+            current.profileId == profileId && current.matchId == matchId
+
+        is MatchDetailsUiState.Failed,
+        MatchDetailsUiState.Idle,
+        -> false
+    }
+
+    private fun isMatchSheetFor(
+        profileId: String,
+        matchId: String,
+    ): Boolean = when (val current = mutableMatchSheetState.value) {
+        is MatchSheetUiState.Loading ->
+            current.profileId == profileId && current.matchId == matchId
+
+        is MatchSheetUiState.Content ->
+            current.profileId == profileId && current.matchId == matchId
+
+        is MatchSheetUiState.Failed ->
+            current.profileId == profileId && current.matchId == matchId
+
+        MatchSheetUiState.Idle -> true
     }
 }

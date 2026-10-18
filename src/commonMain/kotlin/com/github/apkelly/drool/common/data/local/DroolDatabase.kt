@@ -4,7 +4,10 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.room.migration.Migration
+import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import androidx.sqlite.execSQL
 import com.github.apkelly.drool.common.data.local.dao.CacheMetadataDao
 import com.github.apkelly.drool.common.data.local.dao.ClubDao
 import com.github.apkelly.drool.common.data.local.dao.FixtureDao
@@ -42,7 +45,7 @@ import kotlinx.coroutines.Dispatchers
         TeamHubCacheEntity::class,
         MatchWeatherCacheEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 @ConstructedBy(DroolDatabaseConstructor::class)
@@ -64,7 +67,31 @@ expect object DroolDatabaseConstructor : RoomDatabaseConstructor<DroolDatabase> 
 
 expect fun createPlatformDatabaseBuilder(): RoomDatabase.Builder<DroolDatabase>
 
+internal val MIGRATION_15_16 = object : Migration(15, 16) {
+    override fun migrate(
+        connection: SQLiteConnection,
+    ) {
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `roundLabel` TEXT")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `venueAddress` TEXT")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `latitude` REAL")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `longitude` REAL")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `leagueId` TEXT")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `seasonId` TEXT")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `tenantId` TEXT")
+        connection.execSQL("ALTER TABLE `FixtureEntity` ADD COLUMN `matchSheetId` TEXT")
+        connection.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_FixtureEntity_accountId_kickoffEpochMillis` " +
+                "ON `FixtureEntity` (`accountId`, `kickoffEpochMillis`)",
+        )
+        connection.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_FixtureEntity_accountId_role_kickoffEpochMillis` " +
+                "ON `FixtureEntity` (`accountId`, `role`, `kickoffEpochMillis`)",
+        )
+    }
+}
+
 fun createDroolDatabase(): DroolDatabase = createPlatformDatabaseBuilder()
+    .addMigrations(MIGRATION_15_16)
     .fallbackToDestructiveMigration(dropAllTables = true)
     .setDriver(BundledSQLiteDriver())
     .setQueryCoroutineContext(Dispatchers.Default)

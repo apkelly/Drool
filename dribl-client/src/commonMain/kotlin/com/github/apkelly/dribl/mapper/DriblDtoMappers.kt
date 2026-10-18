@@ -347,8 +347,11 @@ private fun List<MatchRoleResourceDto>.fixtureRole(): FixtureRole = when {
 }
 
 internal fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
-    val matchId = attributes.eventId.textValue ?: id.textValue ?: return null
-    val kickoff = attributes.date.epochMillis ?: return null
+    val matchId = attributes.eventId.textValue
+        ?: attributes.matchId.textValue
+        ?: id.textValue
+        ?: return null
+    val kickoff = (attributes.date ?: attributes.startDate).epochMillis ?: return null
     val homeName = attributes.homeTeamName ?: attributes.homeClubName ?: return null
     val awayName = attributes.awayTeamName ?: attributes.awayClubName ?: return null
     val competition = attributes.competitionName ?: attributes.leagueName

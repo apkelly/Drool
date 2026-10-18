@@ -20,6 +20,19 @@ interface ClubDao {
         clubs: List<ClubEntity>,
     )
 
+    @Query(
+        """
+        SELECT * FROM ClubEntity
+        WHERE id IN (
+            SELECT clubId FROM ClubRelationshipEntity WHERE accountId IN (:accountIds)
+        )
+        ORDER BY name COLLATE NOCASE
+        """,
+    )
+    fun observeForAccounts(
+        accountIds: List<String>,
+    ): Flow<List<ClubEntity>>
+
     @Query("SELECT * FROM ClubRelationshipEntity WHERE accountId IN (:accountIds)")
     fun observeRelationships(
         accountIds: List<String>,
@@ -37,6 +50,14 @@ interface ClubDao {
 
     @Query("DELETE FROM ClubRelationshipEntity")
     suspend fun deleteAllRelationships()
+
+    @Query(
+        """
+        DELETE FROM ClubEntity
+        WHERE id NOT IN (SELECT clubId FROM ClubRelationshipEntity)
+        """,
+    )
+    suspend fun deleteUnreferenced()
 
     @Query("DELETE FROM ClubEntity")
     suspend fun deleteAll()

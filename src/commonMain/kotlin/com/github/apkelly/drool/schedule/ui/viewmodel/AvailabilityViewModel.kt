@@ -212,7 +212,12 @@ class AvailabilityViewModel(
                         configurationVersion == requestVersion &&
                         mutableActiveProfileId.value == profileId
                     ) {
-                        mutableState.value = ready.copy(failure = result.reason)
+                        mutableState.update { current ->
+                            (current as? AvailabilityUiState.Ready)?.copy(
+                                deletingAvailabilityId = null,
+                                failure = result.reason,
+                            ) ?: current
+                        }
                     }
                 }
             }

@@ -7,7 +7,9 @@ import kotlinx.serialization.json.JsonPrimitive
 @Serializable
 internal data class ScheduleAllocationAttributesDto(
     @SerialName("event_id") val eventId: JsonPrimitive? = null,
-    @SerialName("date") val date: JsonPrimitive,
+    @SerialName("match_id") val matchId: JsonPrimitive? = null,
+    @SerialName("date") val date: JsonPrimitive? = null,
+    @SerialName("start_date") val startDate: JsonPrimitive? = null,
     @SerialName("home_team_id") val homeTeamId: JsonPrimitive? = null,
     @SerialName("home_club_name") val homeClubName: String? = null,
     @SerialName("home_team_name") val homeTeamName: String? = null,

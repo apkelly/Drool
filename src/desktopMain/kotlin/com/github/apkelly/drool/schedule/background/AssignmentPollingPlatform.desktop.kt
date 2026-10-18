@@ -31,10 +31,16 @@ private class DesktopAssignmentPollingScheduler(
         CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : AssignmentPollingScheduler {
     private var pollingJob: Job? = null
+    private var scheduledInterval: AssignmentPollingInterval? = null
 
+    @Synchronized
     override fun schedule(
         interval: AssignmentPollingInterval,
     ) {
+        if (scheduledInterval == interval && pollingJob?.isActive == true) {
+            return
+        }
+        scheduledInterval = interval
         pollingJob?.cancel()
         pollingJob = interval.intervalMillis?.let { intervalMillis ->
             scope.launch {

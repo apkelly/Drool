@@ -10,9 +10,16 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.FormatStyle
 import java.util.Locale
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 private val formattingLogger = DroolLog.withTag("LocalizedFormatting")
+private val fullDateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+private val mediumDateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+private val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEEE")
+
+private val macOs24HourPreferenceFuture: CompletableFuture<Boolean?> =
+    CompletableFuture.supplyAsync(::readMacOs24HourPreference)
 
 @Composable
 actual fun formatFixtureDateTime(
@@ -21,14 +28,16 @@ actual fun formatFixtureDateTime(
 
 actual fun formatFixtureDateHeading(
     epochMillis: Long,
-): String = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+): String = fullDateFormatter
+    .withLocale(Locale.getDefault())
     .withZone(ZoneId.systemDefault())
     .format(Instant.ofEpochMilli(epochMillis))
 
 @Composable
 actual fun formatFixtureDay(
     epochMillis: Long,
-): String = DateTimeFormatter.ofPattern("EEEE")
+): String = dayOfWeekFormatter
+    .withLocale(Locale.getDefault())
     .withZone(ZoneId.systemDefault())
     .format(Instant.ofEpochMilli(epochMillis))
 
@@ -43,23 +52,21 @@ actual fun formatFixtureTime(
 ): String = formatDesktopTime(epochMillis)
 
 @Composable
-actual fun platformUses24HourClock(): Boolean = desktopUses24HourClock
+actual fun platformUses24HourClock(): Boolean = desktopUses24HourClock()
 
-private val desktopUses24HourClock by lazy {
-    readMacOs24HourPreference()
-        ?: localeUses24HourClock(Locale.getDefault())
-}
+private fun desktopUses24HourClock(): Boolean = macOs24HourPreferenceFuture.getNow(null)
+    ?: localeUses24HourClock(Locale.getDefault())
 
 private fun formatDesktopDate(
     epochMillis: Long,
-): String = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+): String = mediumDateFormatter
     .withLocale(Locale.getDefault())
     .withZone(ZoneId.systemDefault())
     .format(Instant.ofEpochMilli(epochMillis))
 
 internal fun formatDesktopTime(
     epochMillis: Long,
-    use24HourClock: Boolean = desktopUses24HourClock,
+    use24HourClock: Boolean = desktopUses24HourClock(),
     locale: Locale = Locale.getDefault(),
     zoneId: ZoneId = ZoneId.systemDefault(),
 ): String = DateTimeFormatter.ofPattern(

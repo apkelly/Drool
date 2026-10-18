@@ -114,6 +114,7 @@ kotlin {
 
         getByName("androidMain") {
             dependencies {
+                implementation(libs.androidx.activity.compose)
                 implementation(libs.androidx.work.runtime)
                 implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.okhttp)

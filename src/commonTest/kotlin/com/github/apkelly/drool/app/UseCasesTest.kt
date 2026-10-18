@@ -294,12 +294,12 @@ class UseCasesTest {
             advanceUntilIdle()
             teamViewModel.load("profile", "team")
             advanceUntilIdle()
-            assertEquals(2, dataSource.teamHubCalls)
+            assertEquals(1, dataSource.teamHubCalls)
             assertEquals(false, dataSource.lastTeamHubForce)
 
             teamViewModel.refresh("profile", "team")
             advanceUntilIdle()
-            assertEquals(3, dataSource.teamHubCalls)
+            assertEquals(2, dataSource.teamHubCalls)
             assertEquals(true, dataSource.lastTeamHubForce)
 
             matchViewModel.load("profile", "match")
@@ -415,7 +415,7 @@ internal class FakeSportsDataSource :
     val teams = MutableStateFlow(CachedData<List<Team>>(emptyList(), null, true))
     val fixtures = MutableStateFlow(CachedData<List<Fixture>>(emptyList(), null, true))
     val relationships = MutableStateFlow<Map<String, TeamRelationship>>(emptyMap())
-    val linkedProfileFixtures = MutableStateFlow<List<Fixture>>(emptyList())
+    val linkedProfileFixtures = MutableStateFlow(CachedData<List<Fixture>>(emptyList(), null, true))
     val profileTeams = MutableStateFlow<List<ProfileTeam>>(emptyList())
     val profileClubs = MutableStateFlow<List<ProfileClub>>(emptyList())
     var lastClubId: String? = null
@@ -479,7 +479,7 @@ internal class FakeSportsDataSource :
     override fun observeFixtures(): Flow<CachedData<List<Fixture>>> = fixtures
     override fun observeLinkedProfileFixtures(
         profileIds: Set<String>,
-    ): Flow<List<Fixture>> {
+    ): Flow<CachedData<List<Fixture>>> {
         lastProfileIds = profileIds
         return linkedProfileFixtures
     }

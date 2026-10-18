@@ -1,13 +1,14 @@
 package com.github.apkelly.drool.schedule.background
 
 import android.Manifest
-import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -47,12 +48,12 @@ actual fun rememberAssignmentNotificationPermissionRequester(): (() -> Unit)? {
     ) {
         return null
     }
-    return remember(context) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) {}
+    return remember(launcher) {
         {
-            (context as? Activity)?.requestPermissions(
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                NOTIFICATION_PERMISSION_REQUEST_CODE,
-            )
+            launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }
@@ -168,4 +169,3 @@ private class AndroidRefereeAssignmentNotifier(
 private const val PERIODIC_WORK_NAME = "referee-assignment-poll"
 private const val IMMEDIATE_WORK_NAME = "referee-assignment-poll-now"
 private const val NOTIFICATION_CHANNEL_ID = "referee-assignments"
-private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 4102

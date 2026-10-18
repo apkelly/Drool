@@ -745,7 +745,7 @@ class SessionDataSourceImplTest {
                 IOException("offline") to LinkMemberFailure.Offline,
                 IllegalStateException("unexpected") to LinkMemberFailure.Unknown,
             ).forEach { (failure, expected) ->
-                sports.failure = failure as Exception
+                sports.failure = failure
                 assertEquals(
                     expected,
                     assertFailsWith<LinkMemberException> {
