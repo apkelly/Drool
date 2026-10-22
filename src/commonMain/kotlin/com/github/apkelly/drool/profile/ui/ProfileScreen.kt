@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -31,12 +31,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
+import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.RelatedUser
 import com.github.apkelly.drool.common.domain.model.ThemeMode
 import com.github.apkelly.drool.common.observability.platformSupportsObservability
@@ -75,6 +79,7 @@ import com.github.apkelly.drool.common.ui.theme.DroolTheme
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
+import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.profile.ui.model.ProfileUiModel
 import com.github.apkelly.drool.profile.ui.model.UnlinkMemberUiState
 import org.jetbrains.compose.resources.stringResource
@@ -93,22 +98,20 @@ fun ProfileScreen(
     onSignOut: () -> Unit,
 ) {
     val profile = model.profile
-    val themeMode = model.themeMode
-    val observabilityEnabled = model.observabilityEnabled
-    val assignmentPollingInterval = model.assignmentPollingInterval
     var confirmSignOut by remember { mutableStateOf(false) }
     var pendingUnlink by remember { mutableStateOf<RelatedUser?>(null) }
     val linkedUsers = profile.relatedUsers
-        .filter {
-            it.isLinked &&
-                it.subjectUserId != profile.accountId
-        }
+        .filter { it.isLinked && it.subjectUserId != profile.accountId }
         .distinctBy { it.subjectUserId }
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddMember) {
+            FloatingActionButton(
+                onClick = onAddMember,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 MaterialSymbolIcon(
                     MaterialSymbol.Add,
                     contentDescription = stringResource(Res.string.profile_link_member),
@@ -124,40 +127,40 @@ fun ProfileScreen(
                 end = 20.dp,
                 bottom = 96.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 Text(
                     stringResource(Res.string.profile_title),
                     style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
                 )
             }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    RemoteImage(
-                        url = profile.avatarUrl,
-                        contentDescription = stringResource(
-                            Res.string.content_profile_image,
-                            profile.displayName,
-                        ),
-                        fallbackIcon = MaterialSymbol.Person,
-                        modifier = Modifier.size(72.dp),
-                        contentScale = ContentScale.Crop,
-                    )
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(profile.displayName, style = MaterialTheme.typography.titleLarge)
-                        profile.email?.let { Text(it) }
-                    }
-                }
+                ProfileHeaderCard(profile = profile)
             }
             item {
                 Text(
                     stringResource(Res.string.profile_related_users),
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
             if (linkedUsers.isEmpty()) {
-                item { Text(stringResource(Res.string.profile_no_related_users)) }
+                item {
+                    SportsCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                stringResource(Res.string.profile_no_related_users),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
             } else {
                 items(linkedUsers, key = { it.subjectUserId }) { user ->
                     val linkId = user.linkId
@@ -185,82 +188,24 @@ fun ProfileScreen(
                 }
             }
             item {
-                Text(
-                    stringResource(Res.string.profile_appearance),
-                    style = MaterialTheme.typography.titleMedium,
+                AppearanceSettingsCard(
+                    themeMode = model.themeMode,
+                    onThemeChange = onThemeChange,
                 )
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ThemeMode.entries.forEach { mode ->
-                        FilterChip(
-                            selected = themeMode == mode,
-                            onClick = { onThemeChange(mode) },
-                            label = {
-                                Text(
-                                    stringResource(
-                                        when (mode) {
-                                            ThemeMode.System -> Res.string.theme_system
-                                            ThemeMode.Light -> Res.string.theme_light
-                                            ThemeMode.Dark -> Res.string.theme_dark
-                                        },
-                                    ),
-                                )
-                            },
-                        )
-                    }
-                }
             }
             if (platformSupportsObservability) {
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                stringResource(Res.string.profile_observability),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                stringResource(Res.string.profile_observability_body),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        Switch(
-                            checked = observabilityEnabled,
-                            onCheckedChange = onObservabilityChange,
-                        )
-                    }
-                }
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        stringResource(Res.string.profile_assignment_checks),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        stringResource(Res.string.profile_assignment_checks_body),
-                        style = MaterialTheme.typography.bodySmall,
+                    ObservabilitySettingsCard(
+                        observabilityEnabled = model.observabilityEnabled,
+                        onObservabilityChange = onObservabilityChange,
                     )
                 }
             }
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(AssignmentPollingInterval.entries) { interval ->
-                        FilterChip(
-                            selected = assignmentPollingInterval == interval,
-                            onClick = {
-                                onAssignmentPollingIntervalChange(interval)
-                            },
-                            label = { Text(stringResource(interval.labelResource())) },
-                        )
-                    }
-                }
+                AssignmentPollingSettingsCard(
+                    assignmentPollingInterval = model.assignmentPollingInterval,
+                    onAssignmentPollingIntervalChange = onAssignmentPollingIntervalChange,
+                )
             }
             item {
                 OutlinedButton(onClick = { confirmSignOut = true }) {
@@ -270,9 +215,183 @@ fun ProfileScreen(
         }
     }
 
+    ProfileDialogs(
+        confirmSignOut = confirmSignOut,
+        onDismissSignOut = { confirmSignOut = false },
+        onConfirmSignOut = {
+            confirmSignOut = false
+            onSignOut()
+        },
+        pendingUnlink = pendingUnlink,
+        onDismissUnlink = { pendingUnlink = null },
+        onConfirmUnlink = { user ->
+            pendingUnlink = null
+            user.linkId?.let(onUnlinkUser)
+        },
+        unlinkMemberState = model.unlinkMemberState,
+        onClearUnlinkFailure = onClearUnlinkFailure,
+    )
+}
+
+@Composable
+private fun ProfileHeaderCard(
+    profile: Profile,
+) {
+    SportsCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RemoteImage(
+                url = profile.avatarUrl,
+                contentDescription = stringResource(
+                    Res.string.content_profile_image,
+                    profile.displayName,
+                ),
+                fallbackIcon = MaterialSymbol.Person,
+                modifier = Modifier.size(64.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    profile.displayName,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                profile.email?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppearanceSettingsCard(
+    themeMode: ThemeMode,
+    onThemeChange: (ThemeMode) -> Unit,
+) {
+    SportsCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                stringResource(Res.string.profile_appearance),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ThemeMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = themeMode == mode,
+                        onClick = { onThemeChange(mode) },
+                        label = {
+                            Text(
+                                stringResource(
+                                    when (mode) {
+                                        ThemeMode.System -> Res.string.theme_system
+                                        ThemeMode.Light -> Res.string.theme_light
+                                        ThemeMode.Dark -> Res.string.theme_dark
+                                    },
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ObservabilitySettingsCard(
+    observabilityEnabled: Boolean,
+    onObservabilityChange: (Boolean) -> Unit,
+) {
+    SportsCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    stringResource(Res.string.profile_observability),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    stringResource(Res.string.profile_observability_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = observabilityEnabled,
+                onCheckedChange = onObservabilityChange,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AssignmentPollingSettingsCard(
+    assignmentPollingInterval: AssignmentPollingInterval,
+    onAssignmentPollingIntervalChange: (AssignmentPollingInterval) -> Unit,
+) {
+    SportsCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    stringResource(Res.string.profile_assignment_checks),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    stringResource(Res.string.profile_assignment_checks_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(AssignmentPollingInterval.entries) { interval ->
+                    FilterChip(
+                        selected = assignmentPollingInterval == interval,
+                        onClick = { onAssignmentPollingIntervalChange(interval) },
+                        label = { Text(stringResource(interval.labelResource())) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileDialogs(
+    confirmSignOut: Boolean,
+    onDismissSignOut: () -> Unit,
+    onConfirmSignOut: () -> Unit,
+    pendingUnlink: RelatedUser?,
+    onDismissUnlink: () -> Unit,
+    onConfirmUnlink: (RelatedUser) -> Unit,
+    unlinkMemberState: UnlinkMemberUiState,
+    onClearUnlinkFailure: () -> Unit,
+) {
     if (confirmSignOut) {
         AlertDialog(
-            onDismissRequest = { confirmSignOut = false },
+            onDismissRequest = onDismissSignOut,
             title = { Text(stringResource(Res.string.sign_out_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -281,15 +400,12 @@ fun ProfileScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    confirmSignOut = false
-                    onSignOut()
-                }) {
+                Button(onClick = onConfirmSignOut) {
                     Text(stringResource(Res.string.action_sign_out))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmSignOut = false }) {
+                TextButton(onClick = onDismissSignOut) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -298,7 +414,7 @@ fun ProfileScreen(
 
     pendingUnlink?.let { user ->
         AlertDialog(
-            onDismissRequest = { pendingUnlink = null },
+            onDismissRequest = onDismissUnlink,
             title = {
                 Text(stringResource(Res.string.profile_unlink_title, user.displayName))
             },
@@ -306,24 +422,19 @@ fun ProfileScreen(
                 Text(stringResource(Res.string.profile_unlink_body, user.displayName))
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        pendingUnlink = null
-                        user.linkId?.let(onUnlinkUser)
-                    },
-                ) {
+                Button(onClick = { onConfirmUnlink(user) }) {
                     Text(stringResource(Res.string.profile_unlink_action))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingUnlink = null }) {
+                TextButton(onClick = onDismissUnlink) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
         )
     }
 
-    (model.unlinkMemberState as? UnlinkMemberUiState.Failed)?.let { failure ->
+    (unlinkMemberState as? UnlinkMemberUiState.Failed)?.let { failure ->
         AlertDialog(
             onDismissRequest = onClearUnlinkFailure,
             title = { Text(stringResource(Res.string.profile_unlink_failed)) },
@@ -364,35 +475,42 @@ private fun ProfileAssociationCard(
 ) {
     val content: @Composable ColumnScope.() -> Unit = {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             RemoteImage(
                 url = imageUrl,
                 contentDescription = contentDescription,
                 fallbackIcon = fallbackIcon,
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(44.dp).clip(CircleShape),
                 contentScale = ContentScale.Crop,
             )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, style = MaterialTheme.typography.titleSmall)
-                subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                subtitle?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             action?.invoke()
         }
     }
-    if (onClick == null) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            content = content,
-        )
-    } else {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
-            content = content,
-        )
-    }
+    SportsCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        content = content,
+    )
 }
 
 @Composable

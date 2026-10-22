@@ -19,6 +19,8 @@ import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.data.time.TimeProvider
 import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.FixtureRole
+import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
@@ -73,11 +75,7 @@ class ScheduleRepositoryImpl(
         val accountId = store.getActiveAccountId()
             ?: return RefreshResult.Failed(RefreshFailure.Unauthorized, hasCachedData = false)
         val existingCount = database.fixtureDao().countForAccount(accountId)
-        val metadata = database.cacheMetadataDao().get(FIXTURES_KEY, accountId)
-        if (
-            !force &&
-            !metadata.isStale(timeProvider.nowEpochMillis(), FIXTURES_TTL)
-        ) {
+        if (!shouldRefreshFixtures(accountId, force)) {
             return RefreshResult.NotModified
         }
 
@@ -85,8 +83,7 @@ class ScheduleRepositoryImpl(
             val fixtures = coroutineScope {
                 val playerFixtures = async { api.fetchFixtures(token, accountId) }
                 val refereeFixtures = async { loadRefereeFixtures(token, accountId) }
-                (playerFixtures.await() + refereeFixtures.await())
-                    .distinctBy { it.id to it.role }
+                mergeFixtures(playerFixtures.await(), refereeFixtures.await())
             }
             database.inTransaction {
                 database.fixtureDao().deleteForAccount(accountId)
@@ -116,10 +113,7 @@ class ScheduleRepositoryImpl(
             }
         return profiles.associate { profile ->
             val existingCount = database.fixtureDao().countForAccount(profile.id)
-            val metadata = database.cacheMetadataDao().get(FIXTURES_KEY, profile.id)
-            val refreshProfile = force ||
-                metadata.isStale(timeProvider.nowEpochMillis(), FIXTURES_TTL)
-            val result = if (!refreshProfile) {
+            val result = if (!shouldRefreshFixtures(profile.id, force)) {
                 RefreshResult.NotModified
             } else {
                 refreshResult(existingCount > 0) {
@@ -139,8 +133,10 @@ class ScheduleRepositoryImpl(
                         val clubsDeferred = async { api.fetchProfileClubs(token) }
                         Triple(
                             teamsDeferred.await(),
-                            (playerFixturesDeferred.await() + refereeFixturesDeferred.await())
-                                .distinctBy { it.id to it.role },
+                            mergeFixtures(
+                                playerFixturesDeferred.await(),
+                                refereeFixturesDeferred.await(),
+                            ),
                             clubsDeferred.await(),
                         )
                     }
@@ -183,6 +179,19 @@ class ScheduleRepositoryImpl(
             }
             profile.id to result
         }
+    }
+
+    private suspend fun shouldRefreshFixtures(
+        accountId: String,
+        force: Boolean,
+    ): Boolean {
+        if (force) return true
+        val hasMissingAllocationId = database.fixtureDao()
+            .getRefereeFixtures(listOf(accountId))
+            .any { it.refereeAllocationId.isNullOrBlank() }
+        if (hasMissingAllocationId) return true
+        val metadata = database.cacheMetadataDao().get(FIXTURES_KEY, accountId)
+        return metadata.isStale(timeProvider.nowEpochMillis(), FIXTURES_TTL)
     }
 
     override suspend fun updateRefereeAllocation(
@@ -270,3 +279,83 @@ class ScheduleRepositoryImpl(
         const val FIXTURES_TTL = 15L * 60L * 1_000L
     }
 }
+
+internal fun mergeFixtures(
+    playerFixtures: List<Fixture>,
+    refereeFixtures: List<Fixture>,
+): List<Fixture> {
+    val unmatchedAllocations = refereeFixtures
+        .groupBy { it.id to it.role }
+        .values
+        .map { it.reduce(::mergeDuplicateFixture) }
+        .toMutableList()
+    val mergedPlayerFixtures = playerFixtures
+        .groupBy { it.id to it.role }
+        .values
+        .map { it.reduce(::mergeDuplicateFixture) }
+        .map { fixture ->
+            if (fixture.role != FixtureRole.Referee) {
+                fixture
+            } else {
+                val matchIndex = unmatchedAllocations.indexOfFirst { allocation ->
+                    allocation.id == fixture.id ||
+                        (
+                            allocation.kickoffEpochMillis == fixture.kickoffEpochMillis &&
+                                allocation.homeTeamName.equals(
+                                    fixture.homeTeamName,
+                                    ignoreCase = true,
+                                ) &&
+                                allocation.awayTeamName.equals(
+                                    fixture.awayTeamName,
+                                    ignoreCase = true,
+                                )
+                            )
+                }
+                if (matchIndex >= 0) {
+                    mergeDuplicateFixture(fixture, unmatchedAllocations.removeAt(matchIndex))
+                } else {
+                    fixture
+                }
+            }
+        }
+    return (mergedPlayerFixtures + unmatchedAllocations)
+        .groupBy { it.id to it.role }
+        .values
+        .map { it.reduce(::mergeDuplicateFixture) }
+}
+
+private fun mergeDuplicateFixture(
+    first: Fixture,
+    second: Fixture,
+): Fixture = first.copy(
+    homeTeamId = prefer(first.homeTeamId, second.homeTeamId),
+    awayTeamId = prefer(first.awayTeamId, second.awayTeamId),
+    competitionName = prefer(first.competitionName, second.competitionName),
+    venueName = prefer(first.venueName, second.venueName),
+    userTeamId = prefer(first.userTeamId, second.userTeamId),
+    status = prefer(
+        first.status.takeUnless { it == FixtureStatus.Unknown },
+        second.status,
+    ) ?: second.status,
+    homeScore = prefer(first.homeScore, second.homeScore),
+    awayScore = prefer(first.awayScore, second.awayScore),
+    homeTeamLogoUrl = prefer(first.homeTeamLogoUrl, second.homeTeamLogoUrl),
+    awayTeamLogoUrl = prefer(first.awayTeamLogoUrl, second.awayTeamLogoUrl),
+    roundLabel = prefer(first.roundLabel, second.roundLabel),
+    venueAddress = prefer(first.venueAddress, second.venueAddress),
+    latitude = prefer(first.latitude, second.latitude),
+    longitude = prefer(first.longitude, second.longitude),
+    refereeRole = prefer(second.refereeRole, first.refereeRole),
+    refereeAllocationId = prefer(second.refereeAllocationId, first.refereeAllocationId),
+    refereeStatus = prefer(second.refereeStatus, first.refereeStatus),
+    leagueName = prefer(first.leagueName, second.leagueName),
+    leagueId = prefer(first.leagueId, second.leagueId),
+    seasonId = prefer(first.seasonId, second.seasonId),
+    tenantId = prefer(first.tenantId, second.tenantId),
+    matchSheetId = prefer(first.matchSheetId, second.matchSheetId),
+)
+
+private fun <T> prefer(
+    primary: T?,
+    fallback: T?,
+): T? = primary ?: fallback

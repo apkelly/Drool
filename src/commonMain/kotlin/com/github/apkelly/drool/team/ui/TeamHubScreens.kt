@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
@@ -68,6 +67,7 @@ import com.github.apkelly.drool.common.ui.widgets.CacheStatus
 import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
+import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
 import org.jetbrains.compose.resources.stringResource
 
@@ -238,7 +238,7 @@ private fun FixtureList(
     ) {
         items(fixtures, key = { it.id }) { fixture ->
             val teamNames = fixture.displayTeamNames()
-            Card(
+            SportsCard(
                 onClick = { onSelect(fixture) },
                 modifier = Modifier.fillMaxWidth(),
             ) {

@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
@@ -73,6 +72,7 @@ import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
+import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.profile.ui.model.LinkMemberUiState
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -314,7 +314,7 @@ fun LinkMemberScreen(
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(state.candidates, key = { it.id }) { candidate ->
                                 val requesting = state.requestingCandidateId == candidate.id
-                                Card(
+                                SportsCard(
                                     onClick = { selected = candidate },
                                     enabled = state.requestingCandidateId == null,
                                     modifier = Modifier.fillMaxWidth(),

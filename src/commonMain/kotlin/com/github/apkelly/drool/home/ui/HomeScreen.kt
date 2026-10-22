@@ -22,6 +22,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
+import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.domain.model.ThemeMode
@@ -44,6 +49,7 @@ import com.github.apkelly.drool.common.resources.home_view_schedule
 import com.github.apkelly.drool.common.resources.linked_profile_refresh_failed
 import com.github.apkelly.drool.common.resources.linked_profile_session_expired
 import com.github.apkelly.drool.common.resources.linked_profile_teams
+import com.github.apkelly.drool.common.resources.schedule_allocation_update_failed
 import com.github.apkelly.drool.common.ui.preview.TopLevelScreenPreviewData
 import com.github.apkelly.drool.common.ui.theme.DroolTheme
 import com.github.apkelly.drool.common.ui.widgets.CacheStatus
@@ -51,7 +57,13 @@ import com.github.apkelly.drool.common.ui.widgets.FixtureCard
 import com.github.apkelly.drool.common.ui.widgets.LinkedProfileSelector
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
+import com.github.apkelly.drool.common.ui.widgets.PendingAllocationDecision
 import com.github.apkelly.drool.common.ui.widgets.ProfileTeamCard
+import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationActions
+import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationConfirmationDialog
+import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -69,6 +81,7 @@ fun HomeScreen(
     onFixtureSelect: (Fixture) -> Unit,
     onViewSchedule: () -> Unit,
     modifier: Modifier = Modifier,
+    onAllocationDecision: (Fixture, RefereeAllocationDecision) -> Unit = { _, _ -> },
     onTeamSelect: (ProfileTeam) -> Unit,
 ) {
     val profile = model.profile
@@ -77,6 +90,13 @@ fun HomeScreen(
     val profileTeams = model.profileTeams
     val linkedProfileRefreshResults = model.linkedProfileRefreshResults
     val fixtures = model.fixtures
+    var pendingDecision by remember { mutableStateOf<PendingAllocationDecision?>(null) }
+
+    RefereeAllocationConfirmationDialog(
+        pending = pendingDecision,
+        onDismiss = { pendingDecision = null },
+        onConfirm = onAllocationDecision,
+    )
     val expiredProfileNames = linkedProfileRefreshResults
         .filterValues {
             it is RefreshResult.Failed &&
@@ -113,18 +133,18 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(HOME_GRID_SPACING),
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(Res.string.home_greeting, profile.displayName),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        stringResource(Res.string.home_overview),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            stringResource(Res.string.home_greeting, profile.displayName),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                        )
+                        Text(
+                            stringResource(Res.string.home_overview),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     LinkedProfileSelector(
@@ -138,17 +158,25 @@ fun HomeScreen(
                         key = "expired-linked-profile-session",
                         span = { GridItemSpan(maxLineSpan) },
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = stringResource(
-                                    Res.string.linked_profile_session_expired,
-                                    expiredProfileNames,
-                                ),
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            Button(onClick = onSignInAgain) {
-                                Text(stringResource(Res.string.action_sign_in))
+                        com.github.apkelly.drool.common.ui.widgets.SportsCard(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        Res.string.linked_profile_session_expired,
+                                        expiredProfileNames,
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                Button(onClick = onSignInAgain) {
+                                    Text(stringResource(Res.string.action_sign_in))
+                                }
                             }
                         }
                     }
@@ -163,16 +191,21 @@ fun HomeScreen(
                             key = "refresh-failure-$profileId",
                             span = { GridItemSpan(maxLineSpan) },
                         ) {
-                            Text(
-                                text = stringResource(
-                                    Res.string.linked_profile_refresh_failed,
-                                    linkedProfiles.firstOrNull { it.id == profileId }
-                                        ?.displayName
-                                        ?: profileId,
-                                ),
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
+                            com.github.apkelly.drool.common.ui.widgets.SportsCard(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        Res.string.linked_profile_refresh_failed,
+                                        linkedProfiles.firstOrNull { it.id == profileId }
+                                            ?.displayName
+                                            ?: profileId,
+                                    ),
+                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
                         }
                     }
                 }
@@ -184,41 +217,78 @@ fun HomeScreen(
                         onRetry = onRefresh,
                     )
                 }
+                if (model.allocationFailure != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        com.github.apkelly.drool.common.ui.widgets.SportsCard(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    Res.string.schedule_allocation_update_failed,
+                                ),
+                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
                 val now = Clock.System.now().toEpochMilliseconds()
                 val upcoming = fixtures.items
                     .filter { it.kickoffEpochMillis >= now }
                     .upcomingOnNextDay()
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             stringResource(Res.string.home_upcoming),
                             style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(onClick = onViewSchedule) {
                             MaterialSymbolIcon(
                                 MaterialSymbol.CalendarMonth,
                                 contentDescription = null,
+                                size = 20.dp,
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text(stringResource(Res.string.home_view_schedule))
+                            Text(
+                                stringResource(Res.string.home_view_schedule),
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                     }
                 }
                 if (upcoming.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        com.github.apkelly.drool.common.ui.widgets.SportsCard(
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(
-                                stringResource(Res.string.home_no_games),
-                                style = MaterialTheme.typography.titleLarge,
-                            )
-                            Text(stringResource(Res.string.home_no_games_body))
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                MaterialSymbolIcon(
+                                    symbol = MaterialSymbol.SportsSoccer,
+                                    contentDescription = null,
+                                    size = 36.dp,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    stringResource(Res.string.home_no_games),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    stringResource(Res.string.home_no_games_body),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 } else {
@@ -235,6 +305,31 @@ fun HomeScreen(
                             ),
                             stackedTeams = true,
                             onClick = { onFixtureSelect(fixture) },
+                            footer = if (fixture.hasAssignedRefereeAllocation()) {
+                                {
+                                    RefereeAllocationActions(
+                                        updating = model.allocationUpdatingId ==
+                                            fixture.refereeAllocationId,
+                                        actionsEnabled = model.allocationUpdatingId == null,
+                                        showAccept = fixture.canAcceptRefereeAllocation(),
+                                        showDecline = fixture.canDeclineRefereeAllocation(),
+                                        onAccept = {
+                                            pendingDecision = PendingAllocationDecision(
+                                                fixture = fixture,
+                                                decision = RefereeAllocationDecision.Accept,
+                                            )
+                                        },
+                                        onDecline = {
+                                            pendingDecision = PendingAllocationDecision(
+                                                fixture = fixture,
+                                                decision = RefereeAllocationDecision.Decline,
+                                            )
+                                        },
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
@@ -244,6 +339,8 @@ fun HomeScreen(
                         Text(
                             stringResource(Res.string.linked_profile_teams),
                             style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 6.dp),
                         )
                     }
                     items(

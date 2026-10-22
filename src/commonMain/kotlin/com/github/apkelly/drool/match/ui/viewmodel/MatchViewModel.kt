@@ -2,9 +2,11 @@ package com.github.apkelly.drool.match.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.OperationResult
 import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.common.logging.DroolLog
+import com.github.apkelly.drool.common.ui.widgets.mergeRefereeAllocationFrom
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchSheetUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
@@ -51,6 +53,16 @@ class MatchViewModel(
         profileId: String,
         matchId: String,
     ) = request(profileId, matchId, force = true)
+
+    fun seedFixture(
+        fixture: Fixture,
+    ) {
+        val profileId = fixture.profileId ?: return
+        val key = MatchCacheKey(profileId, fixture.id)
+        val existing = matchCache.get(key)
+        val merged = existing?.mergeRefereeAllocationFrom(fixture) ?: fixture
+        matchCache.put(key, merged, resolvedDetails = matchCache.isResolved(key))
+    }
 
     fun loadMatchSheet(
         profileId: String,
@@ -203,9 +215,12 @@ class MatchViewModel(
         viewModelScope.launch {
             var refreshFailed = false
             val fixture = when (val result = loadMatchDetails(profileId, matchId)) {
-                is OperationResult.Success -> result.value.also {
-                    matchCache.put(key, result.value, resolvedDetails = true)
-                }
+                is OperationResult.Success ->
+                    result.value
+                        .mergeRefereeAllocationFrom(cached)
+                        .also {
+                            matchCache.put(key, it, resolvedDetails = true)
+                        }
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to load match details: ${result.reason}" }

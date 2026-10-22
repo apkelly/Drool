@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.apkelly.drool.app.ui.DroolApp
 import com.github.apkelly.drool.app.ui.viewmodel.AppViewModel
@@ -32,7 +33,10 @@ fun App(
     val themeMode by appViewModel.themeMode.collectAsState()
 
     DroolTheme(themeMode) {
-        Surface(modifier = modifier) {
+        Surface(
+            modifier = modifier,
+            color = Color.Transparent,
+        ) {
             DroolApp(
                 appViewModel = appViewModel,
                 discoverViewModel = discoverViewModel,

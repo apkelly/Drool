@@ -4,6 +4,7 @@ import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
+import com.github.apkelly.drool.common.domain.model.RefreshFailure
 import com.github.apkelly.drool.common.domain.model.RefreshResult
 import com.github.apkelly.drool.common.ui.model.CollectionUiState
 
@@ -14,4 +15,6 @@ data class HomeUiModel(
     val profileTeams: List<ProfileTeam>,
     val linkedProfileRefreshResults: Map<String, RefreshResult>,
     val fixtures: CollectionUiState<Fixture>,
+    val allocationUpdatingId: String? = null,
+    val allocationFailure: RefreshFailure? = null,
 )

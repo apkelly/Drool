@@ -914,6 +914,80 @@ class SportsDataSourceImplTest {
         }
     }
 
+    @Test
+    fun refereeMatchesFromMatchesEndpointMergeWithAllocationsEndpoint() = runTest {
+        fixture { repository, remote, store, _, _ ->
+            store.saveBearerToken("root-token")
+            store.setActiveAccountId("root")
+            remote.fixtures = listOf(
+                Fixture(
+                    id = "oct-27-match",
+                    kickoffEpochMillis = 1_761_541_200_000L,
+                    homeTeamId = "home-id",
+                    homeTeamName = "Rovers FC",
+                    awayTeamId = "away-id",
+                    awayTeamName = "United FC",
+                    competitionName = "Summer League",
+                    roundLabel = "Round 4",
+                    venueName = "Field 1",
+                    venueAddress = "10 Pitch Way",
+                    userTeamId = null,
+                    status = FixtureStatus.Scheduled,
+                    role = FixtureRole.Referee,
+                    refereeAllocationId = null,
+                    refereeRole = "Referee",
+                    refereeStatus = null,
+                    matchSheetId = "sheet-27",
+                ),
+            )
+            remote.refereeFixturesByUser = mapOf(
+                "child" to listOf(
+                    Fixture(
+                        id = "oct-27-match",
+                        kickoffEpochMillis = 1_761_541_200_000L,
+                        homeTeamId = null,
+                        homeTeamName = "Rovers FC",
+                        awayTeamId = null,
+                        awayTeamName = "United FC",
+                        competitionName = "Summer League",
+                        venueName = "Field 1",
+                        userTeamId = null,
+                        status = FixtureStatus.Scheduled,
+                        role = FixtureRole.Referee,
+                        refereeAllocationId = "alloc-oct-27",
+                        refereeRole = "Assistant Referee 1",
+                        refereeStatus = "pending",
+                    ),
+                ),
+            )
+            val profiles = listOf(
+                LinkedProfile("root", "Alex", null, isPrimary = true),
+                LinkedProfile("child", "Ethan", null, isPrimary = false),
+            )
+
+            assertEquals(
+                mapOf(
+                    "root" to RefreshResult.Updated,
+                    "child" to RefreshResult.Updated,
+                ),
+                repository.refreshLinkedProfiles(profiles, force = true),
+            )
+
+            val saved = repository.observeLinkedProfileFixtures(setOf("child"))
+                .first()
+                .value
+                .single()
+            assertEquals("oct-27-match", saved.id)
+            assertEquals(FixtureRole.Referee, saved.role)
+            assertEquals("alloc-oct-27", saved.refereeAllocationId)
+            assertEquals("Assistant Referee 1", saved.refereeRole)
+            assertEquals("pending", saved.refereeStatus)
+            assertEquals("Round 4", saved.roundLabel)
+            assertEquals("10 Pitch Way", saved.venueAddress)
+            assertEquals("sheet-27", saved.matchSheetId)
+        }
+    }
+
     private fun fixture(
         id: String,
         kickoffEpochMillis: Long,

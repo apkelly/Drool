@@ -34,6 +34,7 @@ import com.github.apkelly.drool.common.resources.nav_profile
 import com.github.apkelly.drool.common.resources.nav_schedule
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
+import com.github.apkelly.drool.common.ui.widgets.mergeRefereeAllocationFrom
 import com.github.apkelly.drool.discover.ui.ClubScreen
 import com.github.apkelly.drool.discover.ui.DiscoverScreen
 import com.github.apkelly.drool.discover.ui.model.DiscoverUiModel
@@ -145,6 +146,9 @@ fun MainNavigation(
                     val linkedProfileRefreshResults by
                         scheduleViewModel.linkedProfileRefreshResults.collectAsState()
                     val fixtures by scheduleViewModel.fixtures.collectAsState()
+                    val allocationUpdatingId by
+                        scheduleViewModel.allocationUpdatingId.collectAsState()
+                    val allocationFailure by scheduleViewModel.allocationFailure.collectAsState()
                     HomeScreen(
                         model = HomeUiModel(
                             profile = profile,
@@ -153,11 +157,14 @@ fun MainNavigation(
                             profileTeams = profileTeams,
                             linkedProfileRefreshResults = linkedProfileRefreshResults,
                             fixtures = fixtures,
+                            allocationUpdatingId = allocationUpdatingId,
+                            allocationFailure = allocationFailure,
                         ),
                         onProfileSelect = scheduleViewModel::selectLinkedProfile,
                         onRefresh = scheduleViewModel::refreshFixtures,
                         onSignInAgain = appViewModel::signOut,
                         onFixtureSelect = { fixture ->
+                            matchViewModel.seedFixture(fixture)
                             fixture.profileId?.let { profileId ->
                                 currentStack.add(
                                     AppRoute.MatchDetails(
@@ -167,6 +174,7 @@ fun MainNavigation(
                                 )
                             }
                         },
+                        onAllocationDecision = scheduleViewModel::updateRefereeAllocation,
                         onViewSchedule = {
                             selectedOrdinal = TopLevelDestination.Schedule.ordinal
                         },
@@ -206,6 +214,7 @@ fun MainNavigation(
                         onProfileSelect = scheduleViewModel::selectLinkedProfile,
                         onRefresh = scheduleViewModel::refreshFixtures,
                         onFixtureSelect = { fixture ->
+                            matchViewModel.seedFixture(fixture)
                             fixture.profileId?.let { profileId ->
                                 currentStack.add(
                                     AppRoute.MatchDetails(
@@ -311,7 +320,31 @@ fun MainNavigation(
                     val matchDetailsState by matchViewModel.state.collectAsState()
                     val matchSheetState by matchViewModel.matchSheetState.collectAsState()
                     val allProfileTeams by scheduleViewModel.allProfileTeams.collectAsState()
-                    val details = matchDetailsState as? MatchDetailsUiState.Content
+                    val scheduleFixtures by scheduleViewModel.fixtures.collectAsState()
+                    val allocationUpdatingId by
+                        scheduleViewModel.allocationUpdatingId.collectAsState()
+                    val allocationFailure by scheduleViewModel.allocationFailure.collectAsState()
+                    val scheduledRefereeFixture = scheduleFixtures.items
+                        .asSequence()
+                        .filter { it.profileId == route.profileId && it.id == route.matchId }
+                        .firstOrNull {
+                            it.role == com.github.apkelly.drool.common.domain.model.FixtureRole.Referee
+                        }
+                    val resolvedMatchDetailsState = when (val details = matchDetailsState) {
+                        is MatchDetailsUiState.Content ->
+                            if (details.profileId == route.profileId && details.matchId == route.matchId) {
+                                details.copy(
+                                    fixture = details.fixture.mergeRefereeAllocationFrom(
+                                        scheduledRefereeFixture,
+                                    ),
+                                )
+                            } else {
+                                details
+                            }
+
+                        else -> details
+                    }
+                    val details = resolvedMatchDetailsState as? MatchDetailsUiState.Content
                     val fixture = details?.takeIf {
                         it.profileId == route.profileId && it.matchId == route.matchId
                     }?.fixture
@@ -337,7 +370,7 @@ fun MainNavigation(
                     MatchDetailsScreen(
                         profileId = route.profileId,
                         matchId = route.matchId,
-                        state = matchDetailsState,
+                        state = resolvedMatchDetailsState,
                         onBack = {
                             if (currentStack.size > 1) {
                                 currentStack.removeAt(currentStack.lastIndex)
@@ -375,6 +408,9 @@ fun MainNavigation(
                                 ),
                             )
                         },
+                        allocationUpdatingId = allocationUpdatingId,
+                        allocationFailure = allocationFailure,
+                        onAllocationDecision = scheduleViewModel::updateRefereeAllocation,
                     )
                 }
                 entry<AppRoute.TeamAvailability> { route ->

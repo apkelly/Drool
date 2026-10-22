@@ -322,6 +322,7 @@ private fun MatchAttributesDto.toDomain(
         latitude = latitude?.doubleOrNull,
         longitude = longitude?.doubleOrNull,
         role = roles.fixtureRole(),
+        refereeRole = roles.refereeRoleName(),
         leagueName = leagueName,
         leagueId = leagueId.textValue,
         seasonId = seasonId.textValue,
@@ -345,6 +346,10 @@ private fun List<MatchRoleResourceDto>.fixtureRole(): FixtureRole = when {
     any { it.attributes.isCoach } -> FixtureRole.Coach
     else -> FixtureRole.Player
 }
+
+private fun List<MatchRoleResourceDto>.refereeRoleName(): String? = firstOrNull {
+    it.attributes.isReferee
+}?.attributes?.name?.takeIf(String::isNotBlank)
 
 internal fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
     val matchId = attributes.eventId.textValue
@@ -377,7 +382,8 @@ internal fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
         role = FixtureRole.Referee,
         refereeRole = attributes.refereeRole?.takeIf(String::isNotBlank),
         refereeAllocationId = id.textValue,
-        refereeStatus = attributes.refereeStatus?.takeIf(String::isNotBlank),
+        refereeStatus = (attributes.refereeStatus ?: attributes.status)
+            ?.takeIf(String::isNotBlank),
         leagueName = attributes.leagueName,
     )
 }
