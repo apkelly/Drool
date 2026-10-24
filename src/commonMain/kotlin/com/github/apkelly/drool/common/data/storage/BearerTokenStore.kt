@@ -9,9 +9,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.github.apkelly.dribl.api.DriblTokenStore
 import com.github.apkelly.drool.common.domain.model.AssignmentPollingInterval
 import com.github.apkelly.drool.common.domain.model.ThemeMode
+import com.github.apkelly.drool.match.domain.model.RefereeMatchSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 import okio.Path.Companion.toPath
 
 internal const val DATA_STORE_FILE_NAME = "drool.preferences_pb"
@@ -113,6 +115,38 @@ class BearerTokenStore(
         }
     }
 
+    suspend fun getRefereeMatchSession(
+        profileId: String,
+        matchId: String,
+    ): RefereeMatchSession? {
+        val raw = dataStore.data.first()[refereeMatchSessionKey(profileId, matchId)]
+            ?.takeIf(String::isNotBlank)
+            ?: return null
+        return runCatching {
+            sessionJson.decodeFromString<RefereeMatchSession>(raw)
+        }.getOrNull()
+    }
+
+    suspend fun saveRefereeMatchSession(
+        session: RefereeMatchSession,
+    ) {
+        val key = refereeMatchSessionKey(session.profileId, session.matchId)
+        val encoded = sessionJson.encodeToString(session)
+        dataStore.edit { preferences ->
+            preferences[key] = encoded
+        }
+    }
+
+    suspend fun clearRefereeMatchSession(
+        profileId: String,
+        matchId: String,
+    ) {
+        val key = refereeMatchSessionKey(profileId, matchId)
+        dataStore.edit { preferences ->
+            preferences.remove(key)
+        }
+    }
+
     private companion object {
         val BearerTokenKey = stringPreferencesKey("bearer_token")
         val ActiveAccountKey = stringPreferencesKey("active_account_id")
@@ -122,6 +156,15 @@ class BearerTokenStore(
             stringPreferencesKey("assignment_baseline_account_id")
         val AssignmentPollingIntervalKey =
             stringPreferencesKey("assignment_polling_interval")
+        val sessionJson = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
+
+        fun refereeMatchSessionKey(
+            profileId: String,
+            matchId: String,
+        ) = stringPreferencesKey("referee_match_session_${profileId}_$matchId")
     }
 }
 

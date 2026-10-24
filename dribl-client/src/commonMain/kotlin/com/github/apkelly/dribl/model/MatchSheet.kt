@@ -8,4 +8,6 @@ data class MatchSheet(
     val members: List<MatchSheetMember>,
     val referees: List<MatchSheetOfficial>,
     val officials: List<MatchSheetOfficial>,
+    val score: MatchSheetScore? = null,
+    val goals: List<MatchSheetGoal> = emptyList(),
 )

@@ -17,7 +17,10 @@ import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoal
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
+import com.github.apkelly.drool.common.domain.model.MatchSheetScore
 import com.github.apkelly.drool.common.domain.model.MatchSheetTeam
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.RefereeAvailability
@@ -401,5 +404,65 @@ internal class FakeSportsRemote : SportsRemoteDataSource {
     ) {
         failure?.let { throw it }
         deletedAvailabilityId = availabilityId
+    }
+
+    var refereePresenceRequest: Triple<String, String, Boolean>? = null
+    var submittedScoreRequest: MatchSheetScore? = null
+    val createdGoals = mutableListOf<MatchSheetGoalDraft>()
+    val deletedGoalIds = mutableListOf<String>()
+
+    override suspend fun updateRefereePresence(
+        bearerToken: String,
+        refereeOfficialId: String,
+        checkedIn: Boolean,
+    ) {
+        failure?.let { throw it }
+        refereePresenceRequest = Triple(bearerToken, refereeOfficialId, checkedIn)
+    }
+
+    override suspend fun submitMatchSheetScore(
+        bearerToken: String,
+        matchSheetId: String,
+        scoreId: String?,
+        homeHalfTime: Int?,
+        awayHalfTime: Int?,
+        homeFullTime: Int,
+        awayFullTime: Int,
+    ): MatchSheetScore {
+        failure?.let { throw it }
+        val score = MatchSheetScore(
+            id = scoreId ?: "score-1",
+            homeHalfTime = homeHalfTime,
+            awayHalfTime = awayHalfTime,
+            homeFullTime = homeFullTime,
+            awayFullTime = awayFullTime,
+        )
+        submittedScoreRequest = score
+        return score
+    }
+
+    override suspend fun createMatchSheetGoal(
+        bearerToken: String,
+        matchSheetId: String,
+        draft: MatchSheetGoalDraft,
+    ): MatchSheetGoal {
+        failure?.let { throw it }
+        createdGoals += draft
+        return MatchSheetGoal(
+            id = "goal-${createdGoals.size}",
+            matchSheetMemberId = draft.matchSheetMemberId,
+            half = draft.half,
+            minute = draft.minute,
+            ownGoal = draft.ownGoal,
+            penaltyKick = draft.penaltyKick,
+        )
+    }
+
+    override suspend fun deleteMatchSheetGoal(
+        bearerToken: String,
+        goalId: String,
+    ) {
+        failure?.let { throw it }
+        deletedGoalIds += goalId
     }
 }

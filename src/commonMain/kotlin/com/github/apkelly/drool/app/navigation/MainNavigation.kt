@@ -411,6 +411,14 @@ fun MainNavigation(
                         allocationUpdatingId = allocationUpdatingId,
                         allocationFailure = allocationFailure,
                         onAllocationDecision = scheduleViewModel::updateRefereeAllocation,
+                        onCheckInReferee = matchViewModel::checkInReferee,
+                        onSelectRefereePreset = matchViewModel::selectRefereePreset,
+                        onToggleRefereeTimer = matchViewModel::toggleRefereeTimer,
+                        onAdvanceRefereePhase = matchViewModel::advanceRefereePhase,
+                        onResetRefereeTimer = matchViewModel::resetRefereeTimer,
+                        onRecordRefereeGoal = matchViewModel::recordRefereeGoal,
+                        onRemoveRefereeGoal = matchViewModel::removeRefereeGoal,
+                        onSubmitRefereeReport = matchViewModel::submitRefereeMatchReport,
                     )
                 }
                 entry<AppRoute.TeamAvailability> { route ->

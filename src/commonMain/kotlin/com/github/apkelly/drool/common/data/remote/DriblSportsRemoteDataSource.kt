@@ -5,7 +5,10 @@ import com.github.apkelly.drool.common.data.mapper.toDomain
 import com.github.apkelly.drool.common.data.mapper.toDribl
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoal
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
+import com.github.apkelly.drool.common.domain.model.MatchSheetScore
 import com.github.apkelly.drool.common.domain.model.RefereeAvailability
 import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.common.domain.model.TeamSheetStatus
@@ -159,4 +162,41 @@ internal class DriblSportsRemoteDataSource(
             DriblTeamSheetAction.valueOf(action.name),
         ).name,
     )
+
+    override suspend fun updateRefereePresence(
+        bearerToken: String,
+        refereeOfficialId: String,
+        checkedIn: Boolean,
+    ) = delegate.updateRefereePresence(bearerToken, refereeOfficialId, checkedIn)
+
+    override suspend fun submitMatchSheetScore(
+        bearerToken: String,
+        matchSheetId: String,
+        scoreId: String?,
+        homeHalfTime: Int?,
+        awayHalfTime: Int?,
+        homeFullTime: Int,
+        awayFullTime: Int,
+    ): MatchSheetScore = delegate.submitMatchSheetScore(
+        bearerToken = bearerToken,
+        matchSheetId = matchSheetId,
+        scoreId = scoreId,
+        homeHalfTime = homeHalfTime,
+        awayHalfTime = awayHalfTime,
+        homeFullTime = homeFullTime,
+        awayFullTime = awayFullTime,
+    ).toDomain()
+
+    override suspend fun createMatchSheetGoal(
+        bearerToken: String,
+        matchSheetId: String,
+        draft: MatchSheetGoalDraft,
+    ): MatchSheetGoal = delegate
+        .createMatchSheetGoal(bearerToken, matchSheetId, draft.toDribl())
+        .toDomain()
+
+    override suspend fun deleteMatchSheetGoal(
+        bearerToken: String,
+        goalId: String,
+    ) = delegate.deleteMatchSheetGoal(bearerToken, goalId)
 }

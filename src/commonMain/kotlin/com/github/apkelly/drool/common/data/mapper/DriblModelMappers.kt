@@ -11,9 +11,13 @@ import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LadderEntry
 import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
+import com.github.apkelly.drool.common.domain.model.MatchHalf
 import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoal
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
 import com.github.apkelly.drool.common.domain.model.MatchSheetOfficial
+import com.github.apkelly.drool.common.domain.model.MatchSheetScore
 import com.github.apkelly.drool.common.domain.model.MatchSheetTeam
 import com.github.apkelly.drool.common.domain.model.Profile
 import com.github.apkelly.drool.common.domain.model.RefereeAvailability
@@ -32,9 +36,13 @@ import com.github.apkelly.dribl.model.EmergencyContact as DriblEmergencyContact
 import com.github.apkelly.dribl.model.Fixture as DriblFixture
 import com.github.apkelly.dribl.model.LadderEntry as DriblLadderEntry
 import com.github.apkelly.dribl.model.LinkMemberRequestResult as DriblLinkMemberRequestResult
+import com.github.apkelly.dribl.model.MatchHalf as DriblMatchHalf
 import com.github.apkelly.dribl.model.MatchSheet as DriblMatchSheet
+import com.github.apkelly.dribl.model.MatchSheetGoal as DriblMatchSheetGoal
+import com.github.apkelly.dribl.model.MatchSheetGoalDraft as DriblMatchSheetGoalDraft
 import com.github.apkelly.dribl.model.MatchSheetMember as DriblMatchSheetMember
 import com.github.apkelly.dribl.model.MatchSheetOfficial as DriblMatchSheetOfficial
+import com.github.apkelly.dribl.model.MatchSheetScore as DriblMatchSheetScore
 import com.github.apkelly.dribl.model.MatchSheetTeam as DriblMatchSheetTeam
 import com.github.apkelly.dribl.model.Profile as DriblProfile
 import com.github.apkelly.dribl.model.RefereeAvailability as DriblRefereeAvailability
@@ -213,6 +221,8 @@ internal fun DriblMatchSheet.toDomain() = MatchSheet(
     members = members.map(DriblMatchSheetMember::toDomain),
     referees = referees.map(DriblMatchSheetOfficial::toDomain),
     officials = officials.map(DriblMatchSheetOfficial::toDomain),
+    score = score?.toDomain(),
+    goals = goals.map(DriblMatchSheetGoal::toDomain),
 )
 
 private fun DriblMatchSheetTeam.toDomain() = MatchSheetTeam(
@@ -233,7 +243,41 @@ internal fun DriblMatchSheetMember.toDomain() = MatchSheetMember(
     available,
 )
 
-private fun DriblMatchSheetOfficial.toDomain() = MatchSheetOfficial(id, displayName, roleName)
+private fun DriblMatchSheetOfficial.toDomain() = MatchSheetOfficial(
+    id = id,
+    displayName = displayName,
+    roleName = roleName,
+    userId = userId,
+    checkedIn = checkedIn,
+)
+
+internal fun DriblMatchSheetScore.toDomain() = MatchSheetScore(
+    id = id,
+    homeHalfTime = homeHalfTime,
+    awayHalfTime = awayHalfTime,
+    homeFullTime = homeFullTime,
+    awayFullTime = awayFullTime,
+)
+
+internal fun DriblMatchSheetGoal.toDomain() = MatchSheetGoal(
+    id = id,
+    teamId = teamId,
+    matchSheetMemberId = matchSheetMemberId,
+    memberName = memberName,
+    jerseyNumber = jerseyNumber,
+    half = MatchHalf.valueOf(half.name),
+    minute = minute,
+    ownGoal = ownGoal,
+    penaltyKick = penaltyKick,
+)
+
+internal fun MatchSheetGoalDraft.toDribl() = DriblMatchSheetGoalDraft(
+    matchSheetMemberId = matchSheetMemberId,
+    half = DriblMatchHalf.valueOf(half.name),
+    minute = minute,
+    ownGoal = ownGoal,
+    penaltyKick = penaltyKick,
+)
 
 internal fun DriblRefereeClub.toDomain() = RefereeClub(id, name, logoUrl, timeZone)
 

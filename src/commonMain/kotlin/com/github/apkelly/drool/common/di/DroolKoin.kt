@@ -47,9 +47,12 @@ import com.github.apkelly.drool.match.data.weather.WeatherRemoteDataSource
 import com.github.apkelly.drool.match.data.weather.platformWeatherApiKey
 import com.github.apkelly.drool.match.data.weather.platformWeatherRequestHeaders
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
+import com.github.apkelly.drool.match.domain.usecase.CheckInRefereeUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchSheetUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.domain.usecase.RefereeMatchSessionUseCase
+import com.github.apkelly.drool.match.domain.usecase.SubmitRefereeMatchReportUseCase
 import com.github.apkelly.drool.match.domain.usecase.UpdateMatchSheetMemberUseCase
 import com.github.apkelly.drool.match.domain.usecase.UpdateTeamSheetStatusUseCase
 import com.github.apkelly.drool.match.ui.viewmodel.MatchCache
@@ -229,6 +232,9 @@ private val domainModule = module {
     factory { LoadMatchSheetUseCase(repository = get()) }
     factory { UpdateMatchSheetMemberUseCase(repository = get()) }
     factory { UpdateTeamSheetStatusUseCase(repository = get()) }
+    factory { CheckInRefereeUseCase(repository = get()) }
+    factory { SubmitRefereeMatchReportUseCase(repository = get()) }
+    factory { RefereeMatchSessionUseCase(repository = get()) }
 }
 
 private val uiModule = module {
@@ -289,6 +295,9 @@ private val uiModule = module {
             updateMatchSheetMemberUseCase = get(),
             updateTeamSheetStatusUseCase = get(),
             matchCache = get(),
+            checkInRefereeUseCase = get(),
+            submitRefereeMatchReportUseCase = get(),
+            refereeMatchSessionUseCase = get(),
         )
     }
     factory {

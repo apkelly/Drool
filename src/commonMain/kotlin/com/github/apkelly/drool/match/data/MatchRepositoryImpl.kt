@@ -5,8 +5,10 @@ import com.github.apkelly.drool.common.data.repository.operationResult
 import com.github.apkelly.drool.common.data.repository.profileToken
 import com.github.apkelly.drool.common.data.storage.BearerTokenStore
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.match.data.weather.MatchWeatherDataSource
+import com.github.apkelly.drool.match.domain.model.RefereeMatchSession
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
 
 class MatchRepositoryImpl(
@@ -66,4 +68,77 @@ class MatchRepositoryImpl(
             action = action,
         )
     }
+
+    override suspend fun updateRefereeCheckIn(
+        profileId: String,
+        refereeOfficialId: String,
+        checkedIn: Boolean,
+    ) = operationResult {
+        api.updateRefereePresence(
+            bearerToken = profileToken(api, store, profileId),
+            refereeOfficialId = refereeOfficialId,
+            checkedIn = checkedIn,
+        )
+    }
+
+    override suspend fun submitRefereeMatchReport(
+        profileId: String,
+        fixture: Fixture,
+        scoreId: String?,
+        homeHalfTime: Int?,
+        awayHalfTime: Int?,
+        homeFullTime: Int,
+        awayFullTime: Int,
+        goals: List<MatchSheetGoalDraft>?,
+        existingGoalIds: List<String>,
+    ) = operationResult {
+        val matchSheetId = fixture.matchSheetId?.takeIf(String::isNotBlank)
+            ?: error("Match response did not contain a matchsheet ID")
+        val bearerToken = profileToken(api, store, profileId)
+        val submittedScore = api.submitMatchSheetScore(
+            bearerToken = bearerToken,
+            matchSheetId = matchSheetId,
+            scoreId = scoreId,
+            homeHalfTime = homeHalfTime,
+            awayHalfTime = awayHalfTime,
+            homeFullTime = homeFullTime,
+            awayFullTime = awayFullTime,
+        )
+        val submittedGoals = if (goals != null) {
+            existingGoalIds.forEach { goalId ->
+                api.deleteMatchSheetGoal(
+                    bearerToken = bearerToken,
+                    goalId = goalId,
+                )
+            }
+            goals.map { draft ->
+                api.createMatchSheetGoal(
+                    bearerToken = bearerToken,
+                    matchSheetId = matchSheetId,
+                    draft = draft,
+                )
+            }
+        } else {
+            null
+        }
+        val refreshedSheet = api.fetchMatchSheet(bearerToken, fixture)
+        refreshedSheet.copy(
+            score = refreshedSheet.score ?: submittedScore,
+            goals = submittedGoals ?: refreshedSheet.goals,
+        )
+    }
+
+    override suspend fun loadRefereeMatchSession(
+        profileId: String,
+        matchId: String,
+    ): RefereeMatchSession? = store.getRefereeMatchSession(profileId, matchId)
+
+    override suspend fun saveRefereeMatchSession(
+        session: RefereeMatchSession,
+    ) = store.saveRefereeMatchSession(session)
+
+    override suspend fun clearRefereeMatchSession(
+        profileId: String,
+        matchId: String,
+    ) = store.clearRefereeMatchSession(profileId, matchId)
 }

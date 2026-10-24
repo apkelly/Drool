@@ -3,13 +3,23 @@ package com.github.apkelly.drool.match.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
+import com.github.apkelly.drool.common.domain.model.MatchSheetMember
 import com.github.apkelly.drool.common.domain.model.OperationResult
 import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.common.logging.DroolLog
 import com.github.apkelly.drool.common.ui.widgets.mergeRefereeAllocationFrom
+import com.github.apkelly.drool.match.domain.model.RecordedRefereeGoal
+import com.github.apkelly.drool.match.domain.model.RefereeMatchPreset
+import com.github.apkelly.drool.match.domain.model.RefereeMatchSession
+import com.github.apkelly.drool.match.domain.model.RefereeTimerPhase
+import com.github.apkelly.drool.match.domain.usecase.CheckInRefereeUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchSheetUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.domain.usecase.RefereeMatchSessionUseCase
+import com.github.apkelly.drool.match.domain.usecase.SubmitRefereeMatchReportUseCase
 import com.github.apkelly.drool.match.domain.usecase.UpdateMatchSheetMemberUseCase
 import com.github.apkelly.drool.match.domain.usecase.UpdateTeamSheetStatusUseCase
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
@@ -18,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+@Suppress("LongParameterList", "TooManyFunctions")
 class MatchViewModel(
     private val loadMatchDetails: LoadMatchDetailsUseCase,
     private val loadMatchWeather: LoadMatchWeatherUseCase,
@@ -25,6 +36,9 @@ class MatchViewModel(
     private val updateMatchSheetMemberUseCase: UpdateMatchSheetMemberUseCase,
     private val updateTeamSheetStatusUseCase: UpdateTeamSheetStatusUseCase,
     private val matchCache: MatchCache,
+    private val checkInRefereeUseCase: CheckInRefereeUseCase? = null,
+    private val submitRefereeMatchReportUseCase: SubmitRefereeMatchReportUseCase? = null,
+    private val refereeMatchSessionUseCase: RefereeMatchSessionUseCase? = null,
 ) : ViewModel() {
     private val logger = DroolLog.withTag("MatchViewModel")
     private val mutableState = MutableStateFlow<MatchDetailsUiState>(MatchDetailsUiState.Idle)
@@ -75,14 +89,27 @@ class MatchViewModel(
         val loadingState = MatchSheetUiState.Loading(profileId, matchId)
         mutableMatchSheetState.value = loadingState
         viewModelScope.launch {
+            val savedSession = current?.refereeSession
+                ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+                ?: refereeMatchSessionUseCase?.load(profileId, matchId)
             val nextState = when (
                 val result = loadMatchSheetUseCase(profileId, details.fixture)
             ) {
-                is OperationResult.Success -> MatchSheetUiState.Content(
-                    profileId = profileId,
-                    matchId = matchId,
-                    matchSheet = result.value,
-                )
+                is OperationResult.Success -> {
+                    val resolvedSession = savedSession
+                        ?: seedRefereeSessionFromMatchSheet(
+                            profileId = profileId,
+                            matchId = matchId,
+                            matchSheet = result.value,
+                        )
+                    MatchSheetUiState.Content(
+                        profileId = profileId,
+                        matchId = matchId,
+                        matchSheet = result.value,
+                        refereeSession = resolvedSession,
+                        refereeReportSubmitted = resolvedSession.submittedAtEpochMillis != null,
+                    )
+                }
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to load match sheet: ${result.reason}" }
@@ -179,6 +206,299 @@ class MatchViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun checkInReferee(
+        profileId: String,
+        refereeOfficialId: String,
+    ) {
+        val checkIn = checkInRefereeUseCase ?: return
+        val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
+        if (current.checkingInRefereeId != null) return
+        mutableMatchSheetState.value = current.copy(
+            checkingInRefereeId = refereeOfficialId,
+            updateFailed = false,
+        )
+        viewModelScope.launch {
+            when (val result = checkIn(profileId, refereeOfficialId, checkedIn = true)) {
+                is OperationResult.Success -> {
+                    val latest = mutableMatchSheetState.value as? MatchSheetUiState.Content
+                        ?: return@launch
+                    mutableMatchSheetState.value = latest.copy(
+                        matchSheet = latest.matchSheet.copy(
+                            referees = latest.matchSheet.referees.map { official ->
+                                if (official.id == refereeOfficialId) {
+                                    official.copy(checkedIn = true)
+                                } else {
+                                    official
+                                }
+                            },
+                        ),
+                        checkingInRefereeId = null,
+                    )
+                }
+
+                is OperationResult.Failed -> {
+                    logger.w { "Unable to check in referee: ${result.reason}" }
+                    val latest = mutableMatchSheetState.value as? MatchSheetUiState.Content
+                        ?: return@launch
+                    mutableMatchSheetState.value = latest.copy(
+                        checkingInRefereeId = null,
+                        updateFailed = true,
+                    )
+                }
+            }
+        }
+    }
+
+    fun selectRefereePreset(
+        profileId: String,
+        preset: RefereeMatchPreset,
+    ) {
+        updateRefereeSession(profileId) { session ->
+            if (session.phase != RefereeTimerPhase.NotStarted) {
+                session
+            } else {
+                session.copy(
+                    preset = preset,
+                    submittedAtEpochMillis = null,
+                )
+            }
+        }
+    }
+
+    fun toggleRefereeTimer(
+        profileId: String,
+        nowEpochMillis: Long,
+    ) {
+        updateRefereeSession(profileId) { session ->
+            if (session.isRunning) {
+                session.copy(
+                    accumulatedMillis = session.elapsedHalfMillis(nowEpochMillis),
+                    isRunning = false,
+                    startedAtEpochMillis = null,
+                )
+            } else {
+                when (session.phase) {
+                    RefereeTimerPhase.NotStarted -> session.copy(
+                        phase = RefereeTimerPhase.FirstHalf,
+                        accumulatedMillis = 0L,
+                        isRunning = true,
+                        startedAtEpochMillis = nowEpochMillis,
+                    )
+
+                    RefereeTimerPhase.HalfTime -> session.copy(
+                        phase = RefereeTimerPhase.SecondHalf,
+                        accumulatedMillis = 0L,
+                        isRunning = true,
+                        startedAtEpochMillis = nowEpochMillis,
+                    )
+
+                    RefereeTimerPhase.FullTime -> session.copy(
+                        phase = RefereeTimerPhase.SecondHalf,
+                        isRunning = true,
+                        startedAtEpochMillis = nowEpochMillis,
+                    )
+
+                    RefereeTimerPhase.FirstHalf,
+                    RefereeTimerPhase.SecondHalf,
+                    -> session.copy(
+                        isRunning = true,
+                        startedAtEpochMillis = nowEpochMillis,
+                    )
+                }
+            }
+        }
+    }
+
+    fun advanceRefereePhase(
+        profileId: String,
+        nowEpochMillis: Long,
+    ) {
+        updateRefereeSession(profileId) { session ->
+            when (session.phase) {
+                RefereeTimerPhase.NotStarted -> session.copy(
+                    phase = RefereeTimerPhase.FirstHalf,
+                    accumulatedMillis = 0L,
+                    isRunning = true,
+                    startedAtEpochMillis = nowEpochMillis,
+                )
+
+                RefereeTimerPhase.FirstHalf -> session.copy(
+                    phase = RefereeTimerPhase.HalfTime,
+                    accumulatedMillis = 0L,
+                    isRunning = false,
+                    startedAtEpochMillis = null,
+                )
+
+                RefereeTimerPhase.HalfTime -> session.copy(
+                    phase = RefereeTimerPhase.SecondHalf,
+                    accumulatedMillis = 0L,
+                    isRunning = true,
+                    startedAtEpochMillis = nowEpochMillis,
+                )
+
+                RefereeTimerPhase.SecondHalf -> session.copy(
+                    phase = RefereeTimerPhase.FullTime,
+                    accumulatedMillis = session.elapsedHalfMillis(nowEpochMillis),
+                    isRunning = false,
+                    startedAtEpochMillis = null,
+                )
+
+                RefereeTimerPhase.FullTime -> session
+            }
+        }
+    }
+
+    fun resetRefereeTimer(
+        profileId: String,
+    ) {
+        updateRefereeSession(profileId) { session ->
+            session.copy(
+                phase = RefereeTimerPhase.NotStarted,
+                isRunning = false,
+                accumulatedMillis = 0L,
+                startedAtEpochMillis = null,
+            )
+        }
+    }
+
+    fun recordRefereeGoal(
+        profileId: String,
+        isHomeScoringTeam: Boolean,
+        member: MatchSheetMember?,
+        ownGoal: Boolean,
+        nowEpochMillis: Long,
+    ) {
+        updateRefereeSession(profileId, clearSubmitted = true) { session ->
+            val goal = RecordedRefereeGoal(
+                id = "goal-$nowEpochMillis-${session.recordedGoals.size}",
+                isHomeScoringTeam = isHomeScoringTeam,
+                half = session.activeHalf,
+                minute = session.currentMatchMinute(nowEpochMillis),
+                matchSheetMemberId = member?.id,
+                playerName = member?.displayName,
+                jerseyNumber = member?.jerseyNumber,
+                ownGoal = ownGoal,
+            )
+            session.copy(
+                recordedGoals = session.recordedGoals + goal,
+                submittedAtEpochMillis = null,
+            )
+        }
+    }
+
+    fun removeRefereeGoal(
+        profileId: String,
+        goalId: String,
+    ) {
+        updateRefereeSession(profileId, clearSubmitted = true) { session ->
+            session.copy(
+                recordedGoals = session.recordedGoals.filterNot { it.id == goalId },
+                submittedAtEpochMillis = null,
+            )
+        }
+    }
+
+    fun submitRefereeMatchReport(
+        profileId: String,
+        nowEpochMillis: Long,
+    ) {
+        val submitReport = submitRefereeMatchReportUseCase ?: return
+        val details = mutableState.value as? MatchDetailsUiState.Content ?: return
+        val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
+        if (current.profileId != profileId || current.isSubmittingRefereeReport) return
+        val session = current.refereeSession
+        val goalDrafts = if (session.preset.requiresPlayerSelection) {
+            session.recordedGoals.mapNotNull { goal ->
+                val memberId = goal.matchSheetMemberId?.takeIf(String::isNotBlank)
+                    ?: return@mapNotNull null
+                MatchSheetGoalDraft(
+                    matchSheetMemberId = memberId,
+                    half = goal.half,
+                    minute = goal.minute,
+                    ownGoal = goal.ownGoal,
+                )
+            }
+        } else {
+            null
+        }
+        mutableMatchSheetState.value = current.copy(
+            isSubmittingRefereeReport = true,
+            refereeReportSubmitted = false,
+            updateFailed = false,
+        )
+        viewModelScope.launch {
+            val result = submitReport(
+                profileId = profileId,
+                fixture = details.fixture,
+                scoreId = current.matchSheet.score?.id,
+                homeHalfTime = session.homeHalfTimeScore,
+                awayHalfTime = session.awayHalfTimeScore,
+                homeFullTime = session.homeFullTimeScore,
+                awayFullTime = session.awayFullTimeScore,
+                goals = goalDrafts,
+                existingGoalIds = current.matchSheet.goals.map { it.id },
+            )
+            when (result) {
+                is OperationResult.Success -> {
+                    val updatedSession = session.copy(submittedAtEpochMillis = nowEpochMillis)
+                    refereeMatchSessionUseCase?.save(updatedSession)
+                    val latestSheet = mutableMatchSheetState.value as? MatchSheetUiState.Content
+                    if (latestSheet?.profileId == profileId && latestSheet.matchId == details.matchId) {
+                        mutableMatchSheetState.value = latestSheet.copy(
+                            matchSheet = result.value,
+                            isSubmittingRefereeReport = false,
+                            refereeReportSubmitted = true,
+                            refereeSession = updatedSession,
+                            updateFailed = false,
+                        )
+                    }
+                    val latestDetails = mutableState.value as? MatchDetailsUiState.Content
+                    if (latestDetails?.profileId == profileId && latestDetails.matchId == details.matchId) {
+                        val updatedFixture = latestDetails.fixture.copy(
+                            homeScore = session.homeFullTimeScore,
+                            awayScore = session.awayFullTimeScore,
+                        )
+                        matchCache.put(
+                            MatchCacheKey(profileId, details.matchId),
+                            updatedFixture,
+                            resolvedDetails = true,
+                        )
+                        mutableState.value = latestDetails.copy(fixture = updatedFixture)
+                    }
+                }
+
+                is OperationResult.Failed -> {
+                    logger.w { "Unable to submit referee match report: ${result.reason}" }
+                    val latestSheet = mutableMatchSheetState.value as? MatchSheetUiState.Content
+                    if (latestSheet?.profileId == profileId && latestSheet.matchId == details.matchId) {
+                        mutableMatchSheetState.value = latestSheet.copy(
+                            isSubmittingRefereeReport = false,
+                            updateFailed = true,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateRefereeSession(
+        profileId: String,
+        clearSubmitted: Boolean = false,
+        transform: (RefereeMatchSession) -> RefereeMatchSession,
+    ) {
+        val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
+        if (current.profileId != profileId) return
+        val updated = transform(current.refereeSession)
+        mutableMatchSheetState.value = current.copy(
+            refereeSession = updated,
+            refereeReportSubmitted = if (clearSubmitted) false else current.refereeReportSubmitted,
+            updateFailed = false,
+        )
+        viewModelScope.launch {
+            refereeMatchSessionUseCase?.save(updated)
         }
     }
 
@@ -298,4 +618,39 @@ class MatchViewModel(
 
         MatchSheetUiState.Idle -> true
     }
+}
+
+private fun seedRefereeSessionFromMatchSheet(
+    profileId: String,
+    matchId: String,
+    matchSheet: MatchSheet,
+): RefereeMatchSession {
+    if (matchSheet.goals.isNotEmpty()) {
+        val goals = matchSheet.goals.map { goal ->
+            val isHomeTeamGoal = when {
+                goal.ownGoal -> goal.teamId == matchSheet.awayTeam.id
+                else -> goal.teamId == matchSheet.homeTeam.id
+            }
+            RecordedRefereeGoal(
+                id = goal.id,
+                isHomeScoringTeam = isHomeTeamGoal,
+                half = goal.half,
+                minute = goal.minute ?: 1,
+                matchSheetMemberId = goal.matchSheetMemberId,
+                playerName = goal.memberName,
+                jerseyNumber = goal.jerseyNumber,
+                ownGoal = goal.ownGoal,
+            )
+        }
+        return RefereeMatchSession(
+            profileId = profileId,
+            matchId = matchId,
+            preset = RefereeMatchPreset.Adult,
+            recordedGoals = goals,
+        )
+    }
+    return RefereeMatchSession(
+        profileId = profileId,
+        matchId = matchId,
+    )
 }

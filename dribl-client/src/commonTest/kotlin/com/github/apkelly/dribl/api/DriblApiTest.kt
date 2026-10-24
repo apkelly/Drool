@@ -916,8 +916,10 @@ class DriblApiTest {
                         "/api/matchsheet-referees" ->
                             """
                             {"data":[{"id":"referee","attributes":{
+                              "user_id":"303",
                               "user_first_name":"Robin","user_last_name":"Referee",
-                              "referee_role":"Centre Referee"
+                              "referee_role":"Centre Referee",
+                              "presence":"present"
                             }}]}
                             """.trimIndent()
 
@@ -925,6 +927,28 @@ class DriblApiTest {
                             """
                             {"data":[{"id":"official","attributes":{
                               "name":"Taylor Official","type":"Sideline Official"
+                            }}]}
+                            """.trimIndent()
+
+                        "/api/matchsheet-scores" ->
+                            """
+                            {"data":[{"id":"score-1","attributes":{
+                              "home_half_time":1,"away_half_time":0,
+                              "home_full_time":2,"away_full_time":1
+                            }}]}
+                            """.trimIndent()
+
+                        "/api/matchsheet-goals" ->
+                            """
+                            {"data":[{"id":"goal-1","attributes":{
+                              "team_id":"home",
+                              "matchsheet_member_id":"home-member",
+                              "matchsheet_member_name":"Alex Player",
+                              "jersey_number":"7",
+                              "game_section":"ft-first-half",
+                              "minute":18,
+                              "own_goal":false,
+                              "penalty_kick":false
                             }}]}
                             """.trimIndent()
 
@@ -970,9 +994,16 @@ class DriblApiTest {
         assertEquals("7", sheet.members.first().jerseyNumber)
         assertEquals("Robin Referee", sheet.referees.single().displayName)
         assertEquals("Centre Referee", sheet.referees.single().roleName)
+        assertEquals("303", sheet.referees.single().userId)
+        assertEquals(true, sheet.referees.single().checkedIn)
         assertEquals("Taylor Official", sheet.officials.single().displayName)
         assertEquals("Sideline Official", sheet.officials.single().roleName)
-        assertEquals(6, requests.size)
+        assertEquals("score-1", sheet.score?.id)
+        assertEquals(2, sheet.score?.homeFullTime)
+        assertEquals(1, sheet.score?.awayFullTime)
+        assertEquals("goal-1", sheet.goals.single().id)
+        assertEquals(18, sheet.goals.single().minute)
+        assertEquals(8, requests.size)
         assertFalse(requests.any { it.first.contains("/matchsheets/") })
         assertEquals(
             setOf("home", "away"),
@@ -982,7 +1013,9 @@ class DriblApiTest {
         )
         requests.filter {
             it.first.endsWith("/matchsheet-referees") ||
-                it.first.endsWith("/matchsheet-officials")
+                it.first.endsWith("/matchsheet-officials") ||
+                it.first.endsWith("/matchsheet-scores") ||
+                it.first.endsWith("/matchsheet-goals")
         }.forEach { (_, parameters) ->
             assertEquals("sheet", parameters["matchsheet_id"])
             assertEquals("61", parameters["tenant_id"])

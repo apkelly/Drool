@@ -7,7 +7,10 @@ import com.github.apkelly.dribl.model.EmergencyContact
 import com.github.apkelly.dribl.model.Fixture
 import com.github.apkelly.dribl.model.LinkMemberRequestResult
 import com.github.apkelly.dribl.model.MatchSheet
+import com.github.apkelly.dribl.model.MatchSheetGoal
+import com.github.apkelly.dribl.model.MatchSheetGoalDraft
 import com.github.apkelly.dribl.model.MatchSheetMember
+import com.github.apkelly.dribl.model.MatchSheetScore
 import com.github.apkelly.dribl.model.Profile
 import com.github.apkelly.dribl.model.RefereeAvailability
 import com.github.apkelly.dribl.model.RefereeClub
@@ -125,6 +128,52 @@ class DriblSportsApi(
         matchSheetId,
         teamId,
         action,
+    )
+
+    override suspend fun updateRefereePresence(
+        bearerToken: String,
+        refereeOfficialId: String,
+        checkedIn: Boolean,
+    ) = matchSheetApi.updateRefereePresence(
+        bearerToken,
+        refereeOfficialId,
+        checkedIn,
+    )
+
+    override suspend fun submitMatchSheetScore(
+        bearerToken: String,
+        matchSheetId: String,
+        scoreId: String?,
+        homeHalfTime: Int?,
+        awayHalfTime: Int?,
+        homeFullTime: Int,
+        awayFullTime: Int,
+    ): MatchSheetScore = matchSheetApi.submitMatchSheetScore(
+        bearerToken,
+        matchSheetId,
+        scoreId,
+        homeHalfTime,
+        awayHalfTime,
+        homeFullTime,
+        awayFullTime,
+    )
+
+    override suspend fun createMatchSheetGoal(
+        bearerToken: String,
+        matchSheetId: String,
+        draft: MatchSheetGoalDraft,
+    ): MatchSheetGoal = matchSheetApi.createMatchSheetGoal(
+        bearerToken,
+        matchSheetId,
+        draft,
+    )
+
+    override suspend fun deleteMatchSheetGoal(
+        bearerToken: String,
+        goalId: String,
+    ) = matchSheetApi.deleteMatchSheetGoal(
+        bearerToken,
+        goalId,
     )
 
     override suspend fun fetchProfile(

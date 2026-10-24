@@ -2,7 +2,10 @@ package com.github.apkelly.drool.common.data.remote
 
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoal
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
+import com.github.apkelly.drool.common.domain.model.MatchSheetScore
 import com.github.apkelly.drool.common.domain.model.TeamSheetAction
 import com.github.apkelly.drool.common.domain.model.TeamSheetStatus
 
@@ -24,4 +27,31 @@ interface MatchSheetRemoteDataSource {
         teamId: String,
         action: TeamSheetAction,
     ): TeamSheetStatus
+
+    suspend fun updateRefereePresence(
+        bearerToken: String,
+        refereeOfficialId: String,
+        checkedIn: Boolean,
+    )
+
+    suspend fun submitMatchSheetScore(
+        bearerToken: String,
+        matchSheetId: String,
+        scoreId: String?,
+        homeHalfTime: Int?,
+        awayHalfTime: Int?,
+        homeFullTime: Int,
+        awayFullTime: Int,
+    ): MatchSheetScore
+
+    suspend fun createMatchSheetGoal(
+        bearerToken: String,
+        matchSheetId: String,
+        draft: MatchSheetGoalDraft,
+    ): MatchSheetGoal
+
+    suspend fun deleteMatchSheetGoal(
+        bearerToken: String,
+        goalId: String,
+    )
 }

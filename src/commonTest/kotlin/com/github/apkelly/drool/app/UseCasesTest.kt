@@ -12,11 +12,15 @@ import com.github.apkelly.drool.common.domain.model.AuthenticatedSession
 import com.github.apkelly.drool.common.domain.model.CachedData
 import com.github.apkelly.drool.common.domain.model.Club
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkMemberRequestResult
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.MatchSheet
+import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
+import com.github.apkelly.drool.common.domain.model.MatchSheetOfficial
+import com.github.apkelly.drool.common.domain.model.MatchSheetScore
 import com.github.apkelly.drool.common.domain.model.MatchSheetTeam
 import com.github.apkelly.drool.common.domain.model.MatchWeather
 import com.github.apkelly.drool.common.domain.model.OperationResult
@@ -43,12 +47,20 @@ import com.github.apkelly.drool.discover.domain.usecase.SetTeamFollowingUseCase
 import com.github.apkelly.drool.home.domain.repository.HomeRepository
 import com.github.apkelly.drool.home.domain.usecase.ObserveProfileClubsUseCase
 import com.github.apkelly.drool.home.domain.usecase.ObserveProfileTeamsUseCase
+import com.github.apkelly.drool.match.domain.model.RefereeMatchPreset
+import com.github.apkelly.drool.match.domain.model.RefereeMatchSession
+import com.github.apkelly.drool.match.domain.model.RefereeTimerPhase
 import com.github.apkelly.drool.match.domain.repository.MatchRepository
+import com.github.apkelly.drool.match.domain.usecase.CheckInRefereeUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchDetailsUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchSheetUseCase
 import com.github.apkelly.drool.match.domain.usecase.LoadMatchWeatherUseCase
+import com.github.apkelly.drool.match.domain.usecase.RefereeMatchSessionUseCase
+import com.github.apkelly.drool.match.domain.usecase.SubmitRefereeMatchReportUseCase
 import com.github.apkelly.drool.match.domain.usecase.UpdateMatchSheetMemberUseCase
 import com.github.apkelly.drool.match.domain.usecase.UpdateTeamSheetStatusUseCase
+import com.github.apkelly.drool.match.ui.model.MatchSheetUiState
+import com.github.apkelly.drool.match.ui.shouldShowRefereeChecklistTab
 import com.github.apkelly.drool.match.ui.viewmodel.MatchCache
 import com.github.apkelly.drool.match.ui.viewmodel.MatchViewModel
 import com.github.apkelly.drool.profile.data.ProfileRepositoryImpl
@@ -320,6 +332,122 @@ class UseCasesTest {
             Dispatchers.resetMain()
         }
     }
+
+    @Test
+    fun refereeChecklistVisibilityAndWorkflowUpdatesTimerGoalsAndSubmitsReport() = runTest {
+        val kickoff = 1_700_000_000_000L
+        val refereeFixture = Fixture(
+            id = "match",
+            profileId = "profile",
+            kickoffEpochMillis = kickoff,
+            homeTeamId = "home",
+            homeTeamName = "Home",
+            awayTeamId = "away",
+            awayTeamName = "Away",
+            competitionName = "Premier",
+            venueName = "Main Field",
+            userTeamId = null,
+            status = FixtureStatus.Scheduled,
+            role = FixtureRole.Referee,
+            matchSheetId = "sheet",
+        )
+        assertEquals(
+            false,
+            shouldShowRefereeChecklistTab(refereeFixture, kickoff - 31 * 60_000L),
+        )
+        assertEquals(
+            true,
+            shouldShowRefereeChecklistTab(refereeFixture, kickoff - 30 * 60_000L),
+        )
+        assertEquals(
+            true,
+            shouldShowRefereeChecklistTab(refereeFixture, kickoff + 60 * 60_000L),
+        )
+        assertEquals(
+            false,
+            shouldShowRefereeChecklistTab(
+                refereeFixture.copy(role = FixtureRole.Player),
+                kickoff,
+            ),
+        )
+
+        val dataSource = FakeSportsDataSource()
+        dataSource.matchSheet = dataSource.matchSheet.copy(
+            members = listOf(dataSource.matchSheetMember),
+            referees = listOf(
+                MatchSheetOfficial(
+                    id = "ref-1",
+                    displayName = "Ethan Referee",
+                    roleName = "Centre Referee",
+                    userId = "profile",
+                    checkedIn = false,
+                ),
+            ),
+        )
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val matchCache = MatchCache()
+        val matchViewModel = MatchViewModel(
+            loadMatchDetails = LoadMatchDetailsUseCase(dataSource),
+            loadMatchWeather = LoadMatchWeatherUseCase(dataSource),
+            loadMatchSheetUseCase = LoadMatchSheetUseCase(dataSource),
+            updateMatchSheetMemberUseCase = UpdateMatchSheetMemberUseCase(dataSource),
+            updateTeamSheetStatusUseCase = UpdateTeamSheetStatusUseCase(dataSource),
+            matchCache = matchCache,
+            checkInRefereeUseCase = CheckInRefereeUseCase(dataSource),
+            submitRefereeMatchReportUseCase = SubmitRefereeMatchReportUseCase(dataSource),
+            refereeMatchSessionUseCase = RefereeMatchSessionUseCase(dataSource),
+        )
+        try {
+            matchViewModel.load("profile", "match")
+            advanceUntilIdle()
+            matchViewModel.loadMatchSheet("profile", force = true)
+            advanceUntilIdle()
+
+            matchViewModel.checkInReferee("profile", "ref-1")
+            advanceUntilIdle()
+            assertEquals("ref-1" to true, dataSource.lastCheckedInReferee)
+            val checkedInState = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
+            assertEquals(true, checkedInState.matchSheet.referees.single().checkedIn)
+
+            matchViewModel.selectRefereePreset("profile", RefereeMatchPreset.Adult)
+            matchViewModel.toggleRefereeTimer("profile", 1_000L)
+            matchViewModel.recordRefereeGoal(
+                profileId = "profile",
+                isHomeScoringTeam = true,
+                member = dataSource.matchSheetMember,
+                ownGoal = false,
+                nowEpochMillis = 61_000L,
+            )
+            matchViewModel.advanceRefereePhase("profile", 90_000L)
+            matchViewModel.advanceRefereePhase("profile", 100_000L)
+            matchViewModel.recordRefereeGoal(
+                profileId = "profile",
+                isHomeScoringTeam = false,
+                member = dataSource.matchSheetMember,
+                ownGoal = true,
+                nowEpochMillis = 160_000L,
+            )
+            matchViewModel.advanceRefereePhase("profile", 200_000L)
+            advanceUntilIdle()
+
+            val preSubmit = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
+            assertEquals(RefereeTimerPhase.FullTime, preSubmit.refereeSession.phase)
+            assertEquals(1, preSubmit.refereeSession.homeHalfTimeScore)
+            assertEquals(0, preSubmit.refereeSession.awayHalfTimeScore)
+            assertEquals(1, preSubmit.refereeSession.homeFullTimeScore)
+            assertEquals(1, preSubmit.refereeSession.awayFullTimeScore)
+
+            matchViewModel.submitRefereeMatchReport("profile", 210_000L)
+            advanceUntilIdle()
+
+            assertEquals(1 to 1, dataSource.lastSubmittedScore)
+            assertEquals(2, dataSource.lastSubmittedGoals?.size)
+            val postSubmit = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
+            assertEquals(true, postSubmit.refereeReportSubmitted)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
 }
 
 internal class FakeSessionDataSource : SessionDataSource {
@@ -447,7 +575,7 @@ internal class FakeSportsDataSource :
         null,
         FixtureStatus.Scheduled,
     )
-    val matchSheet = MatchSheet(
+    var matchSheet = MatchSheet(
         id = "sheet",
         status = "pending",
         homeTeam = MatchSheetTeam("home", "Home", TeamSheetStatus.Open),
@@ -606,4 +734,62 @@ internal class FakeSportsDataSource :
             -> TeamSheetStatus.Open
         },
     )
+
+    var lastCheckedInReferee: Pair<String, Boolean>? = null
+    var lastSubmittedScore: Pair<Int, Int>? = null
+    var lastSubmittedGoals: List<MatchSheetGoalDraft>? = null
+    val savedSessions = mutableMapOf<Pair<String, String>, RefereeMatchSession>()
+
+    override suspend fun updateRefereeCheckIn(
+        profileId: String,
+        refereeOfficialId: String,
+        checkedIn: Boolean,
+    ): OperationResult<Unit> {
+        lastCheckedInReferee = refereeOfficialId to checkedIn
+        return OperationResult.Success(Unit)
+    }
+
+    override suspend fun submitRefereeMatchReport(
+        profileId: String,
+        fixture: Fixture,
+        scoreId: String?,
+        homeHalfTime: Int?,
+        awayHalfTime: Int?,
+        homeFullTime: Int,
+        awayFullTime: Int,
+        goals: List<MatchSheetGoalDraft>?,
+        existingGoalIds: List<String>,
+    ): OperationResult<MatchSheet> {
+        lastSubmittedScore = homeFullTime to awayFullTime
+        lastSubmittedGoals = goals
+        return OperationResult.Success(
+            matchSheet.copy(
+                score = MatchSheetScore(
+                    id = scoreId ?: "score-1",
+                    homeHalfTime = homeHalfTime,
+                    awayHalfTime = awayHalfTime,
+                    homeFullTime = homeFullTime,
+                    awayFullTime = awayFullTime,
+                ),
+            ),
+        )
+    }
+
+    override suspend fun loadRefereeMatchSession(
+        profileId: String,
+        matchId: String,
+    ): RefereeMatchSession? = savedSessions[profileId to matchId]
+
+    override suspend fun saveRefereeMatchSession(
+        session: RefereeMatchSession,
+    ) {
+        savedSessions[session.profileId to session.matchId] = session
+    }
+
+    override suspend fun clearRefereeMatchSession(
+        profileId: String,
+        matchId: String,
+    ) {
+        savedSessions.remove(profileId to matchId)
+    }
 }

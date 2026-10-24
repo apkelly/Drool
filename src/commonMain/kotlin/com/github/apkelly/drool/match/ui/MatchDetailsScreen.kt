@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
+import com.github.apkelly.drool.common.domain.model.MatchSheetMember
 import com.github.apkelly.drool.common.domain.model.MatchWeather
 import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.domain.model.RefreshFailure
@@ -80,6 +81,7 @@ import com.github.apkelly.drool.common.resources.match_weather_temperature
 import com.github.apkelly.drool.common.resources.match_weather_unavailable
 import com.github.apkelly.drool.common.resources.match_weather_uv
 import com.github.apkelly.drool.common.resources.match_weather_washout
+import com.github.apkelly.drool.common.resources.referee_checklist_tab
 import com.github.apkelly.drool.common.resources.schedule_allocation_section_title
 import com.github.apkelly.drool.common.resources.schedule_allocation_update_failed
 import com.github.apkelly.drool.common.ui.format.displayTeamNames
@@ -101,15 +103,18 @@ import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
+import com.github.apkelly.drool.match.domain.model.RefereeMatchPreset
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
 import com.github.apkelly.drool.match.ui.model.MatchSheetUiState
 import com.github.apkelly.drool.match.ui.platform.platformWeatherTemperatureUnit
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.time.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 fun MatchDetailsScreen(
     profileId: String,
     matchId: String,
@@ -125,13 +130,33 @@ fun MatchDetailsScreen(
     allocationUpdatingId: String? = null,
     allocationFailure: RefreshFailure? = null,
     onAllocationDecision: (Fixture, RefereeAllocationDecision) -> Unit = { _, _ -> },
+    onCheckInReferee: (String, String) -> Unit = { _, _ -> },
+    onSelectRefereePreset: (String, RefereeMatchPreset) -> Unit = { _, _ -> },
+    onToggleRefereeTimer: (String, Long) -> Unit = { _, _ -> },
+    onAdvanceRefereePhase: (String, Long) -> Unit = { _, _ -> },
+    onResetRefereeTimer: (String) -> Unit = {},
+    onRecordRefereeGoal: (String, Boolean, MatchSheetMember?, Boolean, Long) -> Unit =
+        { _, _, _, _, _ -> },
+    onRemoveRefereeGoal: (String, String) -> Unit = { _, _ -> },
+    onSubmitRefereeReport: (String, Long) -> Unit = { _, _ -> },
+    currentEpochMillis: Long = Clock.System.now().toEpochMilliseconds(),
+    initialSelectedTab: Int = 0,
     onTeamSelect: (String, String, String?, String?, String?) -> Unit,
 ) {
     val currentOnLoad by rememberUpdatedState(onLoad)
     LaunchedEffect(profileId, matchId) { currentOnLoad(profileId, matchId) }
     val details = (state as? MatchDetailsUiState.Content)
         ?.takeIf { it.profileId == profileId && it.matchId == matchId }
-    var selectedTab by remember(profileId, matchId) { mutableIntStateOf(0) }
+    val showRefereeChecklist = shouldShowRefereeChecklistTab(
+        fixture = details?.fixture,
+        nowEpochMillis = currentEpochMillis,
+    )
+    var selectedTab by remember(profileId, matchId) { mutableIntStateOf(initialSelectedTab) }
+    LaunchedEffect(showRefereeChecklist) {
+        if (!showRefereeChecklist && selectedTab == 2) {
+            selectedTab = 0
+        }
+    }
     var pendingDecision by remember { mutableStateOf<PendingAllocationDecision?>(null) }
     val currentOnLoadMatchSheet by rememberUpdatedState(onLoadMatchSheet)
     LaunchedEffect(profileId, details?.fixture?.matchSheetId, canViewMatchSheet) {
@@ -170,12 +195,19 @@ fun MatchDetailsScreen(
                         onClick = { selectedTab = 1 },
                         text = { Text(stringResource(Res.string.match_sheet_tab)) },
                     )
+                    if (showRefereeChecklist) {
+                        Tab(
+                            selected = selectedTab == 2,
+                            onClick = { selectedTab = 2 },
+                            text = { Text(stringResource(Res.string.referee_checklist_tab)) },
+                        )
+                    }
                 }
             }
             PullToRefreshBox(
                 isRefreshing = details?.isRefreshing == true,
                 onRefresh = {
-                    if (selectedTab == 1) {
+                    if (selectedTab == 1 || selectedTab == 2) {
                         onLoadMatchSheet(profileId, true)
                     } else {
                         onRefresh(profileId, matchId)
@@ -206,6 +238,44 @@ fun MatchDetailsScreen(
                         state = matchSheetState,
                         onRetry = { onLoadMatchSheet(profileId, true) },
                         onTeamSelect = onMatchSheetTeamSelect,
+                    )
+
+                    selectedTab == 2 && showRefereeChecklist -> RefereeChecklistTab(
+                        profileId = profileId,
+                        matchId = matchId,
+                        fixture = details.fixture,
+                        state = matchSheetState,
+                        onRetry = { onLoadMatchSheet(profileId, true) },
+                        onCheckInReferee = { refereeOfficialId ->
+                            onCheckInReferee(profileId, refereeOfficialId)
+                        },
+                        onSelectPreset = { preset ->
+                            onSelectRefereePreset(profileId, preset)
+                        },
+                        onToggleTimer = { nowMillis ->
+                            onToggleRefereeTimer(profileId, nowMillis)
+                        },
+                        onAdvancePhase = { nowMillis ->
+                            onAdvanceRefereePhase(profileId, nowMillis)
+                        },
+                        onResetTimer = {
+                            onResetRefereeTimer(profileId)
+                        },
+                        onRecordGoal = { isHomeScoringTeam, member, ownGoal, nowMillis ->
+                            onRecordRefereeGoal(
+                                profileId,
+                                isHomeScoringTeam,
+                                member,
+                                ownGoal,
+                                nowMillis,
+                            )
+                        },
+                        onRemoveGoal = { goalId ->
+                            onRemoveRefereeGoal(profileId, goalId)
+                        },
+                        onSubmitReport = { nowMillis ->
+                            onSubmitRefereeReport(profileId, nowMillis)
+                        },
                     )
 
                     else -> MatchDetails(
