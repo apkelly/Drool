@@ -55,7 +55,7 @@ import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationConfirmationD
 import com.github.apkelly.drool.common.ui.widgets.RefreshAction
 import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
-import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocationFromCard
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
 import com.github.apkelly.drool.schedule.ui.model.ScheduleUiModel
 import org.jetbrains.compose.resources.stringResource
@@ -241,7 +241,7 @@ fun ScheduleScreen(
                                                 showAccept =
                                                 fixture.canAcceptRefereeAllocation(),
                                                 showDecline =
-                                                fixture.canDeclineRefereeAllocation(),
+                                                fixture.canDeclineRefereeAllocationFromCard(),
                                                 onAccept = {
                                                     pendingDecision = PendingAllocationDecision(
                                                         fixture = fixture,

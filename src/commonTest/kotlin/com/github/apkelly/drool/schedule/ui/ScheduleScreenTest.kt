@@ -5,6 +5,7 @@ import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocationFromCard
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.mergeRefereeAllocationFrom
 import kotlin.test.Test
@@ -19,7 +20,9 @@ class ScheduleScreenTest {
         assertFalse(fixture(role = FixtureRole.Player).hasAssignedRefereeAllocation())
         assertFalse(fixture(allocationId = null).hasAssignedRefereeAllocation())
         assertTrue(fixture(refereeStatus = "pending").canAcceptRefereeAllocation())
+        assertTrue(fixture(refereeStatus = "pending").canDeclineRefereeAllocationFromCard())
         assertFalse(fixture(refereeStatus = "accepted").canAcceptRefereeAllocation())
+        assertFalse(fixture(refereeStatus = "accepted").canDeclineRefereeAllocationFromCard())
         assertTrue(fixture(refereeStatus = "accepted").canDeclineRefereeAllocation())
         assertFalse(fixture(refereeStatus = "request_contact").canDeclineRefereeAllocation())
     }

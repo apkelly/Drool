@@ -22,10 +22,12 @@ class TeamViewModel(
     fun configureAccount(
         accountId: String,
     ) {
-        if (ownerAccountId == accountId) return
+        val previousAccountId = ownerAccountId
         ownerAccountId = accountId
         matchCache.configureAccount(accountId)
-        mutableState.value = TeamHubUiState.Idle
+        if (previousAccountId != null && previousAccountId != accountId) {
+            mutableState.value = TeamHubUiState.Idle
+        }
     }
 
     fun load(

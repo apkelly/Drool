@@ -1,6 +1,7 @@
 package com.github.apkelly.drool.match.ui.viewmodel
 
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.match.domain.model.RefereeMatchSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -12,21 +13,27 @@ internal data class MatchCacheKey(
 class MatchCache {
     private val entries = MutableStateFlow<Map<MatchCacheKey, Fixture>>(emptyMap())
     private val resolved = MutableStateFlow<Set<MatchCacheKey>>(emptySet())
+    private val refereeSessions =
+        MutableStateFlow<Map<MatchCacheKey, RefereeMatchSession>>(emptyMap())
     private var ownerAccountId: String? = null
 
     fun configureAccount(
         accountId: String,
     ) {
-        if (ownerAccountId == accountId) return
+        val previousAccountId = ownerAccountId
         ownerAccountId = accountId
-        entries.value = emptyMap()
-        resolved.value = emptySet()
+        if (previousAccountId != null && previousAccountId != accountId) {
+            entries.value = emptyMap()
+            resolved.value = emptySet()
+            refereeSessions.value = emptyMap()
+        }
     }
 
     fun clear() {
         ownerAccountId = null
         entries.value = emptyMap()
         resolved.value = emptySet()
+        refereeSessions.value = emptyMap()
     }
 
     internal fun get(
@@ -36,6 +43,25 @@ class MatchCache {
     internal fun isResolved(
         key: MatchCacheKey,
     ): Boolean = key in resolved.value
+
+    internal fun getRefereeSession(
+        key: MatchCacheKey,
+    ): RefereeMatchSession? = refereeSessions.value[key]
+
+    internal fun putRefereeSession(
+        key: MatchCacheKey,
+        session: RefereeMatchSession,
+    ) {
+        refereeSessions.update { cached ->
+            LinkedHashMap(cached).apply {
+                remove(key)
+                put(key, session)
+                while (size > MAXIMUM_SIZE) {
+                    remove(keys.first())
+                }
+            }
+        }
+    }
 
     internal fun put(
         key: MatchCacheKey,

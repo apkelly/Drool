@@ -330,6 +330,9 @@ fun MainNavigation(
                         .firstOrNull {
                             it.role == com.github.apkelly.drool.common.domain.model.FixtureRole.Referee
                         }
+                    LaunchedEffect(scheduledRefereeFixture) {
+                        scheduledRefereeFixture?.let(matchViewModel::seedFixture)
+                    }
                     val resolvedMatchDetailsState = when (val details = matchDetailsState) {
                         is MatchDetailsUiState.Content ->
                             if (details.profileId == route.profileId && details.matchId == route.matchId) {
@@ -418,6 +421,7 @@ fun MainNavigation(
                         onResetRefereeTimer = matchViewModel::resetRefereeTimer,
                         onRecordRefereeGoal = matchViewModel::recordRefereeGoal,
                         onRemoveRefereeGoal = matchViewModel::removeRefereeGoal,
+                        onToggleRefereeGoalOwnGoal = matchViewModel::toggleRefereeGoalOwnGoal,
                         onSubmitRefereeReport = matchViewModel::submitRefereeMatchReport,
                     )
                 }

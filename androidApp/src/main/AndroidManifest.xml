@@ -26,6 +26,7 @@
             android:value="false" />
         <activity
             android:name="com.github.apkelly.drool.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density"
             android:icon="@mipmap/ic_launcher"
             android:exported="true">
             <intent-filter>

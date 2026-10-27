@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit
 private val formattingLogger = DroolLog.withTag("LocalizedFormatting")
 private val fullDateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
 private val mediumDateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+private val shortDayMonthFormatter = DateTimeFormatter.ofPattern("d MMM")
 private val dayOfWeekFormatter = DateTimeFormatter.ofPattern("EEEE")
 
 private val macOs24HourPreferenceFuture: CompletableFuture<Boolean?> =
@@ -24,7 +25,7 @@ private val macOs24HourPreferenceFuture: CompletableFuture<Boolean?> =
 @Composable
 actual fun formatFixtureDateTime(
     epochMillis: Long,
-): String = "${formatDesktopDate(epochMillis)}, ${formatDesktopTime(epochMillis)}"
+): String = formatDesktopDateTime(epochMillis)
 
 actual fun formatFixtureDateHeading(
     epochMillis: Long,
@@ -63,6 +64,20 @@ private fun formatDesktopDate(
     .withLocale(Locale.getDefault())
     .withZone(ZoneId.systemDefault())
     .format(Instant.ofEpochMilli(epochMillis))
+
+internal fun formatDesktopDateTime(
+    epochMillis: Long,
+    use24HourClock: Boolean = desktopUses24HourClock(),
+    locale: Locale = Locale.getDefault(),
+    zoneId: ZoneId = ZoneId.systemDefault(),
+): String {
+    val datePart = shortDayMonthFormatter
+        .withLocale(locale)
+        .withZone(zoneId)
+        .format(Instant.ofEpochMilli(epochMillis))
+    val timePart = formatDesktopTime(epochMillis, use24HourClock, locale, zoneId)
+    return "$datePart - $timePart"
+}
 
 internal fun formatDesktopTime(
     epochMillis: Long,

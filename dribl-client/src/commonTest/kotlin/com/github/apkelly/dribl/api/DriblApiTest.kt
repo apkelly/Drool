@@ -877,14 +877,12 @@ class DriblApiTest {
 
     @Test
     fun matchSheetUsesRecoveredTeamMemberAndOfficialContracts() = runTest {
-        val requests = mutableListOf<Pair<String, Map<String, String>>>()
         val client = HttpClient(MockEngine) {
             install(ContentNegotiation) { json(driblJson) }
             engine {
                 addHandler { request ->
                     val parameters = request.url.parameters.entries()
                         .associate { it.key to it.value.single() }
-                    requests += request.url.encodedPath to parameters
                     val body = when (request.url.encodedPath) {
                         "/api/matchsheet-members" -> {
                             val isHome = parameters["team_id"] == "home"
@@ -952,6 +950,24 @@ class DriblApiTest {
                             }}]}
                             """.trimIndent()
 
+                        "/api/universal/teams/home" ->
+                            """
+                            {"data":{"id":"home","attributes":{
+                              "name":"Home Team",
+                              "color":"#000000",
+                              "accent":"#FFFFFF"
+                            }}}
+                            """.trimIndent()
+
+                        "/api/universal/teams/away" ->
+                            """
+                            {"data":{"id":"away","attributes":{
+                              "name":"Away Team",
+                              "primary_color":"#D50032",
+                              "secondary_color":"#FFFFFF"
+                            }}}
+                            """.trimIndent()
+
                         else -> error("Unexpected request ${request.url}")
                     }
                     respond(
@@ -979,11 +995,19 @@ class DriblApiTest {
 
         val sheet = DriblSportsApi(client, "https://example.test/api")
             .fetchMatchSheet("token", fixture)
+        val requests = (client.engine as MockEngine).requestHistory.map { request ->
+            request.url.encodedPath to request.url.parameters.entries()
+                .associate { it.key to it.value.single() }
+        }
 
         assertEquals("sheet", sheet.id)
         assertEquals(null, sheet.status)
         assertEquals(TeamSheetStatus.Submitted, sheet.homeTeam.status)
+        assertEquals("#000000", sheet.homeTeam.primaryColor)
+        assertEquals("#FFFFFF", sheet.homeTeam.secondaryColor)
         assertEquals(TeamSheetStatus.Confirmed, sheet.awayTeam.status)
+        assertEquals("#D50032", sheet.awayTeam.primaryColor)
+        assertEquals("#FFFFFF", sheet.awayTeam.secondaryColor)
         assertEquals(listOf("home-member", "away-member"), sheet.members.map { it.id })
         assertEquals(
             listOf("Alex Player", "Sam Coach"),
@@ -1003,7 +1027,7 @@ class DriblApiTest {
         assertEquals(1, sheet.score?.awayFullTime)
         assertEquals("goal-1", sheet.goals.single().id)
         assertEquals(18, sheet.goals.single().minute)
-        assertEquals(8, requests.size)
+        assertEquals(10, requests.size)
         assertFalse(requests.any { it.first.contains("/matchsheets/") })
         assertEquals(
             setOf("home", "away"),

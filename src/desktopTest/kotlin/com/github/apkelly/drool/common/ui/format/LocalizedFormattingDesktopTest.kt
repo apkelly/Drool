@@ -34,6 +34,16 @@ class LocalizedFormattingDesktopTest {
     }
 
     @Test
+    fun formatsDateTimeWithoutYear() {
+        val epochMillis = Instant.parse("2026-10-27T19:00:00Z").toEpochMilli()
+
+        assertEquals(
+            "27 Oct - 19:00",
+            formatDesktopDateTime(epochMillis, true, Locale.UK, ZoneOffset.UTC),
+        )
+    }
+
+    @Test
     fun recognizesLocaleClockPatterns() {
         assertTrue(localeUses24HourClock(Locale.FRANCE))
         assertFalse(localeUses24HourClock(Locale.US))

@@ -227,6 +227,9 @@ internal fun Fixture.canAcceptRefereeAllocation(): Boolean = hasAssignedRefereeA
 internal fun Fixture.canDeclineRefereeAllocation(): Boolean = hasAssignedRefereeAllocation() &&
     refereeStatus?.lowercase() !in CLOSED_REFEREE_STATUSES
 
+internal fun Fixture.canDeclineRefereeAllocationFromCard(): Boolean =
+    canAcceptRefereeAllocation() && canDeclineRefereeAllocation()
+
 internal fun Fixture.mergeRefereeAllocationFrom(
     other: Fixture?,
 ): Fixture {

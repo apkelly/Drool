@@ -255,6 +255,7 @@ fun FixtureCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
+                    modifier = Modifier.weight(1f, fill = false),
                     shape = CircleShape,
                     color = if (isReferee) {
                         MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f)
@@ -308,6 +309,7 @@ fun FixtureCard(
                         text = formatFixtureDateTime(fixture.kickoffEpochMillis),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                 }
@@ -353,10 +355,9 @@ fun FixtureCard(
 
             // Bottom metadata: Competition and one-tap Venue / Directions pill
             if (fixture.competitionName != null || fixture.venueName != null) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     fixture.competitionName?.let { competition ->
                         Text(
@@ -370,7 +371,7 @@ fun FixtureCard(
                             },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                     fixture.venueName?.let { venue ->

@@ -51,11 +51,13 @@ class MatchViewModel(
     fun configureAccount(
         accountId: String,
     ) {
-        if (ownerAccountId == accountId) return
+        val previousAccountId = ownerAccountId
         ownerAccountId = accountId
         matchCache.configureAccount(accountId)
-        mutableState.value = MatchDetailsUiState.Idle
-        mutableMatchSheetState.value = MatchSheetUiState.Idle
+        if (previousAccountId != null && previousAccountId != accountId) {
+            mutableState.value = MatchDetailsUiState.Idle
+            mutableMatchSheetState.value = MatchSheetUiState.Idle
+        }
     }
 
     fun load(
@@ -84,40 +86,63 @@ class MatchViewModel(
     ) {
         val details = mutableState.value as? MatchDetailsUiState.Content ?: return
         val matchId = details.matchId
-        val current = mutableMatchSheetState.value as? MatchSheetUiState.Content
-        if (!force && current?.profileId == profileId && current.matchId == matchId) return
+        val key = MatchCacheKey(profileId, matchId)
+        val current = (mutableMatchSheetState.value as? MatchSheetUiState.Content)
+            ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+        val isLoading =
+            mutableMatchSheetState.value == MatchSheetUiState.Loading(profileId, matchId)
+        if (!force && (current != null || isLoading)) return
         val loadingState = MatchSheetUiState.Loading(profileId, matchId)
-        mutableMatchSheetState.value = loadingState
+        if (current == null) {
+            mutableMatchSheetState.value = loadingState
+        }
         viewModelScope.launch {
             val savedSession = current?.refereeSession
-                ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+                ?: matchCache.getRefereeSession(key)
                 ?: refereeMatchSessionUseCase?.load(profileId, matchId)
-            val nextState = when (
+            when (
                 val result = loadMatchSheetUseCase(profileId, details.fixture)
             ) {
                 is OperationResult.Success -> {
-                    val resolvedSession = savedSession
+                    val latestContent =
+                        (mutableMatchSheetState.value as? MatchSheetUiState.Content)
+                            ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+                    val resolvedSession = latestContent?.refereeSession
+                        ?: matchCache.getRefereeSession(key)
+                        ?: savedSession
+                        ?: refereeMatchSessionUseCase?.load(profileId, matchId)
                         ?: seedRefereeSessionFromMatchSheet(
                             profileId = profileId,
                             matchId = matchId,
                             matchSheet = result.value,
                         )
-                    MatchSheetUiState.Content(
-                        profileId = profileId,
-                        matchId = matchId,
-                        matchSheet = result.value,
-                        refereeSession = resolvedSession,
-                        refereeReportSubmitted = resolvedSession.submittedAtEpochMillis != null,
-                    )
+                    matchCache.putRefereeSession(key, resolvedSession)
+                    if (
+                        mutableMatchSheetState.value == loadingState ||
+                        latestContent != null
+                    ) {
+                        mutableMatchSheetState.value = MatchSheetUiState.Content(
+                            profileId = profileId,
+                            matchId = matchId,
+                            matchSheet = result.value,
+                            refereeSession = resolvedSession,
+                            refereeReportSubmitted =
+                            resolvedSession.submittedAtEpochMillis != null,
+                        )
+                    }
                 }
 
                 is OperationResult.Failed -> {
                     logger.w { "Unable to load match sheet: ${result.reason}" }
-                    MatchSheetUiState.Failed(profileId, matchId)
+                    val latestContent =
+                        (mutableMatchSheetState.value as? MatchSheetUiState.Content)
+                            ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+                    if (latestContent != null) {
+                        mutableMatchSheetState.value = latestContent.copy(updateFailed = true)
+                    } else if (mutableMatchSheetState.value == loadingState) {
+                        mutableMatchSheetState.value = MatchSheetUiState.Failed(profileId, matchId)
+                    }
                 }
-            }
-            if (mutableMatchSheetState.value == loadingState) {
-                mutableMatchSheetState.value = nextState
             }
         }
     }
@@ -401,6 +426,24 @@ class MatchViewModel(
         }
     }
 
+    fun toggleRefereeGoalOwnGoal(
+        profileId: String,
+        goalId: String,
+    ) {
+        updateRefereeSession(profileId, clearSubmitted = true) { session ->
+            session.copy(
+                recordedGoals = session.recordedGoals.map { goal ->
+                    if (goal.id == goalId) {
+                        goal.copy(ownGoal = !goal.ownGoal)
+                    } else {
+                        goal
+                    }
+                },
+                submittedAtEpochMillis = null,
+            )
+        }
+    }
+
     fun submitRefereeMatchReport(
         profileId: String,
         nowEpochMillis: Long,
@@ -444,6 +487,10 @@ class MatchViewModel(
             when (result) {
                 is OperationResult.Success -> {
                     val updatedSession = session.copy(submittedAtEpochMillis = nowEpochMillis)
+                    matchCache.putRefereeSession(
+                        MatchCacheKey(profileId, details.matchId),
+                        updatedSession,
+                    )
                     refereeMatchSessionUseCase?.save(updatedSession)
                     val latestSheet = mutableMatchSheetState.value as? MatchSheetUiState.Content
                     if (latestSheet?.profileId == profileId && latestSheet.matchId == details.matchId) {
@@ -492,6 +539,7 @@ class MatchViewModel(
         val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
         if (current.profileId != profileId) return
         val updated = transform(current.refereeSession)
+        matchCache.putRefereeSession(MatchCacheKey(profileId, current.matchId), updated)
         mutableMatchSheetState.value = current.copy(
             refereeSession = updated,
             refereeReportSubmitted = if (clearSubmitted) false else current.refereeReportSubmitted,

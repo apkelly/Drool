@@ -11,10 +11,9 @@ import platform.Foundation.NSLock
 
 private val formatterLock = NSLock()
 
-private val dateTimeFormatter by lazy {
+private val shortDayMonthFormatter by lazy {
     NSDateFormatter().apply {
-        dateStyle = NSDateFormatterMediumStyle
-        timeStyle = NSDateFormatterShortStyle
+        dateFormat = "d MMM"
     }
 }
 
@@ -49,7 +48,8 @@ private val timeFormatter by lazy {
 actual fun formatFixtureDateTime(
     epochMillis: Long,
 ): String = withFormatterLock {
-    dateTimeFormatter.stringFromDate(epochMillis.toDate())
+    val date = epochMillis.toDate()
+    "${shortDayMonthFormatter.stringFromDate(date)} - ${timeFormatter.stringFromDate(date)}"
 }
 
 actual fun formatFixtureDateHeading(

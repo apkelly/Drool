@@ -444,6 +444,32 @@ class UseCasesTest {
             assertEquals(2, dataSource.lastSubmittedGoals?.size)
             val postSubmit = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
             assertEquals(true, postSubmit.refereeReportSubmitted)
+
+            matchViewModel.resetRefereeTimer("profile")
+            matchViewModel.selectRefereePreset("profile", RefereeMatchPreset.Under18s)
+            matchViewModel.toggleRefereeTimer("profile", 10_000L)
+            matchViewModel.configureAccount("account-1")
+            val runningSession =
+                (matchViewModel.matchSheetState.value as MatchSheetUiState.Content).refereeSession
+            assertEquals(true, runningSession.isRunning)
+            assertEquals(300_000L, runningSession.elapsedHalfMillis(310_000L))
+
+            matchViewModel.recordRefereeGoal(
+                profileId = "profile",
+                isHomeScoringTeam = true,
+                member = null,
+                ownGoal = true,
+                nowEpochMillis = 70_000L,
+            )
+            val kidsGoalState = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
+            val kidsGoal = kidsGoalState.refereeSession.recordedGoals.last()
+            assertEquals(true, kidsGoal.ownGoal)
+            matchViewModel.toggleRefereeGoalOwnGoal("profile", kidsGoal.id)
+            val toggledState = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
+            assertEquals(false, toggledState.refereeSession.recordedGoals.last().ownGoal)
+            matchViewModel.toggleRefereeGoalOwnGoal("profile", kidsGoal.id)
+            val retoggledState = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
+            assertEquals(true, retoggledState.refereeSession.recordedGoals.last().ownGoal)
         } finally {
             Dispatchers.resetMain()
         }

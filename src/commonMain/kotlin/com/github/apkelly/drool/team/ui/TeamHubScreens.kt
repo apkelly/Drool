@@ -68,6 +68,7 @@ import com.github.apkelly.drool.common.ui.format.formatFixtureDateTime
 import com.github.apkelly.drool.common.ui.widgets.CacheStatus
 import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
+import com.github.apkelly.drool.common.ui.widgets.RefreshAction
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
 import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
@@ -120,11 +121,18 @@ fun TeamHubScreen(
                         MaterialBackIcon(contentDescription = null)
                     }
                 },
+                actions = {
+                    RefreshAction(
+                        refreshing = content?.isRefreshing == true,
+                        onRefresh = { onRefresh(profileId, teamId) },
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = brand,
                     scrolledContainerColor = brand,
                     navigationIconContentColor = headerContentColor,
                     titleContentColor = headerContentColor,
+                    actionIconContentColor = headerContentColor,
                 ),
                 scrollBehavior = scrollBehavior,
             )

@@ -22,6 +22,7 @@ import com.github.apkelly.drool.common.resources.cache_stale
 import com.github.apkelly.drool.common.resources.offline_cached
 import com.github.apkelly.drool.common.resources.refresh_failed
 import com.github.apkelly.drool.common.resources.refresh_failed_empty
+import com.github.apkelly.drool.common.ui.platform.showToolbarRefreshAction
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -29,7 +30,9 @@ fun RefreshAction(
     refreshing: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    visible: Boolean = showToolbarRefreshAction(),
 ) {
+    if (!visible) return
     if (refreshing) {
         CircularProgressIndicator(modifier = modifier.padding(12.dp))
     } else {

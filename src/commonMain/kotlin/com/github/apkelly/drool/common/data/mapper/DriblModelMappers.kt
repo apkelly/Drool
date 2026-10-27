@@ -226,9 +226,11 @@ internal fun DriblMatchSheet.toDomain() = MatchSheet(
 )
 
 private fun DriblMatchSheetTeam.toDomain() = MatchSheetTeam(
-    id,
-    name,
-    TeamSheetStatus.valueOf(status.name),
+    id = id,
+    name = name,
+    status = TeamSheetStatus.valueOf(status.name),
+    primaryColor = primaryColor,
+    secondaryColor = secondaryColor,
 )
 
 internal fun DriblMatchSheetMember.toDomain() = MatchSheetMember(

@@ -128,6 +128,8 @@
     <string name="referee_timer_start_second_half">Start 2nd Half</string>
     <string name="referee_timer_end_match">End Match</string>
     <string name="referee_timer_reset">Reset timer</string>
+    <string name="referee_timer_reset_confirm_title">Reset match timer?</string>
+    <string name="referee_timer_reset_confirm_body">This will reset the match timer back to 00:00.</string>
     <string name="referee_goals_section_title">Live score &amp; goals</string>
     <string name="referee_goals_half_time_score">HT %1$d–%2$d</string>
     <string name="referee_goals_add_home">+ Goal %1$s</string>

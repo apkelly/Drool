@@ -17,9 +17,9 @@ actual fun formatFixtureDateTime(
 ): String {
     val context = LocalContext.current
     val date = Date(epochMillis)
-    val formattedDate = DateFormat.getMediumDateFormat(context).format(date)
+    val formattedDate = SimpleDateFormat("d MMM", Locale.getDefault()).format(date)
     val formattedTime = DateFormat.getTimeFormat(context).format(date)
-    return "$formattedDate, $formattedTime"
+    return "$formattedDate - $formattedTime"
 }
 
 actual fun formatFixtureDateHeading(

@@ -10,6 +10,8 @@ import com.github.apkelly.dribl.dto.MatchSheetScoreResourceDto
 import com.github.apkelly.dribl.dto.RefereePresenceUpdateRequest
 import com.github.apkelly.dribl.dto.ResourceList
 import com.github.apkelly.dribl.dto.ResourceResponse
+import com.github.apkelly.dribl.dto.TeamDto
+import com.github.apkelly.dribl.dto.TeamResourceDto
 import com.github.apkelly.dribl.dto.TeamSheetSubmissionRequest
 import com.github.apkelly.dribl.dto.TeamSheetSubmissionResourceDto
 import com.github.apkelly.dribl.mapper.toDomain
@@ -87,6 +89,14 @@ internal class DriblMatchSheetApi(
         val goalsRequest = async {
             fetchMatchSheetGoalsOrEmpty(bearerToken, fixture, matchSheetId)
         }
+        val homeTeamAttributesRequest = async {
+            fetchTeamAttributesOrNull(bearerToken, fixture, homeTeamId)
+        }
+        val awayTeamAttributesRequest = async {
+            fetchTeamAttributesOrNull(bearerToken, fixture, awayTeamId)
+        }
+        val homeTeamAttributes = homeTeamAttributesRequest.await()
+        val awayTeamAttributes = awayTeamAttributesRequest.await()
         MatchSheet(
             id = matchSheetId,
             status = null,
@@ -94,11 +104,15 @@ internal class DriblMatchSheetApi(
                 id = homeTeamId,
                 name = fixture.homeTeamName,
                 status = homeStatusRequest.await(),
+                primaryColor = homeTeamAttributes.normalizedPrimaryColor(),
+                secondaryColor = homeTeamAttributes.normalizedSecondaryColor(),
             ),
             awayTeam = MatchSheetTeam(
                 id = awayTeamId,
                 name = fixture.awayTeamName,
                 status = awayStatusRequest.await(),
+                primaryColor = awayTeamAttributes.normalizedPrimaryColor(),
+                secondaryColor = awayTeamAttributes.normalizedSecondaryColor(),
             ),
             members = homeMembersRequest.await() + awayMembersRequest.await(),
             referees = refereesRequest.await(),
@@ -319,4 +333,26 @@ internal class DriblMatchSheetApi(
     }.onFailure { error ->
         if (error is CancellationException) throw error
     }.getOrDefault(emptyList())
+
+    private suspend fun fetchTeamAttributesOrNull(
+        bearerToken: String,
+        fixture: Fixture,
+        teamId: String,
+    ): TeamDto? = runCatching {
+        transport.getBody<ResourceResponse<TeamResourceDto>>(
+            "/universal/teams/$teamId",
+            bearerToken,
+        ) {
+            fixture.tenantId?.let { parameter("tenant_id", it) }
+            fixture.seasonId?.let { parameter("season_id", it) }
+        }.item.attributes
+    }.onFailure { error ->
+        if (error is CancellationException) throw error
+    }.getOrNull()
 }
+
+private fun TeamDto?.normalizedPrimaryColor(): String? =
+    (this?.primaryColor ?: this?.color)?.trim()?.takeIf(String::isNotEmpty)
+
+private fun TeamDto?.normalizedSecondaryColor(): String? =
+    (this?.secondaryColor ?: this?.accent)?.trim()?.takeIf(String::isNotEmpty)

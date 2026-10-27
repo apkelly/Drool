@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +36,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -44,12 +46,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
 import com.github.apkelly.drool.common.domain.model.FixtureStatus
@@ -59,6 +65,7 @@ import com.github.apkelly.drool.common.domain.model.MatchSheetMember
 import com.github.apkelly.drool.common.domain.model.TeamSheetStatus
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_cancel
+import com.github.apkelly.drool.common.resources.action_confirm
 import com.github.apkelly.drool.common.resources.action_retry
 import com.github.apkelly.drool.common.resources.match_score
 import com.github.apkelly.drool.common.resources.match_sheet_confirmed
@@ -116,6 +123,8 @@ import com.github.apkelly.drool.common.resources.referee_timer_preset_label
 import com.github.apkelly.drool.common.resources.referee_timer_preset_u18
 import com.github.apkelly.drool.common.resources.referee_timer_preset_u8
 import com.github.apkelly.drool.common.resources.referee_timer_reset
+import com.github.apkelly.drool.common.resources.referee_timer_reset_confirm_body
+import com.github.apkelly.drool.common.resources.referee_timer_reset_confirm_title
 import com.github.apkelly.drool.common.resources.referee_timer_resume
 import com.github.apkelly.drool.common.resources.referee_timer_section_title
 import com.github.apkelly.drool.common.resources.referee_timer_start
@@ -126,6 +135,7 @@ import com.github.apkelly.drool.common.ui.format.displayTeamNames
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
 import com.github.apkelly.drool.common.ui.widgets.SportsCard
+import com.github.apkelly.drool.common.ui.widgets.toColorOrNull
 import com.github.apkelly.drool.match.domain.model.RecordedRefereeGoal
 import com.github.apkelly.drool.match.domain.model.RefereeMatchPreset
 import com.github.apkelly.drool.match.domain.model.RefereeMatchSession
@@ -170,6 +180,7 @@ internal fun RefereeChecklistTab(
     onRecordGoal: (Boolean, MatchSheetMember?, Boolean, Long) -> Unit,
     onRemoveGoal: (String) -> Unit,
     onSubmitReport: (Long) -> Unit,
+    onToggleGoalOwnGoal: (String) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(20.dp),
     initialAdultGoalDialogForHome: Boolean? = null,
     initialAdultGoalOwnGoal: Boolean = false,
@@ -216,6 +227,7 @@ internal fun RefereeChecklistTab(
                 onResetTimer = onResetTimer,
                 onRecordGoal = onRecordGoal,
                 onRemoveGoal = onRemoveGoal,
+                onToggleGoalOwnGoal = onToggleGoalOwnGoal,
                 onSubmitReport = onSubmitReport,
                 initialAdultGoalDialogForHome = initialAdultGoalDialogForHome,
                 initialAdultGoalOwnGoal = initialAdultGoalOwnGoal,
@@ -238,6 +250,7 @@ private fun RefereeChecklistContent(
     onResetTimer: () -> Unit,
     onRecordGoal: (Boolean, MatchSheetMember?, Boolean, Long) -> Unit,
     onRemoveGoal: (String) -> Unit,
+    onToggleGoalOwnGoal: (String) -> Unit,
     onSubmitReport: (Long) -> Unit,
     initialAdultGoalDialogForHome: Boolean? = null,
     initialAdultGoalOwnGoal: Boolean = false,
@@ -246,12 +259,32 @@ private fun RefereeChecklistContent(
     var nowEpochMillis by remember {
         mutableLongStateOf(Clock.System.now().toEpochMilliseconds())
     }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (
+                event == Lifecycle.Event.ON_START ||
+                event == Lifecycle.Event.ON_RESUME
+            ) {
+                nowEpochMillis = Clock.System.now().toEpochMilliseconds()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     LaunchedEffect(session.isRunning, session.startedAtEpochMillis) {
         nowEpochMillis = Clock.System.now().toEpochMilliseconds()
         while (session.isRunning) {
             delay(STOPWATCH_TICK_MILLIS)
             nowEpochMillis = Clock.System.now().toEpochMilliseconds()
         }
+    }
+    val effectiveNowEpochMillis = if (session.isRunning) {
+        maxOf(nowEpochMillis, Clock.System.now().toEpochMilliseconds())
+    } else {
+        nowEpochMillis
     }
     var pendingAdultGoalForHome by remember { mutableStateOf(initialAdultGoalDialogForHome) }
     val teamNames = fixture.displayTeamNames()
@@ -263,7 +296,7 @@ private fun RefereeChecklistContent(
             awayTeamName = teamNames.away,
             matchSheet = content.matchSheet,
             half = session.activeHalf,
-            minute = session.currentMatchMinute(nowEpochMillis),
+            minute = session.currentMatchMinute(effectiveNowEpochMillis),
             initialOwnGoal = initialAdultGoalOwnGoal,
             onDismiss = { pendingAdultGoalForHome = null },
             onSelectPlayer = { member, ownGoal ->
@@ -291,7 +324,7 @@ private fun RefereeChecklistContent(
         item {
             RefereeTimerCard(
                 session = session,
-                nowEpochMillis = nowEpochMillis,
+                nowEpochMillis = effectiveNowEpochMillis,
                 onSelectPreset = onSelectPreset,
                 onToggleTimer = {
                     val timestamp = Clock.System.now().toEpochMilliseconds()
@@ -310,18 +343,21 @@ private fun RefereeChecklistContent(
             RefereeGoalsCard(
                 homeTeamName = teamNames.home,
                 awayTeamName = teamNames.away,
+                homeTeamPrimaryColor = content.matchSheet.homeTeam.primaryColor,
+                awayTeamPrimaryColor = content.matchSheet.awayTeam.primaryColor,
                 session = session,
-                onQuickGoal = { isHomeScoringTeam ->
+                onQuickGoal = { isHomeScoringTeam, ownGoal ->
                     if (session.preset.requiresPlayerSelection) {
                         nowEpochMillis = Clock.System.now().toEpochMilliseconds()
                         pendingAdultGoalForHome = isHomeScoringTeam
                     } else {
                         val timestamp = Clock.System.now().toEpochMilliseconds()
                         nowEpochMillis = timestamp
-                        onRecordGoal(isHomeScoringTeam, null, false, timestamp)
+                        onRecordGoal(isHomeScoringTeam, null, ownGoal, timestamp)
                     }
                 },
                 onRemoveGoal = onRemoveGoal,
+                onToggleGoalOwnGoal = onToggleGoalOwnGoal,
             )
         }
         item {
@@ -707,11 +743,45 @@ private fun RefereeTimerCard(
             }
 
             if (session.phase != RefereeTimerPhase.NotStarted) {
+                var confirmingReset by remember { mutableStateOf(false) }
+                if (confirmingReset) {
+                    AlertDialog(
+                        onDismissRequest = { confirmingReset = false },
+                        title = {
+                            Text(
+                                text = stringResource(Res.string.referee_timer_reset_confirm_title),
+                                fontWeight = FontWeight.Bold,
+                            )
+                        },
+                        text = {
+                            Text(stringResource(Res.string.referee_timer_reset_confirm_body))
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    confirmingReset = false
+                                    onResetTimer()
+                                },
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.action_confirm),
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { confirmingReset = false }) {
+                                Text(stringResource(Res.string.action_cancel))
+                            }
+                        },
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onResetTimer) {
+                    TextButton(onClick = { confirmingReset = true }) {
                         Text(stringResource(Res.string.referee_timer_reset))
                     }
                 }
@@ -721,14 +791,20 @@ private fun RefereeTimerCard(
 }
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongParameterList", "LongMethod")
 private fun RefereeGoalsCard(
     homeTeamName: String,
     awayTeamName: String,
+    homeTeamPrimaryColor: String?,
+    awayTeamPrimaryColor: String?,
     session: RefereeMatchSession,
-    onQuickGoal: (Boolean) -> Unit,
+    onQuickGoal: (Boolean, Boolean) -> Unit,
     onRemoveGoal: (String) -> Unit,
+    onToggleGoalOwnGoal: (String) -> Unit,
 ) {
+    val homeButtonColor = homeTeamPrimaryColor.toColorOrNull()
+    val awayButtonColor = awayTeamPrimaryColor.toColorOrNull()
+    var kidsOwnGoal by remember(session.preset) { mutableStateOf(false) }
     SportsCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -801,13 +877,50 @@ private fun RefereeGoalsCard(
                 }
             }
 
+            if (!session.preset.requiresPlayerSelection) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { kidsOwnGoal = !kidsOwnGoal }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.referee_goal_dialog_own_goal),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Switch(
+                            checked = kidsOwnGoal,
+                            onCheckedChange = { kidsOwnGoal = it },
+                        )
+                    }
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Button(
-                    onClick = { onQuickGoal(true) },
+                    onClick = {
+                        val ownGoal = kidsOwnGoal
+                        kidsOwnGoal = false
+                        onQuickGoal(true, ownGoal)
+                    },
                     modifier = Modifier.weight(1f),
+                    colors = homeButtonColor?.let { color ->
+                        ButtonDefaults.buttonColors(
+                            containerColor = color,
+                            contentColor = color.contrastingContentColor(),
+                        )
+                    } ?: ButtonDefaults.buttonColors(),
                 ) {
                     MaterialSymbolIcon(
                         symbol = MaterialSymbol.SportsSoccer,
@@ -823,8 +936,18 @@ private fun RefereeGoalsCard(
                     )
                 }
                 Button(
-                    onClick = { onQuickGoal(false) },
+                    onClick = {
+                        val ownGoal = kidsOwnGoal
+                        kidsOwnGoal = false
+                        onQuickGoal(false, ownGoal)
+                    },
                     modifier = Modifier.weight(1f),
+                    colors = awayButtonColor?.let { color ->
+                        ButtonDefaults.buttonColors(
+                            containerColor = color,
+                            contentColor = color.contrastingContentColor(),
+                        )
+                    } ?: ButtonDefaults.buttonColors(),
                 ) {
                     MaterialSymbolIcon(
                         symbol = MaterialSymbol.SportsSoccer,
@@ -867,6 +990,9 @@ private fun RefereeGoalsCard(
                             goal = goal,
                             homeTeamName = homeTeamName,
                             awayTeamName = awayTeamName,
+                            canToggleOwnGoal = !session.preset.requiresPlayerSelection ||
+                                goal.matchSheetMemberId == null,
+                            onToggleOwnGoal = { onToggleGoalOwnGoal(goal.id) },
                             onRemove = { onRemoveGoal(goal.id) },
                         )
                     }
@@ -877,10 +1003,13 @@ private fun RefereeGoalsCard(
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun RecordedGoalRow(
     goal: RecordedRefereeGoal,
     homeTeamName: String,
     awayTeamName: String,
+    canToggleOwnGoal: Boolean,
+    onToggleOwnGoal: () -> Unit,
     onRemove: () -> Unit,
 ) {
     val scoringTeamName = if (goal.isHomeScoringTeam) homeTeamName else awayTeamName
@@ -942,11 +1071,29 @@ private fun RecordedGoalRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (goal.ownGoal) {
+            if (goal.ownGoal || canToggleOwnGoal) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    color = if (goal.ownGoal) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHighest
+                    },
+                    contentColor = if (goal.ownGoal) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    border = if (goal.ownGoal) {
+                        null
+                    } else {
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    },
+                    modifier = if (canToggleOwnGoal) {
+                        Modifier.clickable(onClick = onToggleOwnGoal)
+                    } else {
+                        Modifier
+                    },
                 ) {
                     Text(
                         text = stringResource(Res.string.referee_goals_own_goal_badge),
@@ -1096,12 +1243,14 @@ private fun AdultGoalCaptureDialog(
     val scoringTeamName = if (isHomeScoringTeam) homeTeamName else awayTeamName
     val oppositionTeamName = if (isHomeScoringTeam) awayTeamName else homeTeamName
     val activeJerseyTeamName = if (ownGoal) oppositionTeamName else scoringTeamName
-    val playerSourceTeamId = when {
-        ownGoal && isHomeScoringTeam -> matchSheet.awayTeam.id
-        ownGoal && !isHomeScoringTeam -> matchSheet.homeTeam.id
-        isHomeScoringTeam -> matchSheet.homeTeam.id
-        else -> matchSheet.awayTeam.id
+    val activeJerseyTeam = if (ownGoal == isHomeScoringTeam) {
+        matchSheet.awayTeam
+    } else {
+        matchSheet.homeTeam
     }
+    val playerSourceTeamId = activeJerseyTeam.id
+    val teamPrimaryColor = activeJerseyTeam.primaryColor.toColorOrNull()
+    val teamSecondaryColor = activeJerseyTeam.secondaryColor.toColorOrNull()
     val teamMembers = remember(matchSheet.members, playerSourceTeamId) {
         val allForTeam = matchSheet.members
             .filter { it.teamId == playerSourceTeamId }
@@ -1219,17 +1368,21 @@ private fun AdultGoalCaptureDialog(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             items(teamMembers, key = { it.id }) { member ->
-                                val containerColor = if (ownGoal) {
+                                val containerColor = teamPrimaryColor ?: if (ownGoal) {
                                     MaterialTheme.colorScheme.errorContainer
                                 } else {
                                     MaterialTheme.colorScheme.primaryContainer
                                 }
-                                val contentColor = if (ownGoal) {
-                                    MaterialTheme.colorScheme.onErrorContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                }
-                                val borderColor = if (ownGoal) {
+                                val contentColor = teamPrimaryColor?.contrastingContentColor()
+                                    ?: if (ownGoal) {
+                                        MaterialTheme.colorScheme.onErrorContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    }
+                                val borderColor = if (teamPrimaryColor != null) {
+                                    teamSecondaryColor?.takeIf { it != teamPrimaryColor }
+                                        ?: contentColor.copy(alpha = TEAM_BORDER_CONTRAST_ALPHA)
+                                } else if (ownGoal) {
                                     MaterialTheme.colorScheme.error
                                 } else {
                                     MaterialTheme.colorScheme.primary
@@ -1329,6 +1482,9 @@ internal fun formatElapsedMillis(
     return "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 }
 
+internal fun Color.contrastingContentColor(): Color =
+    if (luminance() > TEAM_COLOR_LUMINANCE_THRESHOLD) Color.Black else Color.White
+
 internal const val REFEREE_CHECKLIST_LEAD_MILLIS = 30L * 60L * 1_000L
 internal const val REFEREE_CHECKLIST_TRAIL_MILLIS = 18L * 60L * 60L * 1_000L
 private const val MILLIS_PER_MINUTE = 60_000L
@@ -1337,3 +1493,5 @@ private const val SECONDS_PER_MINUTE = 60
 private const val STOPWATCH_TICK_MILLIS = 250L
 private const val JERSEY_GRID_COLUMNS = 4
 private const val DIALOG_SCRIM_ALPHA = 0.72f
+private const val TEAM_COLOR_LUMINANCE_THRESHOLD = 0.35f
+private const val TEAM_BORDER_CONTRAST_ALPHA = 0.36f

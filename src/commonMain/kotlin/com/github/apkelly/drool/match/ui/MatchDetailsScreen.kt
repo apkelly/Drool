@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -103,6 +104,7 @@ import com.github.apkelly.drool.common.ui.widgets.PendingAllocationDecision
 import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationActions
 import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationConfirmationDialog
 import com.github.apkelly.drool.common.ui.widgets.RefereeStatusPill
+import com.github.apkelly.drool.common.ui.widgets.RefreshAction
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
 import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
@@ -143,6 +145,7 @@ fun MatchDetailsScreen(
     onRecordRefereeGoal: (String, Boolean, MatchSheetMember?, Boolean, Long) -> Unit =
         { _, _, _, _, _ -> },
     onRemoveRefereeGoal: (String, String) -> Unit = { _, _ -> },
+    onToggleRefereeGoalOwnGoal: (String, String) -> Unit = { _, _ -> },
     onSubmitRefereeReport: (String, Long) -> Unit = { _, _ -> },
     currentEpochMillis: Long = Clock.System.now().toEpochMilliseconds(),
     initialSelectedTab: Int = 0,
@@ -156,9 +159,11 @@ fun MatchDetailsScreen(
         fixture = details?.fixture,
         nowEpochMillis = currentEpochMillis,
     )
-    var selectedTab by remember(profileId, matchId) { mutableIntStateOf(initialSelectedTab) }
-    LaunchedEffect(showRefereeChecklist) {
-        if (!showRefereeChecklist && selectedTab == 2) {
+    var selectedTab by rememberSaveable(profileId, matchId) {
+        mutableIntStateOf(initialSelectedTab)
+    }
+    LaunchedEffect(details != null, showRefereeChecklist) {
+        if (details != null && !showRefereeChecklist && selectedTab == 2) {
             selectedTab = 0
         }
     }
@@ -187,6 +192,18 @@ fun MatchDetailsScreen(
                     IconButton(onClick = onBack) {
                         MaterialBackIcon(contentDescription = null)
                     }
+                },
+                actions = {
+                    RefreshAction(
+                        refreshing = details?.isRefreshing == true,
+                        onRefresh = {
+                            if (selectedTab == 1 || selectedTab == 2) {
+                                onLoadMatchSheet(profileId, true)
+                            } else {
+                                onRefresh(profileId, matchId)
+                            }
+                        },
+                    )
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -282,6 +299,9 @@ fun MatchDetailsScreen(
                         },
                         onRemoveGoal = { goalId ->
                             onRemoveRefereeGoal(profileId, goalId)
+                        },
+                        onToggleGoalOwnGoal = { goalId ->
+                            onToggleRefereeGoalOwnGoal(profileId, goalId)
                         },
                         onSubmitReport = { nowMillis ->
                             onSubmitRefereeReport(profileId, nowMillis)

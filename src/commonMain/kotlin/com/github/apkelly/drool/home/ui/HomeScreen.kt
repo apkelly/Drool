@@ -62,7 +62,7 @@ import com.github.apkelly.drool.common.ui.widgets.ProfileTeamCard
 import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationActions
 import com.github.apkelly.drool.common.ui.widgets.RefereeAllocationConfirmationDialog
 import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
-import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocationFromCard
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
 import com.github.apkelly.drool.home.ui.model.HomeUiModel
 import kotlinx.datetime.TimeZone
@@ -312,7 +312,8 @@ fun HomeScreen(
                                             fixture.refereeAllocationId,
                                         actionsEnabled = model.allocationUpdatingId == null,
                                         showAccept = fixture.canAcceptRefereeAllocation(),
-                                        showDecline = fixture.canDeclineRefereeAllocation(),
+                                        showDecline =
+                                        fixture.canDeclineRefereeAllocationFromCard(),
                                         onAccept = {
                                             pendingDecision = PendingAllocationDecision(
                                                 fixture = fixture,
