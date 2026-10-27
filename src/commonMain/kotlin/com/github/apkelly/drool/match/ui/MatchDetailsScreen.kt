@@ -4,8 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,7 +28,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -164,13 +169,17 @@ fun MatchDetailsScreen(
             currentOnLoadMatchSheet(profileId, false)
         }
     }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState(),
+    )
     RefereeAllocationConfirmationDialog(
         pending = pendingDecision,
         onDismiss = { pendingDecision = null },
         onConfirm = onAllocationDecision,
     )
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.match_details_title)) },
@@ -179,6 +188,7 @@ fun MatchDetailsScreen(
                         MaterialBackIcon(contentDescription = null)
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
@@ -286,7 +296,7 @@ fun MatchDetailsScreen(
                         refreshFailed = details.refreshFailed,
                         allocationUpdatingId = allocationUpdatingId,
                         allocationFailure = allocationFailure,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        contentPadding = PaddingValues(20.dp),
                         onRefresh = { onRefresh(profileId, matchId) },
                         onRequestDecision = { pendingDecision = it },
                         onTeamSelect = onTeamSelect,
@@ -306,7 +316,7 @@ private fun MatchDetails(
     refreshFailed: Boolean,
     allocationUpdatingId: String?,
     allocationFailure: RefreshFailure?,
-    contentPadding: androidx.compose.foundation.layout.PaddingValues,
+    contentPadding: PaddingValues,
     onRefresh: () -> Unit,
     onRequestDecision: (PendingAllocationDecision) -> Unit,
     onTeamSelect: (String, String, String?, String?, String?) -> Unit,
@@ -322,7 +332,8 @@ private fun MatchDetails(
         }
     } ?: stringResource(Res.string.match_round_unknown)
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (refreshFailed) {

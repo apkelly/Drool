@@ -2,6 +2,7 @@ package com.github.apkelly.drool.discover.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,7 +16,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Club
@@ -63,12 +67,17 @@ fun DiscoverScreen(
     val filtered = remember(state.items, query) {
         state.items.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
     }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState(),
+    )
     androidx.compose.material3.Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.discover_title)) },
                 actions = { RefreshAction(state.isRefreshing, onRefresh) },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { innerPadding ->
@@ -153,8 +162,12 @@ fun ClubScreen(
     modifier: Modifier = Modifier,
     onTeamSelect: (Team) -> Unit,
 ) {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState(),
+    )
     androidx.compose.material3.Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(club.name) },
@@ -166,6 +179,7 @@ fun ClubScreen(
                     }
                 },
                 actions = { RefreshAction(teams.isRefreshing, onRefresh) },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { innerPadding ->

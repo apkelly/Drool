@@ -3,6 +3,7 @@ package com.github.apkelly.drool.match.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ internal fun MatchSheetSummary(
     state: MatchSheetUiState,
     onRetry: () -> Unit,
     onTeamSelect: (String) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(20.dp),
 ) {
     when (val content = state as? MatchSheetUiState.Content) {
         null -> {
@@ -74,7 +76,8 @@ internal fun MatchSheetSummary(
             if (content.profileId != profileId || content.matchId != matchId) return
             val sheet = content.matchSheet
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = contentPadding,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item {

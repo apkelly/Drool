@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,8 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +38,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.EmergencyContact
 import com.github.apkelly.drool.common.domain.model.LinkMemberFailure
@@ -102,9 +106,13 @@ fun PersonalInformationScreen(
         )
     }
     val selectedTab = selectedTabIndex.coerceIn(0, tabLabels.lastIndex)
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState(),
+    )
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             Column {
                 TopAppBar(
@@ -114,6 +122,7 @@ fun PersonalInformationScreen(
                             MaterialBackIcon(contentDescription = null)
                         }
                     },
+                    scrollBehavior = scrollBehavior,
                 )
                 PrimaryTabRow(selectedTabIndex = selectedTab) {
                     tabLabels.forEachIndexed { index, label ->
@@ -265,8 +274,13 @@ fun LinkMemberScreen(
         if (state == LinkMemberUiState.Linked) currentOnLink()
     }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+        rememberTopAppBarState(),
+    )
+
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.profile_link_member)) },
@@ -275,73 +289,84 @@ fun LinkMemberScreen(
                         MaterialBackIcon(contentDescription = null)
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { contentPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            when (state) {
-                LinkMemberUiState.Idle,
-                LinkMemberUiState.Loading,
-                -> CircularProgressIndicator()
+        when (state) {
+            LinkMemberUiState.Idle,
+            LinkMemberUiState.Loading,
+            LinkMemberUiState.Linked,
+            is LinkMemberUiState.AwaitingVerification,
+            -> Column(
+                modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                CircularProgressIndicator()
+            }
 
-                is LinkMemberUiState.Failed -> {
-                    Text(
-                        stringResource(
-                            if (state.reason == LinkMemberFailure.SessionExpired) {
-                                Res.string.profile_link_session_expired
-                            } else {
-                                Res.string.profile_link_failed
-                            },
-                        ),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Button(onClick = onLoad) {
-                        Text(stringResource(Res.string.action_retry))
-                    }
+            is LinkMemberUiState.Failed -> Column(
+                modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    stringResource(
+                        if (state.reason == LinkMemberFailure.SessionExpired) {
+                            Res.string.profile_link_session_expired
+                        } else {
+                            Res.string.profile_link_failed
+                        },
+                    ),
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Button(onClick = onLoad) {
+                    Text(stringResource(Res.string.action_retry))
                 }
+            }
 
-                LinkMemberUiState.Linked -> CircularProgressIndicator()
-
-                is LinkMemberUiState.AwaitingVerification -> CircularProgressIndicator()
-
-                is LinkMemberUiState.Ready -> {
-                    if (state.candidates.isEmpty()) {
+            is LinkMemberUiState.Ready -> {
+                if (state.candidates.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(contentPadding).padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
                         Text(stringResource(Res.string.profile_link_candidates_empty))
-                    } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(state.candidates, key = { it.id }) { candidate ->
-                                val requesting = state.requestingCandidateId == candidate.id
-                                SportsCard(
-                                    onClick = { selected = candidate },
-                                    enabled = state.requestingCandidateId == null,
-                                    modifier = Modifier.fillMaxWidth(),
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(contentPadding),
+                        contentPadding = PaddingValues(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(state.candidates, key = { it.id }) { candidate ->
+                            val requesting = state.requestingCandidateId == candidate.id
+                            SportsCard(
+                                onClick = { selected = candidate },
+                                enabled = state.requestingCandidateId == null,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        RemoteImage(
-                                            url = candidate.avatarUrl,
-                                            contentDescription = candidate.displayName,
-                                            fallbackIcon = MaterialSymbol.Person,
-                                            modifier = Modifier.size(44.dp),
+                                    RemoteImage(
+                                        url = candidate.avatarUrl,
+                                        contentDescription = candidate.displayName,
+                                        fallbackIcon = MaterialSymbol.Person,
+                                        modifier = Modifier.size(44.dp),
+                                    )
+                                    Column {
+                                        Text(
+                                            candidate.displayName,
+                                            style = MaterialTheme.typography.titleMedium,
                                         )
-                                        Column {
-                                            Text(
-                                                candidate.displayName,
-                                                style = MaterialTheme.typography.titleMedium,
-                                            )
-                                            candidate.email?.let { Text(it) }
-                                        }
-                                        if (requesting) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                                strokeWidth = 2.dp,
-                                            )
-                                        }
+                                        candidate.email?.let { Text(it) }
+                                    }
+                                    if (requesting) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                        )
                                     }
                                 }
                             }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -169,6 +170,7 @@ internal fun RefereeChecklistTab(
     onRecordGoal: (Boolean, MatchSheetMember?, Boolean, Long) -> Unit,
     onRemoveGoal: (String) -> Unit,
     onSubmitReport: (Long) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(20.dp),
     initialAdultGoalDialogForHome: Boolean? = null,
     initialAdultGoalOwnGoal: Boolean = false,
 ) {
@@ -206,6 +208,7 @@ internal fun RefereeChecklistTab(
                 profileId = profileId,
                 fixture = fixture,
                 content = content,
+                contentPadding = contentPadding,
                 onCheckInReferee = onCheckInReferee,
                 onSelectPreset = onSelectPreset,
                 onToggleTimer = onToggleTimer,
@@ -227,6 +230,7 @@ private fun RefereeChecklistContent(
     profileId: String,
     fixture: Fixture,
     content: MatchSheetUiState.Content,
+    contentPadding: PaddingValues,
     onCheckInReferee: (String) -> Unit,
     onSelectPreset: (RefereeMatchPreset) -> Unit,
     onToggleTimer: (Long) -> Unit,
@@ -272,7 +276,8 @@ private fun RefereeChecklistContent(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
