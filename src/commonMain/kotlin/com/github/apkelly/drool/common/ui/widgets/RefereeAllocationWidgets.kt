@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
+import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.RefereeAllocationDecision
 import com.github.apkelly.drool.common.resources.Res
 import com.github.apkelly.drool.common.resources.action_cancel
@@ -222,13 +223,20 @@ internal fun Fixture.hasAssignedRefereeAllocation(): Boolean = role == FixtureRo
     !refereeAllocationId.isNullOrBlank()
 
 internal fun Fixture.canAcceptRefereeAllocation(): Boolean = hasAssignedRefereeAllocation() &&
+    isActionableRefereeAllocationFixture() &&
     refereeStatus?.lowercase() != "accepted"
 
 internal fun Fixture.canDeclineRefereeAllocation(): Boolean = hasAssignedRefereeAllocation() &&
+    isActionableRefereeAllocationFixture() &&
     refereeStatus?.lowercase() !in CLOSED_REFEREE_STATUSES
 
 internal fun Fixture.canDeclineRefereeAllocationFromCard(): Boolean =
     canAcceptRefereeAllocation() && canDeclineRefereeAllocation()
+
+private fun Fixture.isActionableRefereeAllocationFixture(): Boolean = status != FixtureStatus.Completed &&
+    status != FixtureStatus.Cancelled &&
+    status != FixtureStatus.Washout &&
+    status != FixtureStatus.Postponed
 
 internal fun Fixture.mergeRefereeAllocationFrom(
     other: Fixture?,

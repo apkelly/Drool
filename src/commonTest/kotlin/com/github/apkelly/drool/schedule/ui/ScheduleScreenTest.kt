@@ -25,6 +25,18 @@ class ScheduleScreenTest {
         assertFalse(fixture(refereeStatus = "accepted").canDeclineRefereeAllocationFromCard())
         assertTrue(fixture(refereeStatus = "accepted").canDeclineRefereeAllocation())
         assertFalse(fixture(refereeStatus = "request_contact").canDeclineRefereeAllocation())
+        assertFalse(
+            fixture(
+                refereeStatus = "accepted",
+                status = FixtureStatus.Completed,
+            ).canDeclineRefereeAllocation(),
+        )
+        assertFalse(
+            fixture(
+                refereeStatus = "pending",
+                status = FixtureStatus.Completed,
+            ).canAcceptRefereeAllocation(),
+        )
     }
 
     @Test
@@ -51,6 +63,7 @@ class ScheduleScreenTest {
         role: FixtureRole = FixtureRole.Referee,
         allocationId: String? = "allocation-1",
         refereeStatus: String? = "pending",
+        status: FixtureStatus = FixtureStatus.Scheduled,
     ) = Fixture(
         id = "match-1",
         kickoffEpochMillis = 1L,
@@ -61,7 +74,7 @@ class ScheduleScreenTest {
         competitionName = null,
         venueName = null,
         userTeamId = null,
-        status = FixtureStatus.Scheduled,
+        status = status,
         role = role,
         refereeAllocationId = allocationId,
         refereeStatus = refereeStatus,

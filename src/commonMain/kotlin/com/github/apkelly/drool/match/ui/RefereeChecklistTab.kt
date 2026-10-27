@@ -84,13 +84,13 @@ import com.github.apkelly.drool.common.resources.referee_checklist_status_done
 import com.github.apkelly.drool.common.resources.referee_checklist_status_pending
 import com.github.apkelly.drool.common.resources.referee_checklist_teams_entered_body
 import com.github.apkelly.drool.common.resources.referee_checklist_teams_entered_title
-import com.github.apkelly.drool.common.resources.referee_goal_dialog_no_players
+import com.github.apkelly.drool.common.resources.referee_goal_dialog_kids_title
 import com.github.apkelly.drool.common.resources.referee_goal_dialog_own_goal
 import com.github.apkelly.drool.common.resources.referee_goal_dialog_select_player
+import com.github.apkelly.drool.common.resources.referee_goal_dialog_select_team
 import com.github.apkelly.drool.common.resources.referee_goal_dialog_subtitle
 import com.github.apkelly.drool.common.resources.referee_goal_dialog_title
-import com.github.apkelly.drool.common.resources.referee_goals_add_away
-import com.github.apkelly.drool.common.resources.referee_goals_add_home
+import com.github.apkelly.drool.common.resources.referee_goals_add_goal
 import com.github.apkelly.drool.common.resources.referee_goals_adult_hint
 import com.github.apkelly.drool.common.resources.referee_goals_empty
 import com.github.apkelly.drool.common.resources.referee_goals_half_first_short
@@ -286,24 +286,26 @@ private fun RefereeChecklistContent(
     } else {
         nowEpochMillis
     }
-    var pendingAdultGoalForHome by remember { mutableStateOf(initialAdultGoalDialogForHome) }
+    var showGoalDialog by remember { mutableStateOf(initialAdultGoalDialogForHome != null) }
+    val isMatchCompleted = fixture.status == FixtureStatus.Completed
     val teamNames = fixture.displayTeamNames()
 
-    pendingAdultGoalForHome?.let { isHomeScoringTeam ->
-        AdultGoalCaptureDialog(
-            isHomeScoringTeam = isHomeScoringTeam,
+    if (showGoalDialog && !isMatchCompleted) {
+        GoalCaptureDialog(
+            requiresPlayerSelection = session.preset.requiresPlayerSelection,
+            initialIsHomeScoringTeam = initialAdultGoalDialogForHome ?: true,
             homeTeamName = teamNames.home,
             awayTeamName = teamNames.away,
             matchSheet = content.matchSheet,
             half = session.activeHalf,
             minute = session.currentMatchMinute(effectiveNowEpochMillis),
             initialOwnGoal = initialAdultGoalOwnGoal,
-            onDismiss = { pendingAdultGoalForHome = null },
-            onSelectPlayer = { member, ownGoal ->
+            onDismiss = { showGoalDialog = false },
+            onRecordGoal = { isHomeScoringTeam, member, ownGoal ->
                 val timestamp = Clock.System.now().toEpochMilliseconds()
                 nowEpochMillis = timestamp
                 onRecordGoal(isHomeScoringTeam, member, ownGoal, timestamp)
-                pendingAdultGoalForHome = null
+                showGoalDialog = false
             },
         )
     }
@@ -316,7 +318,10 @@ private fun RefereeChecklistContent(
         item {
             PreMatchChecklistCard(
                 profileId = profileId,
+                homeTeamName = teamNames.home,
+                awayTeamName = teamNames.away,
                 matchSheet = content.matchSheet,
+                isMatchCompleted = isMatchCompleted,
                 checkingInRefereeId = content.checkingInRefereeId,
                 onCheckInReferee = onCheckInReferee,
             )
@@ -325,6 +330,7 @@ private fun RefereeChecklistContent(
             RefereeTimerCard(
                 session = session,
                 nowEpochMillis = effectiveNowEpochMillis,
+                isMatchCompleted = isMatchCompleted,
                 onSelectPreset = onSelectPreset,
                 onToggleTimer = {
                     val timestamp = Clock.System.now().toEpochMilliseconds()
@@ -343,18 +349,11 @@ private fun RefereeChecklistContent(
             RefereeGoalsCard(
                 homeTeamName = teamNames.home,
                 awayTeamName = teamNames.away,
-                homeTeamPrimaryColor = content.matchSheet.homeTeam.primaryColor,
-                awayTeamPrimaryColor = content.matchSheet.awayTeam.primaryColor,
                 session = session,
-                onQuickGoal = { isHomeScoringTeam, ownGoal ->
-                    if (session.preset.requiresPlayerSelection) {
-                        nowEpochMillis = Clock.System.now().toEpochMilliseconds()
-                        pendingAdultGoalForHome = isHomeScoringTeam
-                    } else {
-                        val timestamp = Clock.System.now().toEpochMilliseconds()
-                        nowEpochMillis = timestamp
-                        onRecordGoal(isHomeScoringTeam, null, ownGoal, timestamp)
-                    }
+                isMatchCompleted = isMatchCompleted,
+                onOpenGoalDialog = {
+                    nowEpochMillis = Clock.System.now().toEpochMilliseconds()
+                    showGoalDialog = true
                 },
                 onRemoveGoal = onRemoveGoal,
                 onToggleGoalOwnGoal = onToggleGoalOwnGoal,
@@ -363,6 +362,7 @@ private fun RefereeChecklistContent(
         item {
             RefereeSubmitCard(
                 session = session,
+                isMatchCompleted = isMatchCompleted,
                 isSubmitting = content.isSubmittingRefereeReport,
                 submitted = content.refereeReportSubmitted,
                 updateFailed = content.updateFailed,
@@ -377,9 +377,13 @@ private fun RefereeChecklistContent(
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun PreMatchChecklistCard(
     profileId: String,
+    homeTeamName: String,
+    awayTeamName: String,
     matchSheet: MatchSheet,
+    isMatchCompleted: Boolean,
     checkingInRefereeId: String?,
     onCheckInReferee: (String) -> Unit,
 ) {
@@ -406,9 +410,9 @@ private fun PreMatchChecklistCard(
                 title = stringResource(Res.string.referee_checklist_teams_entered_title),
                 subtitle = stringResource(
                     Res.string.referee_checklist_teams_entered_body,
-                    matchSheet.homeTeam.name,
+                    homeTeamName,
                     teamStatusText(matchSheet.homeTeam.status),
-                    matchSheet.awayTeam.name,
+                    awayTeamName,
                     teamStatusText(matchSheet.awayTeam.status),
                 ),
                 completed = bothTeamsEntered,
@@ -441,7 +445,7 @@ private fun PreMatchChecklistCard(
                         val isCheckingIn = checkingInRefereeId == refereeOfficial.id
                         Button(
                             onClick = { onCheckInReferee(refereeOfficial.id) },
-                            enabled = checkingInRefereeId == null,
+                            enabled = !isMatchCompleted && checkingInRefereeId == null,
                         ) {
                             if (isCheckingIn) {
                                 CircularProgressIndicator(
@@ -478,43 +482,20 @@ private fun ChecklistItemRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
+            Column(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = if (completed) {
-                        MaterialTheme.colorScheme.tertiaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHighest
-                    },
-                    contentColor = if (completed) {
-                        MaterialTheme.colorScheme.onTertiaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                ) {
-                    MaterialSymbolIcon(
-                        symbol = if (completed) MaterialSymbol.Check else MaterialSymbol.Sports,
-                        contentDescription = null,
-                        size = 18.dp,
-                        modifier = Modifier.padding(6.dp),
-                    )
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Spacer(Modifier.width(8.dp))
             ChecklistStatusPill(completed = completed)
@@ -563,10 +544,11 @@ private fun ChecklistStatusPill(
 }
 
 @Composable
-@Suppress("LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 private fun RefereeTimerCard(
     session: RefereeMatchSession,
     nowEpochMillis: Long,
+    isMatchCompleted: Boolean,
     onSelectPreset: (RefereeMatchPreset) -> Unit,
     onToggleTimer: () -> Unit,
     onAdvancePhase: () -> Unit,
@@ -575,7 +557,7 @@ private fun RefereeTimerCard(
     val elapsedMillis = session.elapsedHalfMillis(nowEpochMillis)
     val targetHalfMillis = session.preset.halfDurationMinutes * MILLIS_PER_MINUTE
     val stoppageMillis = (elapsedMillis - targetHalfMillis).coerceAtLeast(0L)
-    val canChangePreset = session.phase == RefereeTimerPhase.NotStarted
+    val canChangePreset = !isMatchCompleted && session.phase == RefereeTimerPhase.NotStarted
 
     SportsCard(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -635,6 +617,8 @@ private fun RefereeTimerCard(
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         },
                         modifier = Modifier.weight(1f),
@@ -692,6 +676,7 @@ private fun RefereeTimerCard(
                 if (session.phase != RefereeTimerPhase.FullTime) {
                     Button(
                         onClick = onToggleTimer,
+                        enabled = !isMatchCompleted,
                         modifier = Modifier.weight(1f),
                     ) {
                         Text(
@@ -714,6 +699,7 @@ private fun RefereeTimerCard(
                     RefereeTimerPhase.FirstHalf -> {
                         OutlinedButton(
                             onClick = onAdvancePhase,
+                            enabled = !isMatchCompleted,
                             modifier = Modifier.weight(1f),
                         ) {
                             Text(
@@ -726,6 +712,7 @@ private fun RefereeTimerCard(
                     RefereeTimerPhase.SecondHalf -> {
                         OutlinedButton(
                             onClick = onAdvancePhase,
+                            enabled = !isMatchCompleted,
                             modifier = Modifier.weight(1f),
                         ) {
                             Text(
@@ -744,7 +731,7 @@ private fun RefereeTimerCard(
 
             if (session.phase != RefereeTimerPhase.NotStarted) {
                 var confirmingReset by remember { mutableStateOf(false) }
-                if (confirmingReset) {
+                if (confirmingReset && !isMatchCompleted) {
                     AlertDialog(
                         onDismissRequest = { confirmingReset = false },
                         title = {
@@ -781,7 +768,10 @@ private fun RefereeTimerCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = { confirmingReset = true }) {
+                    TextButton(
+                        onClick = { confirmingReset = true },
+                        enabled = !isMatchCompleted,
+                    ) {
                         Text(stringResource(Res.string.referee_timer_reset))
                     }
                 }
@@ -795,16 +785,12 @@ private fun RefereeTimerCard(
 private fun RefereeGoalsCard(
     homeTeamName: String,
     awayTeamName: String,
-    homeTeamPrimaryColor: String?,
-    awayTeamPrimaryColor: String?,
     session: RefereeMatchSession,
-    onQuickGoal: (Boolean, Boolean) -> Unit,
+    isMatchCompleted: Boolean,
+    onOpenGoalDialog: () -> Unit,
     onRemoveGoal: (String) -> Unit,
     onToggleGoalOwnGoal: (String) -> Unit,
 ) {
-    val homeButtonColor = homeTeamPrimaryColor.toColorOrNull()
-    val awayButtonColor = awayTeamPrimaryColor.toColorOrNull()
-    var kidsOwnGoal by remember(session.preset) { mutableStateOf(false) }
     SportsCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -877,91 +863,21 @@ private fun RefereeGoalsCard(
                 }
             }
 
-            if (!session.preset.requiresPlayerSelection) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { kidsOwnGoal = !kidsOwnGoal }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.referee_goal_dialog_own_goal),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Switch(
-                            checked = kidsOwnGoal,
-                            onCheckedChange = { kidsOwnGoal = it },
-                        )
-                    }
-                }
-            }
-
-            Row(
+            Button(
+                onClick = onOpenGoalDialog,
+                enabled = !isMatchCompleted,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Button(
-                    onClick = {
-                        val ownGoal = kidsOwnGoal
-                        kidsOwnGoal = false
-                        onQuickGoal(true, ownGoal)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = homeButtonColor?.let { color ->
-                        ButtonDefaults.buttonColors(
-                            containerColor = color,
-                            contentColor = color.contrastingContentColor(),
-                        )
-                    } ?: ButtonDefaults.buttonColors(),
-                ) {
-                    MaterialSymbolIcon(
-                        symbol = MaterialSymbol.SportsSoccer,
-                        contentDescription = null,
-                        size = 18.dp,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(Res.string.referee_goals_add_home, homeTeamName),
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Button(
-                    onClick = {
-                        val ownGoal = kidsOwnGoal
-                        kidsOwnGoal = false
-                        onQuickGoal(false, ownGoal)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = awayButtonColor?.let { color ->
-                        ButtonDefaults.buttonColors(
-                            containerColor = color,
-                            contentColor = color.contrastingContentColor(),
-                        )
-                    } ?: ButtonDefaults.buttonColors(),
-                ) {
-                    MaterialSymbolIcon(
-                        symbol = MaterialSymbol.SportsSoccer,
-                        contentDescription = null,
-                        size = 18.dp,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(Res.string.referee_goals_add_away, awayTeamName),
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                MaterialSymbolIcon(
+                    symbol = MaterialSymbol.SportsSoccer,
+                    contentDescription = null,
+                    size = 18.dp,
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = stringResource(Res.string.referee_goals_add_goal),
+                    fontWeight = FontWeight.Bold,
+                )
             }
 
             Text(
@@ -990,8 +906,9 @@ private fun RefereeGoalsCard(
                             goal = goal,
                             homeTeamName = homeTeamName,
                             awayTeamName = awayTeamName,
-                            canToggleOwnGoal = !session.preset.requiresPlayerSelection ||
-                                goal.matchSheetMemberId == null,
+                            isMatchCompleted = isMatchCompleted,
+                            canToggleOwnGoal = !isMatchCompleted &&
+                                (!session.preset.requiresPlayerSelection || goal.matchSheetMemberId == null),
                             onToggleOwnGoal = { onToggleGoalOwnGoal(goal.id) },
                             onRemove = { onRemoveGoal(goal.id) },
                         )
@@ -1008,6 +925,7 @@ private fun RecordedGoalRow(
     goal: RecordedRefereeGoal,
     homeTeamName: String,
     awayTeamName: String,
+    isMatchCompleted: Boolean,
     canToggleOwnGoal: Boolean,
     onToggleOwnGoal: () -> Unit,
     onRemove: () -> Unit,
@@ -1104,7 +1022,10 @@ private fun RecordedGoalRow(
                 }
             }
         }
-        IconButton(onClick = onRemove) {
+        IconButton(
+            onClick = onRemove,
+            enabled = !isMatchCompleted,
+        ) {
             MaterialSymbolIcon(
                 symbol = MaterialSymbol.Delete,
                 contentDescription = stringResource(Res.string.referee_goals_remove),
@@ -1116,8 +1037,10 @@ private fun RecordedGoalRow(
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun RefereeSubmitCard(
     session: RefereeMatchSession,
+    isMatchCompleted: Boolean,
     isSubmitting: Boolean,
     submitted: Boolean,
     updateFailed: Boolean,
@@ -1196,7 +1119,7 @@ private fun RefereeSubmitCard(
             }
             Button(
                 onClick = onSubmit,
-                enabled = !isSubmitting,
+                enabled = !isMatchCompleted && !isSubmitting,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -1227,18 +1150,20 @@ private fun RefereeSubmitCard(
 }
 
 @Composable
-@Suppress("LongParameterList", "LongMethod")
-private fun AdultGoalCaptureDialog(
-    isHomeScoringTeam: Boolean,
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+private fun GoalCaptureDialog(
+    requiresPlayerSelection: Boolean,
+    initialIsHomeScoringTeam: Boolean,
     homeTeamName: String,
     awayTeamName: String,
     matchSheet: MatchSheet,
     half: MatchHalf,
     minute: Int,
     onDismiss: () -> Unit,
-    onSelectPlayer: (MatchSheetMember, Boolean) -> Unit,
+    onRecordGoal: (Boolean, MatchSheetMember?, Boolean) -> Unit,
     initialOwnGoal: Boolean = false,
 ) {
+    var isHomeScoringTeam by remember { mutableStateOf(initialIsHomeScoringTeam) }
     var ownGoal by remember { mutableStateOf(initialOwnGoal) }
     val scoringTeamName = if (isHomeScoringTeam) homeTeamName else awayTeamName
     val oppositionTeamName = if (isHomeScoringTeam) awayTeamName else homeTeamName
@@ -1252,21 +1177,25 @@ private fun AdultGoalCaptureDialog(
     val teamPrimaryColor = activeJerseyTeam.primaryColor.toColorOrNull()
     val teamSecondaryColor = activeJerseyTeam.secondaryColor.toColorOrNull()
     val teamMembers = remember(matchSheet.members, playerSourceTeamId) {
-        val allForTeam = matchSheet.members
-            .filter { it.teamId == playerSourceTeamId }
-            .filter {
-                it.roleName.equals("Player", ignoreCase = true) ||
-                    !it.jerseyNumber.isNullOrBlank()
-            }
-            .ifEmpty { matchSheet.members.filter { it.teamId == playerSourceTeamId } }
-        val availableForTeam = allForTeam.filter { it.available }
-        (availableForTeam.ifEmpty { allForTeam }).sortedWith(
+        val numberedForTeam = matchSheet.members
+            .filter { it.teamId == playerSourceTeamId && !it.jerseyNumber.isNullOrBlank() }
+        val availableForTeam = numberedForTeam.filter { it.available }
+        (availableForTeam.ifEmpty { numberedForTeam }).sortedWith(
             compareBy(
                 { it.jerseyNumber?.toIntOrNull() ?: Int.MAX_VALUE },
                 { it.displayName },
             ),
         )
     }
+    val homeJerseyTeamId = if (ownGoal) matchSheet.awayTeam.id else matchSheet.homeTeam.id
+    val awayJerseyTeamId = if (ownGoal) matchSheet.homeTeam.id else matchSheet.awayTeam.id
+    val homeHasShirtNumbers = remember(matchSheet.members, homeJerseyTeamId) {
+        matchSheet.members.any { it.teamId == homeJerseyTeamId && !it.jerseyNumber.isNullOrBlank() }
+    }
+    val awayHasShirtNumbers = remember(matchSheet.members, awayJerseyTeamId) {
+        matchSheet.members.any { it.teamId == awayJerseyTeamId && !it.jerseyNumber.isNullOrBlank() }
+    }
+    val showShirtNumberButtons = requiresPlayerSelection && teamMembers.isNotEmpty()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1297,10 +1226,14 @@ private fun AdultGoalCaptureDialog(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = stringResource(
-                                Res.string.referee_goal_dialog_title,
-                                scoringTeamName,
-                            ),
+                            text = if (showShirtNumberButtons) {
+                                stringResource(
+                                    Res.string.referee_goal_dialog_title,
+                                    scoringTeamName,
+                                )
+                            } else {
+                                stringResource(Res.string.referee_goal_dialog_kids_title)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -1312,6 +1245,45 @@ private fun AdultGoalCaptureDialog(
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(Res.string.referee_goal_dialog_select_team),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        GoalDialogTeamButton(
+                            teamName = homeTeamName,
+                            primaryColorHex = matchSheet.homeTeam.primaryColor,
+                            secondaryColorHex = matchSheet.homeTeam.secondaryColor,
+                            selected = if (showShirtNumberButtons) isHomeScoringTeam else null,
+                            onClick = {
+                                if (requiresPlayerSelection && homeHasShirtNumbers) {
+                                    isHomeScoringTeam = true
+                                } else {
+                                    onRecordGoal(true, null, ownGoal)
+                                }
+                            },
+                        )
+                        GoalDialogTeamButton(
+                            teamName = awayTeamName,
+                            primaryColorHex = matchSheet.awayTeam.primaryColor,
+                            secondaryColorHex = matchSheet.awayTeam.secondaryColor,
+                            selected = if (showShirtNumberButtons) !isHomeScoringTeam else null,
+                            onClick = {
+                                if (requiresPlayerSelection && awayHasShirtNumbers) {
+                                    isHomeScoringTeam = false
+                                } else {
+                                    onRecordGoal(false, null, ownGoal)
+                                }
+                            },
                         )
                     }
 
@@ -1340,30 +1312,24 @@ private fun AdultGoalCaptureDialog(
                         }
                     }
 
-                    Text(
-                        text = stringResource(
-                            Res.string.referee_goal_dialog_select_player,
-                            activeJerseyTeamName,
-                        ),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (ownGoal) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    if (teamMembers.isEmpty()) {
+                    if (showShirtNumberButtons) {
                         Text(
-                            text = stringResource(Res.string.referee_goal_dialog_no_players),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = stringResource(
+                                Res.string.referee_goal_dialog_select_player,
+                                activeJerseyTeamName,
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (ownGoal) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            fontWeight = FontWeight.Bold,
                         )
-                    } else {
+
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(JERSEY_GRID_COLUMNS),
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
@@ -1394,14 +1360,16 @@ private fun AdultGoalCaptureDialog(
                                     border = BorderStroke(1.5.dp, borderColor),
                                     modifier = Modifier
                                         .height(56.dp)
-                                        .clickable { onSelectPlayer(member, ownGoal) },
+                                        .clickable {
+                                            onRecordGoal(isHomeScoringTeam, member, ownGoal)
+                                        },
                                 ) {
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier.fillMaxSize(),
                                     ) {
                                         Text(
-                                            text = member.jerseyNumber?.let { "#$it" } ?: "—",
+                                            text = "#${member.jerseyNumber.orEmpty()}",
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.ExtraBold,
                                         )
@@ -1424,6 +1392,73 @@ private fun AdultGoalCaptureDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GoalDialogTeamButton(
+    teamName: String,
+    primaryColorHex: String?,
+    secondaryColorHex: String?,
+    selected: Boolean?,
+    onClick: () -> Unit,
+) {
+    val teamPrimary = primaryColorHex.toColorOrNull()
+    val teamSecondary = secondaryColorHex.toColorOrNull()
+    val isActive = selected ?: true
+    val containerColor = when {
+        !isActive -> MaterialTheme.colorScheme.surfaceContainerHigh
+        teamPrimary != null -> teamPrimary
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val contentColor = when {
+        !isActive -> MaterialTheme.colorScheme.onSurface
+        teamPrimary != null -> teamPrimary.contrastingContentColor()
+        else -> MaterialTheme.colorScheme.onPrimary
+    }
+    val borderColor = when {
+        !isActive -> teamPrimary ?: MaterialTheme.colorScheme.outlineVariant
+
+        teamPrimary != null ->
+            teamSecondary?.takeIf { it != teamPrimary }
+                ?: contentColor.copy(alpha = TEAM_BORDER_CONTRAST_ALPHA)
+
+        else -> MaterialTheme.colorScheme.primary
+    }
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = containerColor,
+        contentColor = contentColor,
+        border = BorderStroke(if (selected == true) 2.dp else 1.5.dp, borderColor),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MaterialSymbolIcon(
+                symbol = if (selected == true) {
+                    MaterialSymbol.Check
+                } else {
+                    MaterialSymbol.SportsSoccer
+                },
+                contentDescription = null,
+                size = 18.dp,
+            )
+            Text(
+                text = teamName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

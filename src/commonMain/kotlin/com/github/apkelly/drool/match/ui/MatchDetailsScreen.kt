@@ -111,6 +111,7 @@ import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
 import com.github.apkelly.drool.match.domain.model.RefereeMatchPreset
+import com.github.apkelly.drool.match.domain.model.RefereeTimerPhase
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
 import com.github.apkelly.drool.match.ui.model.MatchSheetUiState
 import com.github.apkelly.drool.match.ui.platform.platformWeatherTemperatureUnit
@@ -308,19 +309,29 @@ fun MatchDetailsScreen(
                         },
                     )
 
-                    else -> MatchDetails(
-                        fixture = details.fixture,
-                        weather = details.weather,
-                        isWeatherLoading = details.isWeatherLoading,
-                        weatherUnavailable = details.weatherUnavailable,
-                        refreshFailed = details.refreshFailed,
-                        allocationUpdatingId = allocationUpdatingId,
-                        allocationFailure = allocationFailure,
-                        contentPadding = PaddingValues(20.dp),
-                        onRefresh = { onRefresh(profileId, matchId) },
-                        onRequestDecision = { pendingDecision = it },
-                        onTeamSelect = onTeamSelect,
-                    )
+                    else -> {
+                        val matchSheetContent = (matchSheetState as? MatchSheetUiState.Content)
+                            ?.takeIf { it.profileId == profileId && it.matchId == matchId }
+                        val isMatchOver =
+                            details.fixture.status == FixtureStatus.Completed ||
+                                matchSheetContent?.refereeSession?.phase ==
+                                RefereeTimerPhase.FullTime ||
+                                matchSheetContent?.refereeReportSubmitted == true
+                        MatchDetails(
+                            fixture = details.fixture,
+                            isMatchOver = isMatchOver,
+                            weather = details.weather,
+                            isWeatherLoading = details.isWeatherLoading,
+                            weatherUnavailable = details.weatherUnavailable,
+                            refreshFailed = details.refreshFailed,
+                            allocationUpdatingId = allocationUpdatingId,
+                            allocationFailure = allocationFailure,
+                            contentPadding = PaddingValues(20.dp),
+                            onRefresh = { onRefresh(profileId, matchId) },
+                            onRequestDecision = { pendingDecision = it },
+                            onTeamSelect = onTeamSelect,
+                        )
+                    }
                 }
             }
         }
@@ -328,8 +339,10 @@ fun MatchDetailsScreen(
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun MatchDetails(
     fixture: Fixture,
+    isMatchOver: Boolean,
     weather: MatchWeather?,
     isWeatherLoading: Boolean,
     weatherUnavailable: Boolean,
@@ -370,6 +383,7 @@ private fun MatchDetails(
             item {
                 RefereeAppointmentSection(
                     fixture = fixture,
+                    isMatchOver = isMatchOver,
                     allocationUpdatingId = allocationUpdatingId,
                     allocationFailure = allocationFailure,
                     onRequestDecision = onRequestDecision,
@@ -621,6 +635,7 @@ private fun MatchDetails(
 @Composable
 private fun RefereeAppointmentSection(
     fixture: Fixture,
+    isMatchOver: Boolean,
     allocationUpdatingId: String?,
     allocationFailure: RefreshFailure?,
     onRequestDecision: (PendingAllocationDecision) -> Unit,
@@ -673,7 +688,7 @@ private fun RefereeAppointmentSection(
                     )
                 }
             }
-            if (fixture.hasAssignedRefereeAllocation()) {
+            if (fixture.hasAssignedRefereeAllocation() && !isMatchOver) {
                 RefereeAllocationActions(
                     updating = allocationUpdatingId == fixture.refereeAllocationId,
                     actionsEnabled = allocationUpdatingId == null,

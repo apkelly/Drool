@@ -445,8 +445,12 @@ class UseCasesTest {
             val postSubmit = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
             assertEquals(true, postSubmit.refereeReportSubmitted)
 
+            assertEquals(false, RefereeMatchPreset.Under8s.requiresPlayerSelection)
+            assertEquals(true, RefereeMatchPreset.Under18s.requiresPlayerSelection)
+            assertEquals(true, RefereeMatchPreset.Adult.requiresPlayerSelection)
+
             matchViewModel.resetRefereeTimer("profile")
-            matchViewModel.selectRefereePreset("profile", RefereeMatchPreset.Under18s)
+            matchViewModel.selectRefereePreset("profile", RefereeMatchPreset.Under8s)
             matchViewModel.toggleRefereeTimer("profile", 10_000L)
             matchViewModel.configureAccount("account-1")
             val runningSession =
@@ -470,6 +474,25 @@ class UseCasesTest {
             matchViewModel.toggleRefereeGoalOwnGoal("profile", kidsGoal.id)
             val retoggledState = matchViewModel.matchSheetState.value as MatchSheetUiState.Content
             assertEquals(true, retoggledState.refereeSession.recordedGoals.last().ownGoal)
+
+            dataSource.matchDetails = dataSource.matchDetails.copy(status = FixtureStatus.Completed)
+            matchViewModel.refresh("profile", "match")
+            advanceUntilIdle()
+            val goalsBeforeCompletedAttempt =
+                (matchViewModel.matchSheetState.value as MatchSheetUiState.Content).refereeSession.recordedGoals.size
+            matchViewModel.recordRefereeGoal(
+                profileId = "profile",
+                isHomeScoringTeam = false,
+                member = null,
+                ownGoal = false,
+                nowEpochMillis = 80_000L,
+            )
+            matchViewModel.removeRefereeGoal("profile", kidsGoal.id)
+            matchViewModel.resetRefereeTimer("profile")
+            val completedSession =
+                (matchViewModel.matchSheetState.value as MatchSheetUiState.Content).refereeSession
+            assertEquals(goalsBeforeCompletedAttempt, completedSession.recordedGoals.size)
+            assertEquals(true, completedSession.isRunning)
         } finally {
             Dispatchers.resetMain()
         }
@@ -588,7 +611,7 @@ internal class FakeSportsDataSource :
     val weather = MatchWeather("Sunny", 16.0, 24.0, 55, 10, 0.0, 6)
     var lastWeatherFixture: Fixture? = null
     var lastWeatherForce = false
-    val matchDetails = Fixture(
+    var matchDetails = Fixture(
         "match",
         null,
         0L,

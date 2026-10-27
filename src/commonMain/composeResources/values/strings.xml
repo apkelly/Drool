@@ -111,9 +111,9 @@
     <string name="referee_checklist_status_pending">Pending</string>
     <string name="referee_timer_section_title">4. Match timer</string>
     <string name="referee_timer_preset_label">Half duration</string>
-    <string name="referee_timer_preset_u8">U8s · 15m</string>
-    <string name="referee_timer_preset_u18">U18s · 25m</string>
-    <string name="referee_timer_preset_adult">Adult · 45m</string>
+    <string name="referee_timer_preset_u8">15m</string>
+    <string name="referee_timer_preset_u18">25m</string>
+    <string name="referee_timer_preset_adult">45m</string>
     <string name="referee_timer_phase_not_started">Ready for kick-off</string>
     <string name="referee_timer_phase_first_half">1st Half</string>
     <string name="referee_timer_phase_half_time">Half-Time</string>
@@ -132,10 +132,9 @@
     <string name="referee_timer_reset_confirm_body">This will reset the match timer back to 00:00.</string>
     <string name="referee_goals_section_title">Live score &amp; goals</string>
     <string name="referee_goals_half_time_score">HT %1$d–%2$d</string>
-    <string name="referee_goals_add_home">+ Goal %1$s</string>
-    <string name="referee_goals_add_away">+ Goal %1$s</string>
-    <string name="referee_goals_kids_hint">Kids/youth match: goals are recorded immediately without player numbers.</string>
-    <string name="referee_goals_adult_hint">Adult match: select the scoring player number and half for each goal.</string>
+    <string name="referee_goals_add_goal">Goal!</string>
+    <string name="referee_goals_kids_hint">Select the scoring team in the goal dialog without player numbers.</string>
+    <string name="referee_goals_adult_hint">Select the scoring team and player shirt number for each goal.</string>
     <string name="referee_goals_empty">No goals recorded yet.</string>
     <string name="referee_goals_half_first_short">1H</string>
     <string name="referee_goals_half_second_short">2H</string>
@@ -145,8 +144,10 @@
     <string name="referee_goals_player_numbered">#%1$s</string>
     <string name="referee_goals_remove">Remove goal</string>
     <string name="referee_goal_dialog_title">Record goal for %1$s</string>
+    <string name="referee_goal_dialog_kids_title">Record goal</string>
     <string name="referee_goal_dialog_subtitle">%1$s · %2$d&apos;</string>
     <string name="referee_goal_dialog_own_goal">Own goal by opposition</string>
+    <string name="referee_goal_dialog_select_team">Select scoring team</string>
     <string name="referee_goal_dialog_select_player">Select jersey number (%1$s)</string>
     <string name="referee_goal_dialog_no_players">No registered player numbers found on this team sheet.</string>
     <string name="referee_submit_section_title">Post-match submission</string>

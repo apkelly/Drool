@@ -3,6 +3,7 @@ package com.github.apkelly.drool.match.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.apkelly.drool.common.domain.model.Fixture
+import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.MatchSheet
 import com.github.apkelly.drool.common.domain.model.MatchSheetGoalDraft
 import com.github.apkelly.drool.common.domain.model.MatchSheetMember
@@ -239,6 +240,8 @@ class MatchViewModel(
         refereeOfficialId: String,
     ) {
         val checkIn = checkInRefereeUseCase ?: return
+        val details = mutableState.value as? MatchDetailsUiState.Content
+        if (details?.fixture?.status == FixtureStatus.Completed) return
         val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
         if (current.checkingInRefereeId != null) return
         mutableMatchSheetState.value = current.copy(
@@ -450,6 +453,7 @@ class MatchViewModel(
     ) {
         val submitReport = submitRefereeMatchReportUseCase ?: return
         val details = mutableState.value as? MatchDetailsUiState.Content ?: return
+        if (details.fixture.status == FixtureStatus.Completed) return
         val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
         if (current.profileId != profileId || current.isSubmittingRefereeReport) return
         val session = current.refereeSession
@@ -536,6 +540,8 @@ class MatchViewModel(
         clearSubmitted: Boolean = false,
         transform: (RefereeMatchSession) -> RefereeMatchSession,
     ) {
+        val details = mutableState.value as? MatchDetailsUiState.Content
+        if (details?.fixture?.status == FixtureStatus.Completed) return
         val current = mutableMatchSheetState.value as? MatchSheetUiState.Content ?: return
         if (current.profileId != profileId) return
         val updated = transform(current.refereeSession)

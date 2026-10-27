@@ -14,7 +14,7 @@ enum class RefereeMatchPreset(
     ),
     Under18s(
         halfDurationMinutes = 25,
-        requiresPlayerSelection = false,
+        requiresPlayerSelection = true,
     ),
     Adult(
         halfDurationMinutes = 45,
