@@ -13,6 +13,8 @@ internal data class MatchSheetMemberAttributesDto(
     @SerialName("first_name_alias") val firstNameAlias: String? = null,
     @SerialName("last_name_alias") val lastNameAlias: String? = null,
     @SerialName("image_url") val imageUrl: String? = null,
+    @SerialName("image_alias") val imageAlias: String? = null,
+    @SerialName("is_protected") val isProtected: Boolean? = null,
     @SerialName("role_name") val roleName: String? = null,
     @SerialName("jersey_number") val jerseyNumber: JsonPrimitive? = null,
     @SerialName("available") val available: Boolean = false,

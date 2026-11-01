@@ -366,10 +366,15 @@ fun MainNavigation(
                         fixture?.homeTeamId,
                         fixture?.awayTeamId,
                     )
-                    val canViewMatchSheet =
+                    val isMatchOfficialOrReferee =
                         fixture?.role ==
                             com.github.apkelly.drool.common.domain.model.FixtureRole.Referee ||
+                            fixture?.role ==
+                            com.github.apkelly.drool.common.domain.model.FixtureRole.Coach ||
                             managedTeamIds.any(matchTeamIds::contains)
+                    val canViewMatchSheet =
+                        fixture?.matchSheetId != null &&
+                            (fixture.enableSquadPublicDisplay || isMatchOfficialOrReferee)
                     MatchDetailsScreen(
                         profileId = route.profileId,
                         matchId = route.matchId,

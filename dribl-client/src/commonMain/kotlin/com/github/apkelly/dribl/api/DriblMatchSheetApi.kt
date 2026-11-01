@@ -274,7 +274,7 @@ internal class DriblMatchSheetApi(
     ) {
         parameter("matchsheet_id", matchSheetId)
         parameter("team_id", teamId)
-    }.items.map(MatchSheetMemberResourceDto::toDomain)
+    }.items.map { it.toDomain(fallbackTeamId = teamId) }
 
     private suspend fun fetchTeamSheetStatus(
         bearerToken: String,

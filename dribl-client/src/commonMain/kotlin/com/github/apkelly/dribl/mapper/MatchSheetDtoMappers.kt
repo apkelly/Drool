@@ -14,17 +14,24 @@ import com.github.apkelly.dribl.model.TeamSheetStatus
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
-internal fun MatchSheetMemberResourceDto.toDomain(): MatchSheetMember {
+internal fun MatchSheetMemberResourceDto.toDomain(
+    fallbackTeamId: String? = null,
+): MatchSheetMember {
     val firstName = attributes.firstNameAlias ?: attributes.firstName.orEmpty()
     val lastName = attributes.lastNameAlias ?: attributes.lastName.orEmpty()
+    val imageUrl = if (attributes.isProtected == true) {
+        attributes.imageAlias?.takeIf(String::isNotBlank) ?: attributes.imageUrl
+    } else {
+        attributes.imageUrl?.takeIf(String::isNotBlank) ?: attributes.imageAlias
+    }
     return MatchSheetMember(
         id = id.textValue
             ?: throw DriblResponseException("Matchsheet member response contained a blank id"),
         userId = attributes.userId.textValue,
-        teamId = attributes.teamId.textValue,
+        teamId = fallbackTeamId ?: attributes.teamId.textValue,
         firstName = firstName,
         lastName = lastName,
-        imageUrl = attributes.imageUrl,
+        imageUrl = imageUrl,
         roleName = attributes.roleName?.takeIf(String::isNotBlank) ?: "Player",
         jerseyNumber = attributes.jerseyNumber.textValue,
         available = attributes.available,

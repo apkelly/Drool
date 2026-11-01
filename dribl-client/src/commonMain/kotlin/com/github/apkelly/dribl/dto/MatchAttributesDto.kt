@@ -29,5 +29,6 @@ internal data class MatchAttributesDto(
     @SerialName("away_team_score") val awayTeamScore: Int? = null,
     @SerialName("home_team_logo") val homeTeamLogo: String? = null,
     @SerialName("away_team_logo") val awayTeamLogo: String? = null,
+    @SerialName("enable_squad_public_display") val enableSquadPublicDisplay: Boolean = false,
     @SerialName("roles") val roles: List<MatchRoleResourceDto> = emptyList(),
 )

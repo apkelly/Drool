@@ -157,6 +157,7 @@ internal fun DriblFixture.toDomain() = Fixture(
     seasonId = seasonId,
     tenantId = tenantId,
     matchSheetId = matchSheetId,
+    enableSquadPublicDisplay = enableSquadPublicDisplay,
 )
 
 internal fun Fixture.toDribl() = DriblFixture(
@@ -188,6 +189,7 @@ internal fun Fixture.toDribl() = DriblFixture(
     seasonId = seasonId,
     tenantId = tenantId,
     matchSheetId = matchSheetId,
+    enableSquadPublicDisplay = enableSquadPublicDisplay,
 )
 
 internal fun DriblTeamHub.toDomain() = TeamHub(

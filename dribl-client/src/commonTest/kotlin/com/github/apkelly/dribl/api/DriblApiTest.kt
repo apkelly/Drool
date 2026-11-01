@@ -266,7 +266,25 @@ class DriblApiTest {
                         "home_team_name": "Player Team",
                         "away_team_id": "opponent",
                         "away_team_name": "Opponent",
-                        "roles": []
+                        "enable_squad_public_display": true,
+                        "roles": [
+                          {
+                            "type": "roles",
+                            "id": 15,
+                            "attributes": {
+                              "name": "Player",
+                              "slug": "player"
+                            }
+                          },
+                          {
+                            "type": "roles",
+                            "id": 19,
+                            "attributes": {
+                              "name": "Club Referee",
+                              "slug": "clubreferee"
+                            }
+                          }
+                        ]
                       }
                     }
                   ]
@@ -279,8 +297,10 @@ class DriblApiTest {
         val fixtures = api.fetchFixtures("token").associateBy { it.id }
 
         assertEquals(FixtureRole.Referee, fixtures.getValue("referee-match").role)
+        assertEquals(false, fixtures.getValue("referee-match").enableSquadPublicDisplay)
         assertEquals(FixtureRole.Coach, fixtures.getValue("coach-match").role)
         assertEquals(FixtureRole.Player, fixtures.getValue("player-match").role)
+        assertEquals(true, fixtures.getValue("player-match").enableSquadPublicDisplay)
     }
 
     @Test
@@ -884,26 +904,47 @@ class DriblApiTest {
                     val parameters = request.url.parameters.entries()
                         .associate { it.key to it.value.single() }
                     val body = when (request.url.encodedPath) {
-                        "/api/matchsheet-members" -> {
-                            val isHome = parameters["team_id"] == "home"
-                            """
-                            {"data":[{
-                              "id":"${if (isHome) "home-member" else "away-member"}",
-                              "attributes":{
-                                "user_id":"${if (isHome) "101" else "202"}",
-                                "team_id":"${parameters["team_id"]}",
-                                "first_name":"${if (isHome) "Alex" else ""}",
-                                "last_name":"${if (isHome) "Player" else ""}",
-                                "first_name_alias":${if (isHome) "null" else "\"Sam\""},
-                                "last_name_alias":${if (isHome) "null" else "\"Coach\""},
-                                "image_url":"member.png",
-                                "role_name":"${if (isHome) "Player" else "Coach"}",
-                                "jersey_number":${if (isHome) "7" else "null"},
-                                "available":$isHome
-                              }
-                            }]}
-                            """.trimIndent()
-                        }
+                        "/api/matchsheet-members" ->
+                            if (parameters["team_id"] == "home") {
+                                """
+                                {"data":[{
+                                  "id":"home-member",
+                                  "attributes":{
+                                    "user_id":"101",
+                                    "team_id":9999,
+                                    "first_name":"Alex",
+                                    "last_name":"Player",
+                                    "first_name_alias":null,
+                                    "last_name_alias":null,
+                                    "image_url":"member.png",
+                                    "image_alias":null,
+                                    "role_name":"Player",
+                                    "jersey_number":7,
+                                    "available":true
+                                  }
+                                }]}
+                                """.trimIndent()
+                            } else {
+                                """
+                                {"data":[{
+                                  "id":"away-member",
+                                  "attributes":{
+                                    "user_id":"202",
+                                    "team_id":null,
+                                    "first_name":"",
+                                    "last_name":"",
+                                    "first_name_alias":"Sam",
+                                    "last_name_alias":"Coach",
+                                    "image_url":"member.png",
+                                    "image_alias":"alias.png",
+                                    "is_protected":true,
+                                    "role_name":"Coach",
+                                    "jersey_number":null,
+                                    "available":false
+                                  }
+                                }]}
+                                """.trimIndent()
+                            }
 
                         "/api/matchsheet-team-submissions/sheet/home" ->
                             """{"data":{"attributes":{"status":"submitted"}}}"""
@@ -1009,6 +1050,8 @@ class DriblApiTest {
         assertEquals("#D50032", sheet.awayTeam.primaryColor)
         assertEquals("#FFFFFF", sheet.awayTeam.secondaryColor)
         assertEquals(listOf("home-member", "away-member"), sheet.members.map { it.id })
+        assertEquals(listOf("home", "away"), sheet.members.map { it.teamId })
+        assertEquals(listOf("member.png", "alias.png"), sheet.members.map { it.imageUrl })
         assertEquals(
             listOf("Alex Player", "Sam Coach"),
             sheet.members.map {

@@ -167,7 +167,11 @@ class MatchViewModel(
                     mutableMatchSheetState.value = latest.copy(
                         matchSheet = latest.matchSheet.copy(
                             members = latest.matchSheet.members.map { member ->
-                                if (member.id == memberId) result.value else member
+                                if (member.id == memberId) {
+                                    result.value.copy(teamId = member.teamId ?: result.value.teamId)
+                                } else {
+                                    member
+                                }
                             },
                         ),
                         updatingMemberId = null,
@@ -645,33 +649,31 @@ class MatchViewModel(
     private fun isDetailsTarget(
         profileId: String,
         matchId: String,
-    ): Boolean = when (val current = mutableState.value) {
-        is MatchDetailsUiState.Loading ->
-            current.profileId == profileId && current.matchId == matchId
-
-        is MatchDetailsUiState.Content ->
-            current.profileId == profileId && current.matchId == matchId
-
-        is MatchDetailsUiState.Failed,
-        MatchDetailsUiState.Idle,
-        -> false
-    }
+    ): Boolean = mutableState.value.isTarget(profileId, matchId)
 
     private fun isMatchSheetFor(
         profileId: String,
         matchId: String,
-    ): Boolean = when (val current = mutableMatchSheetState.value) {
-        is MatchSheetUiState.Loading ->
-            current.profileId == profileId && current.matchId == matchId
+    ): Boolean = mutableMatchSheetState.value.isTargetOrIdle(profileId, matchId)
+}
 
-        is MatchSheetUiState.Content ->
-            current.profileId == profileId && current.matchId == matchId
+private fun MatchDetailsUiState.isTarget(
+    profileId: String,
+    matchId: String,
+): Boolean = when (this) {
+    is MatchDetailsUiState.Loading -> this.profileId == profileId && this.matchId == matchId
+    is MatchDetailsUiState.Content -> this.profileId == profileId && this.matchId == matchId
+    is MatchDetailsUiState.Failed, MatchDetailsUiState.Idle -> false
+}
 
-        is MatchSheetUiState.Failed ->
-            current.profileId == profileId && current.matchId == matchId
-
-        MatchSheetUiState.Idle -> true
-    }
+private fun MatchSheetUiState.isTargetOrIdle(
+    profileId: String,
+    matchId: String,
+): Boolean = when (this) {
+    is MatchSheetUiState.Loading -> this.profileId == profileId && this.matchId == matchId
+    is MatchSheetUiState.Content -> this.profileId == profileId && this.matchId == matchId
+    is MatchSheetUiState.Failed -> this.profileId == profileId && this.matchId == matchId
+    MatchSheetUiState.Idle -> true
 }
 
 private fun seedRefereeSessionFromMatchSheet(

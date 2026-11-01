@@ -291,6 +291,7 @@ private fun MatchAttributesDto.toDomain(
     resourceId: JsonPrimitive,
 ): Fixture {
     val resolvedCompetitionName = competitionName ?: leagueName
+    val resolvedRole = roles.fixtureRole()
     return Fixture(
         id = resourceId.textValue
             ?: throw DriblResponseException("Match response contained a blank id"),
@@ -321,13 +322,14 @@ private fun MatchAttributesDto.toDomain(
         venueAddress = address,
         latitude = latitude?.doubleOrNull,
         longitude = longitude?.doubleOrNull,
-        role = roles.fixtureRole(),
-        refereeRole = roles.refereeRoleName(),
+        role = resolvedRole,
+        refereeRole = roles.refereeRoleName().takeIf { resolvedRole == FixtureRole.Referee },
         leagueName = leagueName,
         leagueId = leagueId.textValue,
         seasonId = seasonId.textValue,
         tenantId = tenantId.textValue,
         matchSheetId = matchSheetId.textValue,
+        enableSquadPublicDisplay = enableSquadPublicDisplay,
     )
 }
 
@@ -338,12 +340,20 @@ private val MatchRoleAttributesDto.isReferee: Boolean
 
 private val MatchRoleAttributesDto.isCoach: Boolean
     get() = listOfNotNull(name, slug).any {
-        it.contains("coach", ignoreCase = true)
+        it.contains("coach", ignoreCase = true) ||
+            it.contains("manager", ignoreCase = true) ||
+            it.contains("official", ignoreCase = true)
+    }
+
+private val MatchRoleAttributesDto.isPlayer: Boolean
+    get() = listOfNotNull(name, slug).any {
+        it.contains("player", ignoreCase = true)
     }
 
 private fun List<MatchRoleResourceDto>.fixtureRole(): FixtureRole = when {
-    any { it.attributes.isReferee } -> FixtureRole.Referee
     any { it.attributes.isCoach } -> FixtureRole.Coach
+    any { it.attributes.isPlayer } -> FixtureRole.Player
+    any { it.attributes.isReferee } -> FixtureRole.Referee
     else -> FixtureRole.Player
 }
 

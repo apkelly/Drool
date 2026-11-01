@@ -3393,6 +3393,17 @@ paths:
       operationId: get_matchsheet_members
       tags: ["Matchsheets"]
       summary: List one team's match-sheet members
+      description: >-
+        Returns the squad and staff members on the match sheet for the requested
+        `team_id`. Note: (1) `attributes.team_id` in the response returns the
+        internal numeric team ID rather than the hash `team_id` supplied in the
+        query parameter, so clients should retain the requested `team_id`;
+        (2) `attributes.image_alias` always points to a generic placeholder URL
+        even when `is_protected` is false, so `image_alias` should only take
+        precedence over `image_url` when `is_protected` is true;
+        (3) when `enable_squad_public_display` is false on the match, the server
+        returns `{"data": []}` unless the authenticated user is a coach/manager/official
+        of the team or the checked-in referee.
       parameters:
         - name: matchsheet_id
           in: query
@@ -3402,6 +3413,10 @@ paths:
           in: query
           required: true
           schema: { type: string }
+        - name: managers_only
+          in: query
+          required: false
+          schema: { type: boolean }
       responses:
         "200":
           description: Match-sheet members
@@ -3575,17 +3590,34 @@ components:
               oneOf:
                 - { type: string }
                 - { type: integer }
+              description: "Internal numeric team ID; retain the requested hash team_id when grouping by team."
             first_name: { type: string, nullable: true }
             last_name: { type: string, nullable: true }
             first_name_alias: { type: string, nullable: true }
             last_name_alias: { type: string, nullable: true }
             image_url: { type: string, nullable: true, format: uri }
+            image_alias:
+              type: string
+              nullable: true
+              format: uri
+              description: "Generic placeholder image URL; only prefer over image_url when is_protected is true."
+            is_protected: { type: boolean }
             role_name: { type: string, nullable: true }
             jersey_number:
               oneOf:
                 - { type: string }
                 - { type: integer }
             available: { type: boolean }
+            starting: { type: boolean }
+            playing: { type: boolean }
+            is_captain: { type: boolean }
+            is_goalkeeper: { type: boolean }
+            field_position: { type: string, nullable: true }
+            field_role_id:
+              oneOf:
+                - { type: string }
+                - { type: integer }
+              nullable: true
     MatchSheetMemberAvailabilityRequest:
       type: object
       required: [available]
@@ -4008,13 +4040,42 @@ components:
             - { type: string }
             - { type: integer }
         status: { type: string }
+        matchsheet_id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+          nullable: true
+        matchsheet_status: { type: string, nullable: true }
+        enable_squad_public_display:
+          type: boolean
+          description: >-
+            Whether squad lists on `/matchsheet-members` are publicly visible to
+            players, parents, and supporters. When false, only coaches/managers/officials
+            of the match teams and the referee can view squad members.
+        tenant_id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+          nullable: true
+        season_id:
+          oneOf:
+            - { type: string }
+            - { type: integer }
+          nullable: true
         home_team_score: { type: integer, nullable: true }
         away_team_score: { type: integer, nullable: true }
         home_team_logo: { type: string }
         away_team_logo: { type: string }
         roles:
           type: array
-          description: "Roles that associate the requested user with this match. A Referee/clubreferee role identifies a referee appointment."
+          description: >-
+            Roles that associate the requested user with this match. Note that
+            `GET /universal/matches/{matchId}` returns both the user's team-scoped
+            role on the match (e.g. `player`, `teamcoach`) and any club-wide
+            `clubreferee` role in the tenant, whereas `GET /universal/matches?user_id=...`
+            returns only the match-specific role. Clients should prioritize
+            Coach/Manager -> Player -> Referee when resolving `roles`, and merge
+            explicit referee allocations from `/universal/schedule` or `/universal/allocations/`.
           items:
             $ref: "#/components/schemas/UniversalMatchRoleResource"
     UniversalMatchRoleResource:
@@ -4053,9 +4114,20 @@ x-android-version-name: "4.1.0"
 x-android-version-code: 4010001
 x-discovery-notes:
   - "Base API URL recovered: https://api.dribl.com/api"
-  - "App uses Expo/React Native Hermes bytecode; endpoint literals were recovered from the Hermes string table."
+  - "Required User-Agent for Cloudflare/API compatibility: okhttp/4.12.0"
+  - "App uses Expo/React Native Hermes bytecode; endpoint literals and domain rules were recovered from the Hermes bundle and verified against live traffic."
   - "OAuth/JWT/token/API-key values were intentionally not extracted or documented."
   - "Route strings that appear to be local app navigation paths were omitted from paths where identifiable."
+x-client-domain-rules:
+  matchsheet_visibility:
+    - "When `enable_squad_public_display` is true on a match, `/matchsheet-members` returns squad lists to all authenticated users."
+    - "When `enable_squad_public_display` is false on a match, `/matchsheet-members` returns `{\"data\": []}` for non-officials; hide the Match Sheet tab unless the active profile is a Referee or Coach/Manager for the match."
+    - "When `is_protected` is true on a matchsheet member, `first_name_alias`, `last_name_alias`, and `image_alias` override `first_name`, `last_name`, and `image_url`."
+  matchsheet_permissions:
+    - "Coaches/Managers/Team Officials of the home or away team can toggle member availability, starting/playing flags, captain/goalkeeper badges, and shirt numbers while their team sheet status is `open`, `submit`/`unsubmit` their own team sheet, and `confirm`/`unconfirm` the opposing team's submitted sheet."
+    - "Referees can check in (`PUT /referee-mapper/{id}` with `{ presence: 'present' | 'no-show' }`), edit member availability, record scores (`POST`/`PUT /matchsheet-scores`), record match events (`/matchsheet-goals`, `/matchsheet-cards`, `/matchsheet-fouls`, `/matchsheet-substitutions`), and complete the match sheet (`PUT /matchsheets/{id}` with `{ status: 'complete' }`)."
+  match_role_resolution:
+    - "`GET /universal/matches/{matchId}` includes both team-scoped roles (`userroleable_type: 'team'`, e.g. `player`, `teamcoach`) and club-scoped roles (`userroleable_type: 'club'`, e.g. `clubreferee`). Evaluate Coach/Manager before Player before Referee so a player who is also a club referee is not misclassified as Referee on their own team's matches."
 x-discovered-external-services:
   - url: "https://app.dribl.com/app/open?team="
     description: "Dribl web/deep-link URL"
