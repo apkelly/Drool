@@ -25,6 +25,8 @@ internal data class MatchAttributesDto(
     @SerialName("round_label") val roundLabel: String? = null,
     @SerialName("round_number") val roundNumber: JsonPrimitive? = null,
     @SerialName("status") val status: String? = null,
+    @SerialName("event_status") val eventStatus: String? = null,
+    @SerialName("match_status") val matchStatus: String? = null,
     @SerialName("home_team_score") val homeTeamScore: Int? = null,
     @SerialName("away_team_score") val awayTeamScore: Int? = null,
     @SerialName("home_team_logo") val homeTeamLogo: String? = null,

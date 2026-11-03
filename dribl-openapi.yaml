@@ -4039,7 +4039,13 @@ components:
           oneOf:
             - { type: string }
             - { type: integer }
-        status: { type: string }
+        status:
+          type: string
+          description: >-
+            Match status string (e.g. `pending`, `complete`, `postponed`, `abandoned`,
+            or washout variants containing `washout` such as `washout`,
+            `washout-reschedule`, `washout-cancelled`, `washout reschedule`,
+            and `washout cancelled`).
         matchsheet_id:
           oneOf:
             - { type: string }

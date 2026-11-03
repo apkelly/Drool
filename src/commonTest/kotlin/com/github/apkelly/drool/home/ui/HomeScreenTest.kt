@@ -36,6 +36,32 @@ class HomeScreenTest {
         )
     }
 
+    @Test
+    fun upcomingKeepsTodaysMatchesUntilLocalMidnight() {
+        val sydney = TimeZone.of("Australia/Sydney")
+        val fixtures = listOf(
+            fixture("last-week", "2026-10-27T08:00:00Z", FixtureRole.Player),
+            fixture("tonight-6pm", "2026-11-03T07:00:00Z", FixtureRole.Referee),
+            fixture("tonight-7pm", "2026-11-03T08:00:00Z", FixtureRole.Player),
+            fixture("next-week", "2026-11-10T08:00:00Z", FixtureRole.Player),
+        )
+        // 2026-11-03T19:45:00+11:00 (after both 6pm and 7pm kickoffs, before local midnight)
+        val afterKickoffSameNight = Instant.parse("2026-11-03T08:45:00Z").toEpochMilliseconds()
+        assertEquals(
+            listOf("tonight-6pm", "tonight-7pm"),
+            fixtures.upcomingOnNextDay(sydney, nowEpochMillis = afterKickoffSameNight)
+                .map(Fixture::id),
+        )
+
+        // 2026-11-04T00:00:00+11:00 (local midnight has passed)
+        val afterLocalMidnight = Instant.parse("2026-11-03T13:00:00Z").toEpochMilliseconds()
+        assertEquals(
+            listOf("next-week"),
+            fixtures.upcomingOnNextDay(sydney, nowEpochMillis = afterLocalMidnight)
+                .map(Fixture::id),
+        )
+    }
+
     private fun fixture(
         id: String,
         kickoff: String,

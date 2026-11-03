@@ -44,11 +44,13 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Club
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
+import com.github.apkelly.drool.common.domain.model.FixtureStatus
 import com.github.apkelly.drool.common.domain.model.LinkedProfile
 import com.github.apkelly.drool.common.domain.model.ProfileTeam
 import com.github.apkelly.drool.common.domain.model.Team
@@ -67,6 +69,14 @@ import com.github.apkelly.drool.common.resources.fixture_versus_separator
 import com.github.apkelly.drool.common.resources.linked_profile_item
 import com.github.apkelly.drool.common.resources.linked_profiles_all
 import com.github.apkelly.drool.common.resources.match_score
+import com.github.apkelly.drool.common.resources.match_status_cancelled
+import com.github.apkelly.drool.common.resources.match_status_completed
+import com.github.apkelly.drool.common.resources.match_status_live
+import com.github.apkelly.drool.common.resources.match_status_pending
+import com.github.apkelly.drool.common.resources.match_status_postponed
+import com.github.apkelly.drool.common.resources.match_status_scheduled
+import com.github.apkelly.drool.common.resources.match_status_unknown
+import com.github.apkelly.drool.common.resources.match_status_washout
 import com.github.apkelly.drool.common.resources.team_age_group
 import com.github.apkelly.drool.common.resources.team_relationship_coach
 import com.github.apkelly.drool.common.resources.team_relationship_following
@@ -309,13 +319,29 @@ fun FixtureCard(
                         text = formatFixtureDateTime(fixture.kickoffEpochMillis),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
+                        textDecoration = if (fixture.status.isNegativeStatus()) {
+                            TextDecoration.LineThrough
+                        } else {
+                            null
+                        },
                         maxLines = 1,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                 }
             }
-            if (isReferee) {
-                RefereeStatusPill(fixture = fixture)
+            val showStatusPill = fixture.status.isNotableCardStatus()
+            if (showStatusPill || isReferee) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (showStatusPill) {
+                        FixtureStatusPill(status = fixture.status)
+                    }
+                    if (isReferee) {
+                        RefereeStatusPill(fixture = fixture)
+                    }
+                }
             }
 
             // Center matchup block: Team crests, bold team names, and Score or VS badge
@@ -476,6 +502,85 @@ private fun FixtureMatchupCenter(
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+@Composable
+fun FixtureStatusPill(
+    status: FixtureStatus,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = when (status) {
+            FixtureStatus.Washout,
+            FixtureStatus.Cancelled,
+            FixtureStatus.Postponed,
+            -> MaterialTheme.colorScheme.errorContainer
+
+            FixtureStatus.Live -> MaterialTheme.colorScheme.tertiaryContainer
+
+            else -> MaterialTheme.colorScheme.surfaceContainerLowest.copy(
+                alpha = 0.8f,
+            )
+        },
+        contentColor = when (status) {
+            FixtureStatus.Washout,
+            FixtureStatus.Cancelled,
+            FixtureStatus.Postponed,
+            -> MaterialTheme.colorScheme.onErrorContainer
+
+            FixtureStatus.Live -> MaterialTheme.colorScheme.onTertiaryContainer
+
+            else -> MaterialTheme.colorScheme.onSurface
+        },
+    ) {
+        Text(
+            text = fixtureStatusLabel(status),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+        )
+    }
+}
+
+@Composable
+fun fixtureStatusLabel(
+    status: FixtureStatus,
+): String = stringResource(
+    when (status) {
+        FixtureStatus.Pending -> Res.string.match_status_pending
+        FixtureStatus.Scheduled -> Res.string.match_status_scheduled
+        FixtureStatus.Live -> Res.string.match_status_live
+        FixtureStatus.Completed -> Res.string.match_status_completed
+        FixtureStatus.Postponed -> Res.string.match_status_postponed
+        FixtureStatus.Washout -> Res.string.match_status_washout
+        FixtureStatus.Cancelled -> Res.string.match_status_cancelled
+        FixtureStatus.Unknown -> Res.string.match_status_unknown
+    },
+)
+
+internal fun FixtureStatus.isNotableCardStatus(): Boolean = when (this) {
+    FixtureStatus.Washout,
+    FixtureStatus.Cancelled,
+    FixtureStatus.Postponed,
+    FixtureStatus.Live,
+    FixtureStatus.Completed,
+    -> true
+
+    FixtureStatus.Pending,
+    FixtureStatus.Scheduled,
+    FixtureStatus.Unknown,
+    -> false
+}
+
+internal fun FixtureStatus.isNegativeStatus(): Boolean = when (this) {
+    FixtureStatus.Washout,
+    FixtureStatus.Cancelled,
+    FixtureStatus.Postponed,
+    -> true
+
+    else -> false
 }
 
 @Composable

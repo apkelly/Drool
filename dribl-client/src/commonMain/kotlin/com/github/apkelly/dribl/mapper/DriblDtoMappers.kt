@@ -15,6 +15,7 @@ import com.github.apkelly.dribl.dto.PersonDto
 import com.github.apkelly.dribl.dto.PersonResourceDto
 import com.github.apkelly.dribl.dto.ProfileResponse
 import com.github.apkelly.dribl.dto.RefereeAvailabilityResourceDto
+import com.github.apkelly.dribl.dto.ScheduleAllocationAttributesDto
 import com.github.apkelly.dribl.dto.ScheduleAllocationResourceDto
 import com.github.apkelly.dribl.dto.TeamDto
 import com.github.apkelly.dribl.model.Account
@@ -312,7 +313,8 @@ private fun MatchAttributesDto.toDomain(
         competitionName = resolvedCompetitionName,
         venueName = fieldName,
         userTeamId = null,
-        status = status.toFixtureStatus(),
+        status = status.toFixtureStatus().takeUnless { it == FixtureStatus.Unknown }
+            ?: (eventStatus ?: matchStatus).toFixtureStatus(),
         homeScore = homeTeamScore,
         awayScore = awayTeamScore,
         homeTeamLogoUrl = homeTeamLogo,
@@ -384,9 +386,7 @@ internal fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
             .joinToString(" - ")
             .takeIf(String::isNotBlank),
         userTeamId = null,
-        status = attributes.status.toFixtureStatus().takeUnless {
-            it == FixtureStatus.Unknown
-        } ?: FixtureStatus.Scheduled,
+        status = attributes.resolvedFixtureStatus(),
         homeTeamLogoUrl = attributes.homeClubImage,
         awayTeamLogoUrl = attributes.awayClubImage,
         role = FixtureRole.Referee,
@@ -397,6 +397,11 @@ internal fun ScheduleAllocationResourceDto.toDomain(): Fixture? {
         leagueName = attributes.leagueName,
     )
 }
+
+private fun ScheduleAllocationAttributesDto.resolvedFixtureStatus(): FixtureStatus =
+    (eventStatus ?: matchStatus).toFixtureStatus().takeUnless { it == FixtureStatus.Unknown }
+        ?: status.toFixtureStatus().takeUnless { it == FixtureStatus.Unknown }
+        ?: FixtureStatus.Scheduled
 
 internal fun RefereeAvailabilityResourceDto.toDomain(): RefereeAvailability? {
     val startEpochMillis = attributes.start.epochMillis ?: return null
@@ -415,15 +420,18 @@ internal fun RefereeAvailabilityResourceDto.toDomain(): RefereeAvailability? {
     )
 }
 
-private fun String?.toFixtureStatus(): FixtureStatus = when (orEmpty().lowercase()) {
-    "pending" -> FixtureStatus.Pending
-    "scheduled", "upcoming", "fixture" -> FixtureStatus.Scheduled
-    "live", "in_progress" -> FixtureStatus.Live
-    "completed", "complete", "final" -> FixtureStatus.Completed
-    "postponed" -> FixtureStatus.Postponed
-    "washout" -> FixtureStatus.Washout
-    "cancelled", "canceled" -> FixtureStatus.Cancelled
-    else -> FixtureStatus.Unknown
+private fun String?.toFixtureStatus(): FixtureStatus {
+    val normalized = orEmpty().trim().lowercase()
+    return when {
+        normalized == "pending" -> FixtureStatus.Pending
+        normalized in setOf("scheduled", "upcoming", "fixture") -> FixtureStatus.Scheduled
+        normalized in setOf("live", "in_progress") -> FixtureStatus.Live
+        normalized in setOf("completed", "complete", "final") -> FixtureStatus.Completed
+        normalized == "pp" || normalized.contains("postpone") -> FixtureStatus.Postponed
+        normalized == "wo" || normalized.contains("washout") -> FixtureStatus.Washout
+        normalized.contains("cancel") || normalized.contains("abandon") -> FixtureStatus.Cancelled
+        else -> FixtureStatus.Unknown
+    }
 }
 
 private val JsonPrimitive?.textValue: String?

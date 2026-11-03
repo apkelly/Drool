@@ -234,9 +234,7 @@ fun HomeScreen(
                     }
                 }
                 val now = Clock.System.now().toEpochMilliseconds()
-                val upcoming = fixtures.items
-                    .filter { it.kickoffEpochMillis >= now }
-                    .upcomingOnNextDay()
+                val upcoming = fixtures.items.upcomingOnNextDay(nowEpochMillis = now)
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -371,13 +369,28 @@ fun HomeScreen(
 
 internal fun List<Fixture>.upcomingOnNextDay(
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    nowEpochMillis: Long? = null,
 ): List<Fixture> {
-    val nextDate = minOfOrNull {
+    val today = nowEpochMillis?.let {
+        Instant.fromEpochMilliseconds(it)
+            .toLocalDateTime(timeZone)
+            .date
+    }
+    val candidates = if (today == null) {
+        this
+    } else {
+        filter {
+            Instant.fromEpochMilliseconds(it.kickoffEpochMillis)
+                .toLocalDateTime(timeZone)
+                .date >= today
+        }
+    }
+    val nextDate = candidates.minOfOrNull {
         Instant.fromEpochMilliseconds(it.kickoffEpochMillis)
             .toLocalDateTime(timeZone)
             .date
     } ?: return emptyList()
-    return filter {
+    return candidates.filter {
         Instant.fromEpochMilliseconds(it.kickoffEpochMillis)
             .toLocalDateTime(timeZone)
             .date == nextDate

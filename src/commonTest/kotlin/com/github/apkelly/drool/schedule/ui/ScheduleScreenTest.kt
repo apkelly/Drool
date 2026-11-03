@@ -7,6 +7,8 @@ import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocationFromCard
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.isNegativeStatus
+import com.github.apkelly.drool.common.ui.widgets.isNotableCardStatus
 import com.github.apkelly.drool.common.ui.widgets.mergeRefereeAllocationFrom
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,6 +59,24 @@ class ScheduleScreenTest {
         assertEquals("alloc-27", merged.refereeAllocationId)
         assertEquals("Assistant Referee 1", merged.refereeRole)
         assertEquals("pending", merged.refereeStatus)
+    }
+
+    @Test
+    fun washoutStatusDisplaysOnCardAndDisablesRefereeActions() {
+        val washoutFixture = fixture(
+            refereeStatus = "accepted",
+            status = FixtureStatus.Washout,
+        )
+        assertTrue(washoutFixture.status.isNotableCardStatus())
+        assertTrue(washoutFixture.status.isNegativeStatus())
+        assertFalse(washoutFixture.canAcceptRefereeAllocation())
+        assertFalse(washoutFixture.canDeclineRefereeAllocation())
+        assertFalse(FixtureStatus.Scheduled.isNotableCardStatus())
+        assertFalse(FixtureStatus.Pending.isNotableCardStatus())
+
+        val cachedScheduled = fixture(status = FixtureStatus.Scheduled)
+        val merged = cachedScheduled.mergeRefereeAllocationFrom(washoutFixture)
+        assertEquals(FixtureStatus.Washout, merged.status)
     }
 
     private fun fixture(

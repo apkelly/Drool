@@ -108,16 +108,7 @@ fun FixtureEntity.toDomain() = Fixture(
     competitionName = competitionName,
     venueName = venueName,
     userTeamId = userTeamId,
-    status = when (status.lowercase()) {
-        "pending" -> FixtureStatus.Pending
-        "scheduled", "upcoming", "fixture" -> FixtureStatus.Scheduled
-        "live", "in_progress" -> FixtureStatus.Live
-        "completed", "complete", "final" -> FixtureStatus.Completed
-        "postponed" -> FixtureStatus.Postponed
-        "washout" -> FixtureStatus.Washout
-        "cancelled", "canceled" -> FixtureStatus.Cancelled
-        else -> FixtureStatus.Unknown
-    },
+    status = status.toFixtureStatus(),
     roundLabel = roundLabel,
     venueAddress = venueAddress,
     latitude = latitude,
@@ -349,3 +340,17 @@ fun Account.toEntity(
 ) = AccountEntity(ownerAccountId, id, name, subtitle, logoUrl)
 
 fun AccountEntity.toDomain() = Account(id, name, subtitle, logoUrl)
+
+private fun String.toFixtureStatus(): FixtureStatus {
+    val normalized = trim().lowercase()
+    return when {
+        normalized == "pending" -> FixtureStatus.Pending
+        normalized in setOf("scheduled", "upcoming", "fixture") -> FixtureStatus.Scheduled
+        normalized in setOf("live", "in_progress") -> FixtureStatus.Live
+        normalized in setOf("completed", "complete", "final") -> FixtureStatus.Completed
+        normalized == "pp" || normalized.contains("postpone") -> FixtureStatus.Postponed
+        normalized == "wo" || normalized.contains("washout") -> FixtureStatus.Washout
+        normalized.contains("cancel") || normalized.contains("abandon") -> FixtureStatus.Cancelled
+        else -> FixtureStatus.Unknown
+    }
+}

@@ -243,12 +243,27 @@ internal fun Fixture.mergeRefereeAllocationFrom(
 ): Fixture {
     if (other == null) return this
     return copy(
+        status = if (status.isActionableRefereeAllocationStatus() &&
+            !other.status.isActionableRefereeAllocationStatus() &&
+            other.status != FixtureStatus.Unknown
+        ) {
+            other.status
+        } else if (status == FixtureStatus.Unknown) {
+            other.status
+        } else {
+            status
+        },
         role = if (other.role == FixtureRole.Referee) FixtureRole.Referee else role,
         refereeRole = other.refereeRole ?: refereeRole,
         refereeAllocationId = other.refereeAllocationId ?: refereeAllocationId,
         refereeStatus = other.refereeStatus ?: refereeStatus,
     )
 }
+
+private fun FixtureStatus.isActionableRefereeAllocationStatus(): Boolean = this != FixtureStatus.Completed &&
+    this != FixtureStatus.Cancelled &&
+    this != FixtureStatus.Washout &&
+    this != FixtureStatus.Postponed
 
 private val CLOSED_REFEREE_STATUSES =
     setOf("request_contact", "declined", "rejected")

@@ -78,7 +78,12 @@ class MatchViewModel(
         val key = MatchCacheKey(profileId, fixture.id)
         val existing = matchCache.get(key)
         val merged = existing?.mergeRefereeAllocationFrom(fixture) ?: fixture
-        matchCache.put(key, merged, resolvedDetails = matchCache.isResolved(key))
+        val statusChanged = existing != null && existing.status != merged.status
+        matchCache.put(
+            key,
+            merged,
+            resolvedDetails = matchCache.isResolved(key) && !statusChanged,
+        )
     }
 
     fun loadMatchSheet(

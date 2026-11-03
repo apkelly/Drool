@@ -66,11 +66,13 @@ import com.github.apkelly.drool.common.resources.team_results
 import com.github.apkelly.drool.common.ui.format.displayTeamNames
 import com.github.apkelly.drool.common.ui.format.formatFixtureDateTime
 import com.github.apkelly.drool.common.ui.widgets.CacheStatus
+import com.github.apkelly.drool.common.ui.widgets.FixtureStatusPill
 import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.RefreshAction
 import com.github.apkelly.drool.common.ui.widgets.RemoteImage
 import com.github.apkelly.drool.common.ui.widgets.SportsCard
+import com.github.apkelly.drool.common.ui.widgets.isNotableCardStatus
 import com.github.apkelly.drool.team.ui.model.TeamHubUiState
 import org.jetbrains.compose.resources.stringResource
 
@@ -258,10 +260,19 @@ private fun FixtureList(
                     Modifier.fillMaxWidth().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(
-                        formatFixtureDateTime(fixture.kickoffEpochMillis),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            formatFixtureDateTime(fixture.kickoffEpochMillis),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        if (fixture.status.isNotableCardStatus()) {
+                            FixtureStatusPill(status = fixture.status)
+                        }
+                    }
                     Text(
                         "${teamNames.home} vs ${teamNames.away}",
                         style = MaterialTheme.typography.titleMedium,

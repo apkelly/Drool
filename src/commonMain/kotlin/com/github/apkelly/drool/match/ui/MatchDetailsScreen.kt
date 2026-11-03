@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.github.apkelly.drool.common.domain.model.Fixture
 import com.github.apkelly.drool.common.domain.model.FixtureRole
@@ -69,14 +70,6 @@ import com.github.apkelly.drool.common.resources.match_round
 import com.github.apkelly.drool.common.resources.match_round_unknown
 import com.github.apkelly.drool.common.resources.match_score
 import com.github.apkelly.drool.common.resources.match_sheet_tab
-import com.github.apkelly.drool.common.resources.match_status_cancelled
-import com.github.apkelly.drool.common.resources.match_status_completed
-import com.github.apkelly.drool.common.resources.match_status_live
-import com.github.apkelly.drool.common.resources.match_status_pending
-import com.github.apkelly.drool.common.resources.match_status_postponed
-import com.github.apkelly.drool.common.resources.match_status_scheduled
-import com.github.apkelly.drool.common.resources.match_status_unknown
-import com.github.apkelly.drool.common.resources.match_status_washout
 import com.github.apkelly.drool.common.resources.match_venue
 import com.github.apkelly.drool.common.resources.match_weather
 import com.github.apkelly.drool.common.resources.match_weather_humidity
@@ -97,6 +90,7 @@ import com.github.apkelly.drool.common.ui.format.formatFixtureTime
 import com.github.apkelly.drool.common.ui.platform.GoogleMapPreview
 import com.github.apkelly.drool.common.ui.platform.rememberLocationActionLauncher
 import com.github.apkelly.drool.common.ui.widgets.CacheStatus
+import com.github.apkelly.drool.common.ui.widgets.FixtureStatusPill
 import com.github.apkelly.drool.common.ui.widgets.MaterialBackIcon
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbol
 import com.github.apkelly.drool.common.ui.widgets.MaterialSymbolIcon
@@ -110,6 +104,7 @@ import com.github.apkelly.drool.common.ui.widgets.SportsCard
 import com.github.apkelly.drool.common.ui.widgets.canAcceptRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.canDeclineRefereeAllocation
 import com.github.apkelly.drool.common.ui.widgets.hasAssignedRefereeAllocation
+import com.github.apkelly.drool.common.ui.widgets.isNegativeStatus
 import com.github.apkelly.drool.match.domain.model.RefereeMatchPreset
 import com.github.apkelly.drool.match.domain.model.RefereeTimerPhase
 import com.github.apkelly.drool.match.ui.model.MatchDetailsUiState
@@ -314,6 +309,7 @@ fun MatchDetailsScreen(
                             ?.takeIf { it.profileId == profileId && it.matchId == matchId }
                         val isMatchOver =
                             details.fixture.status == FixtureStatus.Completed ||
+                                details.fixture.status.isNegativeStatus() ||
                                 matchSheetContent?.refereeSession?.phase ==
                                 RefereeTimerPhase.FullTime ||
                                 matchSheetContent?.refereeReportSubmitted == true
@@ -414,38 +410,7 @@ private fun MatchDetails(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                             )
                         }
-                        Surface(
-                            shape = CircleShape,
-                            color = when (fixture.status) {
-                                FixtureStatus.Washout,
-                                FixtureStatus.Cancelled,
-                                FixtureStatus.Postponed,
-                                -> MaterialTheme.colorScheme.errorContainer
-
-                                FixtureStatus.Live -> MaterialTheme.colorScheme.tertiaryContainer
-
-                                else -> MaterialTheme.colorScheme.surfaceContainerLowest.copy(
-                                    alpha = 0.8f,
-                                )
-                            },
-                            contentColor = when (fixture.status) {
-                                FixtureStatus.Washout,
-                                FixtureStatus.Cancelled,
-                                FixtureStatus.Postponed,
-                                -> MaterialTheme.colorScheme.onErrorContainer
-
-                                FixtureStatus.Live -> MaterialTheme.colorScheme.onTertiaryContainer
-
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                        ) {
-                            Text(
-                                text = fixtureStatusLabel(fixture.status),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                            )
-                        }
+                        FixtureStatusPill(status = fixture.status)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -553,6 +518,11 @@ private fun MatchDetails(
                             text = formatFixtureTime(fixture.kickoffEpochMillis),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
+                            textDecoration = if (fixture.status.isNegativeStatus()) {
+                                TextDecoration.LineThrough
+                            } else {
+                                null
+                            },
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         )
                     }
@@ -876,22 +846,6 @@ private fun MatchDetailSection(
         }
     }
 }
-
-@Composable
-private fun fixtureStatusLabel(
-    status: FixtureStatus,
-): String = stringResource(
-    when (status) {
-        FixtureStatus.Pending -> Res.string.match_status_pending
-        FixtureStatus.Scheduled -> Res.string.match_status_scheduled
-        FixtureStatus.Live -> Res.string.match_status_live
-        FixtureStatus.Completed -> Res.string.match_status_completed
-        FixtureStatus.Postponed -> Res.string.match_status_postponed
-        FixtureStatus.Washout -> Res.string.match_status_washout
-        FixtureStatus.Cancelled -> Res.string.match_status_cancelled
-        FixtureStatus.Unknown -> Res.string.match_status_unknown
-    },
-)
 
 @Composable
 private fun MatchTeam(

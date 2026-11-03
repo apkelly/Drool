@@ -23,6 +23,8 @@ internal data class ScheduleAllocationAttributesDto(
     @SerialName("ground") val ground: String? = null,
     @SerialName("field") val field: String? = null,
     @SerialName("status") val status: String? = null,
+    @SerialName("event_status") val eventStatus: String? = null,
+    @SerialName("match_status") val matchStatus: String? = null,
     @SerialName("referee_role") val refereeRole: String? = null,
     @SerialName("referee_status") val refereeStatus: String? = null,
 )

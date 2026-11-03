@@ -1628,6 +1628,70 @@ class DriblApiTest {
         assertEquals("Australia/Sydney", club.timeZone)
     }
 
+    @Test
+    fun washoutMatchAndAllocationStatusesMapToWashout() = runTest {
+        val matchesClient = jsonClient(
+            """
+            {
+              "data": [
+                {
+                  "type": "matches",
+                  "id": 9001,
+                  "attributes": {
+                    "date": "2026-11-03T08:00:00Z",
+                    "home_team_id": 10,
+                    "home_team_name": "Home FC",
+                    "away_team_id": 20,
+                    "away_team_name": "Away FC",
+                    "status": "washout-reschedule"
+                  }
+                },
+                {
+                  "type": "matches",
+                  "id": 9002,
+                  "attributes": {
+                    "date": "2026-11-03T09:00:00Z",
+                    "home_team_id": 10,
+                    "home_team_name": "Home FC",
+                    "away_team_id": 20,
+                    "away_team_name": "Away FC",
+                    "status": "washout cancelled"
+                  }
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val fixtures = DriblSportsApi(matchesClient, "https://example.test/api")
+            .fetchFixtures("token", "user-42")
+        assertEquals(listOf(FixtureStatus.Washout, FixtureStatus.Washout), fixtures.map { it.status })
+
+        val allocationsClient = jsonClient(
+            """
+            {
+              "data": [{
+                "type": "allocations",
+                "id": 789,
+                "attributes": {
+                  "match_id": 9001,
+                  "start_date": "2026-11-03T08:00:00Z",
+                  "home_club_name": "Home FC",
+                  "away_club_name": "Away FC",
+                  "status": "accepted",
+                  "event_status": "washout_reschedule",
+                  "referee_status": "accepted"
+                }
+              }]
+            }
+            """.trimIndent(),
+        )
+        val refereeFixture = DriblSportsApi(allocationsClient, "https://example.test/api")
+            .fetchRefereeFixtures("token", "user-42")
+            .single()
+        assertEquals(FixtureStatus.Washout, refereeFixture.status)
+        assertEquals("accepted", refereeFixture.refereeStatus)
+    }
+
     private fun jsonClient(
         body: String,
         expectedMethod: HttpMethod? = null,

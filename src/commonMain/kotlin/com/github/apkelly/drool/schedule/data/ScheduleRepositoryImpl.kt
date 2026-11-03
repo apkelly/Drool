@@ -333,10 +333,7 @@ private fun mergeDuplicateFixture(
     competitionName = prefer(first.competitionName, second.competitionName),
     venueName = prefer(first.venueName, second.venueName),
     userTeamId = prefer(first.userTeamId, second.userTeamId),
-    status = prefer(
-        first.status.takeUnless { it == FixtureStatus.Unknown },
-        second.status,
-    ) ?: second.status,
+    status = preferFixtureStatus(first.status, second.status),
     homeScore = prefer(first.homeScore, second.homeScore),
     awayScore = prefer(first.awayScore, second.awayScore),
     homeTeamLogoUrl = prefer(first.homeTeamLogoUrl, second.homeTeamLogoUrl),
@@ -359,3 +356,31 @@ private fun <T> prefer(
     primary: T?,
     fallback: T?,
 ): T? = primary ?: fallback
+
+private fun preferFixtureStatus(
+    primary: FixtureStatus,
+    fallback: FixtureStatus,
+): FixtureStatus = if (primary.statusPriority() >= fallback.statusPriority()) {
+    primary
+} else {
+    fallback
+}
+
+private fun FixtureStatus.statusPriority(): Int = when (this) {
+    FixtureStatus.Washout,
+    FixtureStatus.Cancelled,
+    FixtureStatus.Postponed,
+    FixtureStatus.Completed,
+    FixtureStatus.Live,
+    -> SPECIFIC_STATUS_PRIORITY
+
+    FixtureStatus.Scheduled,
+    FixtureStatus.Pending,
+    -> GENERIC_STATUS_PRIORITY
+
+    FixtureStatus.Unknown -> UNKNOWN_STATUS_PRIORITY
+}
+
+private const val SPECIFIC_STATUS_PRIORITY = 3
+private const val GENERIC_STATUS_PRIORITY = 2
+private const val UNKNOWN_STATUS_PRIORITY = 1
